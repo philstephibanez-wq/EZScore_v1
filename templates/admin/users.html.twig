@@ -1,31 +1,108 @@
 {% extends 'base.html.twig' %}
 {% block title %}Utilisateurs — EZScore_v1{% endblock %}
+
 {% block body %}
-<header class="page-head"><div><div class="eyebrow">Administration</div><h1>Utilisateurs</h1></div></header>
+<header class="page-head">
+    <div>
+        <div class="eyebrow">Administration</div>
+        <h1>Utilisateurs</h1>
+        <p class="page-note">Comptes locaux et comptes autorisés à utiliser Google SSO.</p>
+    </div>
+</header>
+
 <section class="panel">
     <h2>Créer un utilisateur</h2>
-    <form method="post" class="inline-form user-create">
+    <form method="post" class="user-create-grid">
         <input type="hidden" name="_token" value="{{ csrf_token('create_user') }}">
-        <input name="display_name" placeholder="Nom affiché" required>
-        <input type="email" name="email" placeholder="E-mail" required>
-        <input type="password" name="password" placeholder="Mot de passe local (optionnel)">
-        <select name="role"><option value="ROLE_READER">Lecteur</option><option value="ROLE_EDITOR">Éditeur</option><option value="ROLE_ADMIN">Admin</option></select>
-        <button class="primary">Créer</button>
+
+        <label>
+            <span>Nom affiché</span>
+            <input name="display_name" placeholder="Nom affiché" required>
+        </label>
+
+        <label>
+            <span>E-mail / login local</span>
+            <input type="email" name="email" placeholder="nom@domaine.fr" required>
+        </label>
+
+        <label>
+            <span>Mot de passe local</span>
+            <input type="password" name="password" minlength="10" placeholder="Optionnel si Google uniquement">
+        </label>
+
+        <label>
+            <span>Rôle</span>
+            <select name="role">
+                <option value="ROLE_READER">Lecteur</option>
+                <option value="ROLE_EDITOR">Éditeur</option>
+                <option value="ROLE_ADMIN">Admin</option>
+            </select>
+        </label>
+
+        <button class="primary" type="submit">Créer</button>
     </form>
 </section>
+
 <section class="panel">
-    <div class="table-wrap"><table><thead><tr><th>Utilisateur</th><th>Rôle</th><th>Actif</th><th>Google</th><th></th></tr></thead><tbody>
-    {% for user in users %}
-        <tr><td><strong>{{ user.displayName }}</strong><small>{{ user.email }}</small></td><td colspan="4">
-            <form method="post" action="{{ path('admin_user_update',{id:user.id}) }}" class="row-form">
-                <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
-                <select name="role"><option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>Lecteur</option><option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>Éditeur</option><option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>Admin</option></select>
-                <label class="check"><input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}> actif</label>
-                <span>{{ user.googleSub ? 'lié' : '—' }}</span>
-                <button>Enregistrer</button>
-            </form>
-        </td></tr>
-    {% endfor %}
-    </tbody></table></div>
+    <div class="table-wrap">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Compte</th>
+                    <th>Rôle</th>
+                    <th>Actif</th>
+                    <th>Google</th>
+                    <th>Mot de passe</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+                <tr>
+                    <td colspan="6">
+                        <form method="post"
+                              action="{{ path('admin_user_update', {id: user.id}) }}"
+                              class="user-edit-grid">
+                            <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
+
+                            <div class="identity-fields">
+                                <input name="display_name" value="{{ user.displayName }}" required aria-label="Nom affiché">
+                                <input type="email" name="email" value="{{ user.email }}" required aria-label="E-mail">
+                            </div>
+
+                            <select name="role" aria-label="Rôle">
+                                <option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>Lecteur</option>
+                                <option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>Éditeur</option>
+                                <option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>Admin</option>
+                            </select>
+
+                            <label class="check active-check">
+                                <input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>
+                                actif
+                            </label>
+
+                            <span class="provider-state">{{ user.googleSub ? 'lié' : '—' }}</span>
+
+                            <input type="password"
+                                   name="password"
+                                   minlength="10"
+                                   placeholder="laisser inchangé"
+                                   aria-label="Nouveau mot de passe">
+
+                            <button type="submit">Enregistrer</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6">Aucun utilisateur.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="panel-note">
+        Un compte sans mot de passe local peut être utilisé via Google si son adresse e-mail correspond à un compte autorisé.
+        Le dernier administrateur actif ne peut pas être désactivé ni rétrogradé.
+    </p>
 </section>
 {% endblock %}

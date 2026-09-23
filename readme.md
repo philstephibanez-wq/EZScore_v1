@@ -1,25 +1,45 @@
-# EZScore_v1 R4.2 hotfix
+# EZScore_v1 R5.3 — alignement schéma Doctrine
 
-Corrige la migration SQLite `Version20260924010000`.
+La sortie de `doctrine:schema:update --dump-sql` montre que le mapping ORM est désormais chargé correctement, mais que la migration initiale ne correspond pas exactement au schéma attendu par Doctrine.
 
-## Cause
+Différences corrigées :
 
-La migration R4 contenait des fragments `\n` dans des chaînes PHP entre apostrophes après des commentaires SQL `--(DC2Type:...)`.
+- `users.password` : `CLOB` -> `VARCHAR(255)` ;
+- index FK de `group_members` : noms attendus par Doctrine ;
+- index FK de `playlists` : nom attendu par Doctrine ;
+- `ON UPDATE NO ACTION` explicitement présent sur les clés étrangères SQLite.
 
-En PHP, `\n` n'est pas converti en saut de ligne dans une chaîne entre apostrophes. SQLite considérait donc toute la fin de la requête comme un commentaire, ce qui provoquait :
-
-`SQLSTATE[HY000]: General error: 1 incomplete input`
+Comme EZScore_v1 est encore au stade de fondation et qu'aucune donnée applicative n'a encore besoin d'être conservée, la correction propre consiste à corriger la migration initiale puis recréer la base SQLite.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R4_2_MIGRATION_HOTFIX.zip" -C H:\EZScore_v1
-php bin\console cache:clear
-php bin\console doctrine:migrations:status
-php bin\console doctrine:migrations:migrate --no-interaction
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R5_3_SCHEMA_ALIGNMENT.zip" -C H:\EZScore_v1
 ```
 
-Le ZIP est construit sans dossier racine : `migrations/Version20260924010000.php` écrase directement le fichier du projet.
+## Recréation de la base de développement
 
-Aucun changement de configuration PHP/SQLite n'est nécessaire.
+Ne faire ceci que tant qu'aucun compte ou donnée EZScore à conserver n'a été créé :
+
+```powershell
+Remove-Item .\data\ezscore_v1.sqlite -Force -ErrorAction SilentlyContinue
+
+php bin\console cache:clear
+php bin\console doctrine:migrations:migrate --no-interaction
+php bin\console doctrine:schema:validate
+```
+
+Résultat attendu :
+
+```text
+Mapping
+-------
+[OK] The mapping files are correct.
+
+Database
+--------
+[OK] The database schema is in sync with the mapping files.
+```
+
+Ne pas utiliser `doctrine:schema:update --force`.
