@@ -1,0 +1,6 @@
+.venv-py313/
+__pycache__/
+*.py[cod]
+.streamlit/secrets.toml
+data/*.db
+data/*.db-*
