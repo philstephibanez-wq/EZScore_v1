@@ -1,5 +1,0 @@
-<div class="sidebar-user">
-  <strong>{{ user.display_name }}</strong>
-  <span>{{ user.email }}</span>
-  <em>{{ user.role }}</em>
-</div>

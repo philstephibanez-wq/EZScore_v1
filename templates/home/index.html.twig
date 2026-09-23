@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}EZScore_v1 — Fondation{% endblock %}
+
+{% block body %}
+<main class="shell">
+    <section class="card">
+        <p class="eyebrow">EZScore_v1</p>
+        <h1>Fondation Symfony + Python</h1>
+        <p>Le shell web est désormais géré par Symfony/Twig/jQuery. Les analyses musicales seront isolées dans le service Python.</p>
+        <div class="architecture">
+            <div><strong>Symfony</strong><span>UI · auth · admin · groupes · playlists · catalogue</span></div>
+            <div><strong>JavaScript / jQuery / WebAudio</strong><span>interactions navigateur · player · mixeur</span></div>
+            <div><strong>Python</strong><span>Torch · STEMS · Whisper · accords · rythme · MIDI</span></div>
+        </div>
+    </section>
+</main>
+{% endblock %}

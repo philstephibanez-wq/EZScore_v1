@@ -1,1 +1,0 @@
-<div class="ezscore-root">{{ content | safe }}</div>
