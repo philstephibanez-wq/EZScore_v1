@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+{% block title %}Connexion — EZScore_v1{% endblock %}
+{% block body %}
+<section class="auth-card">
+    <div class="eyebrow">EZScore_v1</div>
+    <h1>Connexion</h1>
+    {% if error %}<div class="flash flash-error">{{ error.messageKey }}</div>{% endif %}
+    <form method="post" class="form-grid">
+        <label>E-mail<input type="email" name="_username" value="{{ last_username }}" required autofocus></label>
+        <label>Mot de passe<input type="password" name="_password" required></label>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        <button class="primary" type="submit">Se connecter</button>
+    </form>
+    <div class="oauth-sep"><span>ou</span></div>
+    {% if google_enabled %}
+        <a class="google-button" href="{{ path('connect_google_start') }}">Continuer avec Google</a>
+    {% else %}
+        <button class="google-button disabled" disabled>Google SSO non configuré</button>
+    {% endif %}
+</section>
+{% endblock %}

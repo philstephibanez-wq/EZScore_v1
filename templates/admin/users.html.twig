@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+{% block title %}Utilisateurs — EZScore_v1{% endblock %}
+{% block body %}
+<header class="page-head"><div><div class="eyebrow">Administration</div><h1>Utilisateurs</h1></div></header>
+<section class="panel">
+    <h2>Créer un utilisateur</h2>
+    <form method="post" class="inline-form user-create">
+        <input type="hidden" name="_token" value="{{ csrf_token('create_user') }}">
+        <input name="display_name" placeholder="Nom affiché" required>
+        <input type="email" name="email" placeholder="E-mail" required>
+        <input type="password" name="password" placeholder="Mot de passe local (optionnel)">
+        <select name="role"><option value="ROLE_READER">Lecteur</option><option value="ROLE_EDITOR">Éditeur</option><option value="ROLE_ADMIN">Admin</option></select>
+        <button class="primary">Créer</button>
+    </form>
+</section>
+<section class="panel">
+    <div class="table-wrap"><table><thead><tr><th>Utilisateur</th><th>Rôle</th><th>Actif</th><th>Google</th><th></th></tr></thead><tbody>
+    {% for user in users %}
+        <tr><td><strong>{{ user.displayName }}</strong><small>{{ user.email }}</small></td><td colspan="4">
+            <form method="post" action="{{ path('admin_user_update',{id:user.id}) }}" class="row-form">
+                <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
+                <select name="role"><option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>Lecteur</option><option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>Éditeur</option><option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>Admin</option></select>
+                <label class="check"><input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}> actif</label>
+                <span>{{ user.googleSub ? 'lié' : '—' }}</span>
+                <button>Enregistrer</button>
+            </form>
+        </td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'base.html.twig' %}
+{% block title %}Répertoire — EZScore_v1{% endblock %}
+{% block body %}
+<header class="page-head"><div><div class="eyebrow">Musique</div><h1>Répertoire</h1></div></header>
+<div class="song-grid">{% for song in songs %}<a class="song-tile" href="{{ path('app_song_workspace',{id:song.id}) }}"><div class="cover-mock">♫</div><div><strong>{{ song.title }}</strong><span>{{ song.artist }}</span><small>{{ song.editor }} · {{ song.comment }}</small></div></a>{% endfor %}</div>
+{% endblock %}

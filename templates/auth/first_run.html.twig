@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}Initialisation — EZScore_v1{% endblock %}
+{% block body %}
+<section class="auth-card">
+    <div class="eyebrow">Premier démarrage</div>
+    <h1>Création de l’administrateur</h1>
+    <p>Ce compte devient l’administrateur initial d’EZScore_v1.</p>
+    {% for error in errors %}<div class="flash flash-error">{{ error }}</div>{% endfor %}
+    <form method="post" class="form-grid">
+        <input type="hidden" name="_token" value="{{ csrf_token('first_run') }}">
+        <label>Nom affiché<input name="display_name" required autofocus></label>
+        <label>E-mail<input type="email" name="email" required></label>
+        <label>Mot de passe<input type="password" name="password" minlength="10" required></label>
+        <label>Confirmation<input type="password" name="confirm_password" minlength="10" required></label>
+        <button class="primary" type="submit">Créer l’administrateur</button>
+    </form>
+</section>
+{% endblock %}

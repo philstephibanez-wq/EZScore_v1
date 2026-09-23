@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}Groupes — EZScore_v1{% endblock %}
+{% block body %}
+<header class="page-head"><div><div class="eyebrow">Collaboration</div><h1>Groupes</h1></div></header>
+{% if is_granted('ROLE_ADMIN') %}
+<section class="panel"><h2>Nouveau groupe</h2><form method="post" class="inline-form"><input type="hidden" name="_token" value="{{ csrf_token('create_group') }}"><input name="name" placeholder="Nom" required><input name="description" placeholder="Description"><button class="primary">Créer</button></form></section>
+{% endif %}
+<div class="card-grid">
+{% for group in groups %}
+<section class="panel group-card"><h2>{{ group.name }}</h2><p>{{ group.description ?: '—' }}</p>
+    <div class="member-list">
+        {% for member in members_by_group[group.id]|default([]) %}<div><strong>{{ member.user.displayName }}</strong><span>{{ member.role }}</span></div>{% else %}<em>Aucun membre.</em>{% endfor %}
+    </div>
+    {% if is_granted('ROLE_ADMIN') %}<form method="post" action="{{ path('app_group_member_add',{id:group.id}) }}" class="inline-form compact"><input type="hidden" name="_token" value="{{ csrf_token('group_' ~ group.id) }}"><input type="email" name="email" placeholder="E-mail du membre" required><select name="role"><option>member</option><option>manager</option><option>owner</option></select><button>Ajouter / modifier</button></form>{% endif %}
+</section>
+{% else %}<div class="empty">Aucun groupe.</div>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+{% block title %}Playlists — EZScore_v1{% endblock %}
+{% block body %}
+<header class="page-head"><div><div class="eyebrow">Bibliothèque</div><h1>Playlists</h1></div></header>
+<section class="panel"><h2>Nouvelle playlist</h2><form method="post" class="playlist-form"><input type="hidden" name="_token" value="{{ csrf_token('create_playlist') }}"><input name="name" placeholder="Nom" required><input name="description" placeholder="Description"><select name="owner_type" class="owner-type"><option value="user">Personnelle</option>{% if groups %}<option value="group">Groupe</option>{% endif %}</select><select name="group_id" class="group-owner" hidden>{% for group in groups %}<option value="{{ group.id }}">{{ group.name }}</option>{% endfor %}</select><label class="check"><input type="checkbox" name="public" value="1"> publique</label><button class="primary">Créer</button></form></section>
+<div class="card-grid">
+{% for playlist in playlists %}<section class="panel"><div class="eyebrow">{{ playlist.ownerType == 'group' ? 'Groupe' : 'Personnelle' }}</div><h2>{{ playlist.name }}</h2><p>{{ playlist.description ?: '—' }}</p><small>{{ playlist.public ? 'Publique' : 'Privée' }}</small></section>{% else %}<div class="empty">Aucune playlist.</div>{% endfor %}
+</div>
+{% endblock %}

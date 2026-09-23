@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\User;
+
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: 'users')]
+#[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\Column(length: 190)]
+    private string $email = '';
+
+    #[ORM\Column(length: 120)]
+    private string $displayName = '';
+
+    #[ORM\Column(nullable: true)]
+    private ?string $password = null;
+
+    #[ORM\Column(type: 'json')]
+    private array $roles = ['ROLE_READER'];
+
+    #[ORM\Column]
+    private bool $active = true;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $googleSub = null;
+
+    #[ORM\Column(length: 600, nullable: true)]
+    private ?string $avatarUrl = null;
+
+    #[ORM\Column]
+    private \DateTimeImmutable $createdAt;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int { return $this->id; }
+    public function getEmail(): string { return $this->email; }
+    public function setEmail(string $email): self { $this->email = mb_strtolower(trim($email)); return $this; }
+    public function getDisplayName(): string { return $this->displayName; }
+    public function setDisplayName(string $name): self { $this->displayName = trim($name); return $this; }
+    public function getPassword(): ?string { return $this->password; }
+    public function setPassword(?string $password): self { $this->password = $password; return $this; }
+    public function isActive(): bool { return $this->active; }
+    public function setActive(bool $active): self { $this->active = $active; return $this; }
+    public function getGoogleSub(): ?string { return $this->googleSub; }
+    public function setGoogleSub(?string $sub): self { $this->googleSub = $sub; return $this; }
+    public function getAvatarUrl(): ?string { return $this->avatarUrl; }
+    public function setAvatarUrl(?string $url): self { $this->avatarUrl = $url; return $this; }
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function getUserIdentifier(): string { return $this->email; }
+    public function eraseCredentials(): void { }
+
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        $roles[] = 'ROLE_USER';
+        return array_values(array_unique($roles));
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $allowed = ['ROLE_ADMIN', 'ROLE_EDITOR', 'ROLE_READER'];
+        $filtered = array_values(array_intersect($allowed, $roles));
+        $this->roles = $filtered ?: ['ROLE_READER'];
+        return $this;
+    }
+
+    public function getPrimaryRole(): string
+    {
+        foreach (['ROLE_ADMIN', 'ROLE_EDITOR', 'ROLE_READER'] as $role) {
+            if (in_array($role, $this->roles, true)) {
+                return $role;
+            }
+        }
+        return 'ROLE_READER';
+    }
+}
