@@ -1,49 +1,65 @@
-# EZScore_v1 — R8.1 correction accueil public
+# EZScore_v1 — R9.1 Doctrine schema sync
 
-Cette livraison corrige le comportement constaté après R8 : un visiteur anonyme ne doit pas être envoyé vers la page de connexion lorsqu’il arrive sur EZScore ou change de langue.
+Correction ciblée du `doctrine:schema:validate` qui restait en boucle après R8/R9.
 
-## Comportement attendu
+## Cause
 
-- `/` -> Répertoire public
-- `/fr` -> Répertoire public FR
-- `/en` -> Répertoire public EN
-- `/fr/catalog` -> Répertoire public FR
-- `/en/catalog` -> Répertoire public EN
-- changement de langue sans référent exploitable -> Répertoire public
-- utilisateur déjà connecté qui ouvre `/login` -> Répertoire
-- déconnexion -> `/` puis Répertoire public
+Les migrations R8/R9 créaient explicitement des index SQL :
 
-La page de connexion reste accessible explicitement depuis le bouton « Se connecter ».
+```text
+IDX_SONGS_PUBLISHED_AT
+IDX_SONG_RATING_SONG
+IDX_SONG_RATING_USER
+```
 
-Un lien « Retour au Répertoire » est également ajouté en bas de la page de connexion.
+mais ces index n'étaient pas déclarés dans le mapping Doctrine des entités.
 
-## Important
+Résultat : la base contenait des objets que le mapping ne décrivait pas, et Doctrine considérait le schéma comme non synchronisé à chaque validation.
 
-R8.1 ne modifie pas :
-- le design du Répertoire public R8 ;
-- la migration `published_at` ;
-- les analyseurs ;
-- les groupes/playlists ;
-- le CSS global.
+## Correction
+
+R9.1 aligne le mapping ORM avec les index déjà créés par les migrations.
+
+Fichiers modifiés uniquement :
+
+```text
+src/Domain/Song/Song.php
+src/Domain/Song/SongRating.php
+readme.md
+```
+
+Aucune migration supplémentaire.
+Aucun changement de données.
+Aucun CSS/Twig/JS.
+Aucune modification fonctionnelle.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_PUBLIC_HOME_ROUTING_R8_1.zip" -C H:\EZScore_v1
+
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_DOCTRINE_SCHEMA_SYNC_R9_1.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
-php bin\console debug:router
+php bin\console doctrine:schema:validate
+php bin\console doctrine:schema:update --dump-sql
 ```
 
-## Vérification
-
-En navigation privée / déconnecté :
+Résultat attendu :
 
 ```text
-https://ezscore.logandplay.com/
-https://ezscore.logandplay.com/fr
-https://ezscore.logandplay.com/fr/catalog
+[OK] The mapping files are correct.
+[OK] The database schema is in sync with the mapping files.
 ```
 
-doivent toutes aboutir au Répertoire public, pas à `/fr/login`.
+et `doctrine:schema:update --dump-sql` ne doit proposer aucune modification.
+
+## Important
+
+Ne pas exécuter :
+
+```text
+doctrine:schema:update --force
+```
+
+Si `--dump-sql` affiche encore une requête après R9.1, conserver la sortie exacte : elle identifiera le dernier écart sans modifier la base.

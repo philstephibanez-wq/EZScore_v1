@@ -162,3 +162,51 @@
     .public-song-gate{align-items:flex-start;flex-direction:column}
     .subscription-summary{grid-template-columns:1fr}
 }
+
+
+/* R9 — song ratings */
+.catalog-rating-summary{
+    display:flex;align-items:center;gap:7px;margin-top:7px;min-height:20px;
+    color:#9aabb6;font-size:11px
+}
+.catalog-rating-summary strong{font-size:11px;color:#e5edf2}
+.catalog-rating-summary small{margin:0!important;color:#7f8e99!important}
+.rating-stars-static{display:inline-flex;gap:1px;color:#4d5962;line-height:1}
+.rating-stars-static span.filled{color:#f0bf4c}
+.rating-stars-static.large{font-size:22px;gap:2px}
+
+.song-rating-panel{display:grid;gap:16px}
+.song-rating-heading{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.song-rating-heading h2{margin:.3rem 0 0}
+.song-rating-average{display:grid;grid-template-columns:auto auto;gap:4px 10px;align-items:center;justify-items:end}
+.song-rating-average .rating-stars-static{grid-row:1/3}
+.song-rating-average strong{font-size:15px}
+.song-rating-average small{color:#83919c;font-size:11px}
+.song-rating-form{
+    display:flex;align-items:center;flex-wrap:wrap;gap:12px;
+    padding-top:14px;border-top:1px solid #2a353e
+}
+.song-rating-label{font-size:12px;font-weight:800;color:#cbd5dc}
+.rating-choice{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px}
+.rating-choice label{position:relative;cursor:pointer}
+.rating-choice input{position:absolute;opacity:0;pointer-events:none}
+.rating-choice label span[aria-hidden="true"]{
+    display:block;font-size:27px;line-height:1;color:#46525b;
+    transition:color .12s ease,transform .12s ease
+}
+.rating-choice label:hover span[aria-hidden="true"],
+.rating-choice label:hover ~ label span[aria-hidden="true"],
+.rating-choice input:checked ~ span[aria-hidden="true"],
+.rating-choice label:has(input:checked) ~ label span[aria-hidden="true"]{color:#f0bf4c}
+.rating-choice label:hover span[aria-hidden="true"]{transform:scale(1.08)}
+.rating-choice input:focus-visible ~ span[aria-hidden="true"]{outline:2px solid #8bd0ff;outline-offset:2px;border-radius:3px}
+.song-rating-actions{display:flex;gap:7px;margin-left:auto}
+.song-rating-public-note{margin:0;color:#8d9aa5;font-size:12px}
+.song-rating-public-note a{color:#8bdad2;font-weight:800;text-decoration:underline}
+
+@media(max-width:620px){
+    .song-rating-heading{align-items:flex-start;flex-direction:column}
+    .song-rating-average{justify-items:start}
+    .song-rating-form{align-items:flex-start;flex-direction:column}
+    .song-rating-actions{margin-left:0}
+}

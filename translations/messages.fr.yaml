@@ -187,6 +187,20 @@ song:
   time_signature: Signature
   capo: Capo
   strumming: Strumming
+  rating:
+    eyebrow: Communauté
+    heading: Note des utilisateurs
+    yours: Votre note
+    save: Enregistrer ma note
+    remove: Retirer ma note
+    none: Pas encore de note
+    count: '{%count%} note(s)'
+    star_title: '%star% étoile(s)'
+    summary_aria: 'Note moyenne %average% sur 5, %count% note(s)'
+    login_note: Connectez-vous pour noter cette chanson.
+    saved: Votre note a été enregistrée.
+    removed: Votre note a été retirée.
+    invalid: La note doit être comprise entre 1 et 5 étoiles.
   publication:
     published_badge: Publié
     draft_badge: Brouillon

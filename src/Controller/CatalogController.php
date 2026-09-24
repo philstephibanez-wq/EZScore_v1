@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Domain\Song\Song;
+use App\Domain\Song\SongRating;
+use App\Domain\Song\SongRatingRepository;
 use App\Domain\Song\SongRepository;
 use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,8 +18,11 @@ use Symfony\Component\Routing\Attribute\Route;
 final class CatalogController extends AbstractController
 {
     #[Route('/catalog', name: 'app_catalog', methods: ['GET'])]
-    public function index(Request $request, SongRepository $songs): Response
-    {
+    public function index(
+        Request $request,
+        SongRepository $songs,
+        SongRatingRepository $ratings,
+    ): Response {
         $user = $this->getUser();
         $query = trim((string) $request->query->get('q', ''));
 
@@ -31,6 +36,7 @@ final class CatalogController extends AbstractController
 
         return $this->render('catalog/index.html.twig', [
             'songs' => $visibleSongs,
+            'ratings' => $ratings->summariesForSongs($visibleSongs),
             'query' => $query,
             'can_import' => $this->isGranted('ROLE_ADMIN') || $this->isGranted('ROLE_EDITOR'),
             'is_public_catalog' => !$user instanceof User,
@@ -38,26 +44,24 @@ final class CatalogController extends AbstractController
     }
 
     #[Route('/song/{id}', name: 'app_song_workspace', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function song(Song $song): Response
+    public function song(Song $song, SongRatingRepository $ratings): Response
     {
         $user = $this->getUser();
-        $isOwnerEditor = $user instanceof User
-            && $this->isGranted('ROLE_EDITOR')
-            && $song->getEditor()?->getId() === $user->getId();
 
-        $canView = $this->isGranted('ROLE_ADMIN')
-            || $song->isPublished()
-            || $isOwnerEditor;
-
-        if (!$canView) {
+        if (!$this->canViewSong($song, $user)) {
             throw $this->createNotFoundException();
         }
 
+        $isOwnerEditor = $this->isOwnerEditor($song, $user);
         $canEdit = $this->isGranted('ROLE_ADMIN') || $isOwnerEditor;
 
         $canUseKaraoke = $this->isGranted('ROLE_ADMIN')
             || ($user instanceof User && !$this->isGranted('ROLE_EDITOR') && $song->isPublished())
             || $isOwnerEditor;
+
+        $userRating = $user instanceof User
+            ? $ratings->findForUserAndSong($user, $song)
+            : null;
 
         return $this->render('song/workspace.html.twig', [
             'song' => $song,
@@ -66,6 +70,67 @@ final class CatalogController extends AbstractController
             'can_play_audio' => $user instanceof User,
             'can_use_karaoke' => $canUseKaraoke,
             'karaoke_preview_seconds' => $user instanceof User ? 0 : 20,
+            'rating_summary' => $ratings->summaryForSong($song),
+            'user_rating' => $userRating?->getRating(),
+        ]);
+    }
+
+    #[Route('/song/{id}/rating', name: 'app_song_rating', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function rate(
+        Song $song,
+        Request $request,
+        SongRatingRepository $ratings,
+        EntityManagerInterface $em,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->canViewSong($song, $user)) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isCsrfTokenValid('song_rating_' . $song->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $rating = filter_var(
+            $request->request->get('rating'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 0, 'max_range' => 5]],
+        );
+
+        if ($rating === false) {
+            $this->addFlash('error', 'song.rating.invalid');
+            return $this->redirectToRoute('app_song_workspace', [
+                '_locale' => $request->getLocale(),
+                'id' => $song->getId(),
+            ]);
+        }
+
+        $existing = $ratings->findForUserAndSong($user, $song);
+
+        if ($rating === 0) {
+            if ($existing instanceof SongRating) {
+                $em->remove($existing);
+                $em->flush();
+            }
+            $this->addFlash('success', 'song.rating.removed');
+        } else {
+            if ($existing instanceof SongRating) {
+                $existing->setRating($rating);
+            } else {
+                $em->persist(new SongRating($song, $user, $rating));
+            }
+
+            $em->flush();
+            $this->addFlash('success', 'song.rating.saved');
+        }
+
+        return $this->redirectToRoute('app_song_workspace', [
+            '_locale' => $request->getLocale(),
+            'id' => $song->getId(),
         ]);
     }
 
@@ -73,10 +138,7 @@ final class CatalogController extends AbstractController
     public function publication(Song $song, Request $request, EntityManagerInterface $em): Response
     {
         $user = $this->getUser();
-        $canEdit = $this->isGranted('ROLE_ADMIN')
-            || ($user instanceof User
-                && $this->isGranted('ROLE_EDITOR')
-                && $song->getEditor()?->getId() === $user->getId());
+        $canEdit = $this->isGranted('ROLE_ADMIN') || $this->isOwnerEditor($song, $user);
 
         if (!$canEdit) {
             throw $this->createAccessDeniedException();
@@ -103,5 +165,19 @@ final class CatalogController extends AbstractController
             '_locale' => $request->getLocale(),
             'id' => $song->getId(),
         ]);
+    }
+
+    private function canViewSong(Song $song, mixed $user): bool
+    {
+        return $this->isGranted('ROLE_ADMIN')
+            || $song->isPublished()
+            || $this->isOwnerEditor($song, $user);
+    }
+
+    private function isOwnerEditor(Song $song, mixed $user): bool
+    {
+        return $user instanceof User
+            && $this->isGranted('ROLE_EDITOR')
+            && $song->getEditor()?->getId() === $user->getId();
     }
 }

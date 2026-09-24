@@ -111,6 +111,19 @@
                 {% if song.comment and app.user %}
                     <small>{{ song.comment }}</small>
                 {% endif %}
+
+                {% set rating = ratings[song.id] ?? {'average': 0, 'count': 0} %}
+                <div class="catalog-rating-summary" aria-label="{{ 'song.rating.summary_aria'|trans({'%average%': rating.average, '%count%': rating.count}) }}">
+                    <span class="rating-stars-static" aria-hidden="true">
+                        {% for star in 1..5 %}<span class="{{ rating.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}
+                    </span>
+                    {% if rating.count > 0 %}
+                        <strong>{{ rating.average|number_format(1, ',', ' ') }}</strong>
+                        <small>{{ 'song.rating.count'|trans({'%count%': rating.count}) }}</small>
+                    {% else %}
+                        <small>{{ 'song.rating.none'|trans }}</small>
+                    {% endif %}
+                </div>
             </div>
             <span class="catalog-card-arrow" aria-hidden="true">→</span>
         </a>

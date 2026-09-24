@@ -187,6 +187,20 @@ song:
   time_signature: Time signature
   capo: Capo
   strumming: Strumming
+  rating:
+    eyebrow: Community
+    heading: User rating
+    yours: Your rating
+    save: Save my rating
+    remove: Remove my rating
+    none: No ratings yet
+    count: '{%count%} rating(s)'
+    star_title: '%star% star(s)'
+    summary_aria: 'Average rating %average% out of 5, %count% rating(s)'
+    login_note: Sign in to rate this song.
+    saved: Your rating has been saved.
+    removed: Your rating has been removed.
+    invalid: Rating must be between 1 and 5 stars.
   publication:
     published_badge: Published
     draft_badge: Draft

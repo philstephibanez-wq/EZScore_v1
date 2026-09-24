@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: SongRepository::class)]
 #[ORM\Table(name: 'songs')]
+#[ORM\Index(name: 'IDX_SONGS_PUBLISHED_AT', columns: ['published_at'])]
 class Song
 {
     #[ORM\Id]
