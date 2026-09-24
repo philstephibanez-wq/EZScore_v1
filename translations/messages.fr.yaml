@@ -153,7 +153,7 @@ catalog:
     heading: Vos chansons prennent vie.
     lead: Explorez les morceaux publiés et découvrez EZScore. Créez gratuitement votre compte pour profiter du karaoké complet, écouter les morceaux et organiser votre musique avec vos playlists et vos groupes.
     register: Créer un compte gratuitement
-    free_note: Inscription gratuite actuellement · aucune carte bancaire requise.
+    free_note: L’inscription à EZScore est gratuite.
     benefits_heading: Avantages de l’inscription
     benefit:
       karaoke:
@@ -276,7 +276,7 @@ profile:
   subscription:
     eyebrow: Abonnement
     heading: Votre offre EZScore
-    body: EZScore est gratuit actuellement. Les futures offres concerneront notamment les quotas d’opérations coûteuses d’import et d’analyse, sans limiter l’usage courant du karaoké.
+    body: L’inscription à EZScore est gratuite. Les offres d’abonnement et les quotas d’usage seront gérés séparément dans votre profil.
     current_label: Offre actuelle
     current_value: Gratuit
     karaoke_label: Karaoké

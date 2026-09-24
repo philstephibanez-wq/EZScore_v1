@@ -153,7 +153,7 @@ catalog:
     heading: Bring your songs to life.
     lead: Explore published songs and discover EZScore. Create your free account to enjoy full karaoke, listen to tracks, and organize your music with playlists and groups.
     register: Create a free account
-    free_note: Registration is currently free · no payment card required.
+    free_note: Registration for EZScore is free.
     benefits_heading: Benefits of registering
     benefit:
       karaoke:
@@ -276,7 +276,7 @@ profile:
   subscription:
     eyebrow: Subscription
     heading: Your EZScore plan
-    body: EZScore is currently free. Future plans will mainly cover quotas for resource-intensive import and analysis operations without limiting normal karaoke use.
+    body: Registration for EZScore is free. Subscription plans and usage quotas will be managed separately in your profile.
     current_label: Current plan
     current_value: Free
     karaoke_label: Karaoke
