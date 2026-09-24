@@ -1,0 +1,18 @@
+common:
+  delete: Delete
+  remove: Remove
+playlists:
+  updated: Playlist updated.
+  deleted: Playlist deleted.
+  owner:
+    label: Owner
+  delete:
+    confirm: 'Permanently delete playlist “%name%”?'
+groups:
+  updated: Group updated.
+  deleted: Group deleted. Playlists owned by this group were also deleted.
+  delete:
+    confirm: 'Permanently delete group “%name%” and its playlists?'
+  member:
+    deleted: Member removed from group.
+    delete_confirm: 'Remove %name% from this group?'

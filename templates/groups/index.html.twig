@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'groups.title'|trans }} — EZScore_v1{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/entity-management.css?v=20260924">{% endblock %}
 {% block body %}
 <header class="page-head">
     <div>
@@ -11,34 +12,70 @@
 {% if is_granted('ROLE_ADMIN') %}
 <section class="panel">
     <h2>{{ 'groups.create.heading'|trans }}</h2>
-    <form method="post" class="inline-form">
+    <form method="post" class="inline-form" data-dirty-track>
         <input type="hidden" name="_token" value="{{ csrf_token('create_group') }}">
         <input name="name" placeholder="{{ 'groups.name'|trans }}" required>
         <input name="description" placeholder="{{ 'groups.description'|trans }}">
-        <button class="primary">{{ 'common.create'|trans }}</button>
+        <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
     </form>
 </section>
 {% endif %}
 
 <div class="card-grid">
 {% for group in groups %}
-<section class="panel group-card">
-    <h2>{{ group.name }}</h2>
-    <p>{{ group.description ?: '—' }}</p>
+<section class="panel group-card entity-card">
+    {% if editable_groups[group.id]|default(false) %}
+        <form id="group-edit-{{ group.id }}" method="post" action="{{ path('app_group_update', {'_locale': app.request.locale, id: group.id}) }}" class="entity-edit-form" data-dirty-track>
+            <input type="hidden" name="_token" value="{{ csrf_token('group_update_' ~ group.id) }}">
+
+            <label>
+                <span>{{ 'groups.name'|trans }}</span>
+                <input name="name" value="{{ group.name }}" required>
+            </label>
+
+            <label>
+                <span>{{ 'groups.description'|trans }}</span>
+                <input name="description" value="{{ group.description }}">
+            </label>
+        </form>
+
+        <div class="entity-actions">
+            <button type="submit" form="group-edit-{{ group.id }}" class="primary">{{ 'common.save'|trans }}</button>
+
+            {% if deletable_groups[group.id]|default(false) %}
+                <form method="post" action="{{ path('app_group_delete', {'_locale': app.request.locale, id: group.id}) }}" onsubmit="return confirm('{{ 'groups.delete.confirm'|trans({'%name%': group.name}, 'management')|e('js') }}');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('group_delete_' ~ group.id) }}">
+                    <button type="submit" class="danger-button">{{ 'common.delete'|trans({}, 'management') }}</button>
+                </form>
+            {% endif %}
+        </div>
+    {% else %}
+        <h2>{{ group.name }}</h2>
+        <p>{{ group.description ?: '—' }}</p>
+    {% endif %}
 
     <div class="member-list">
         {% for member in members_by_group[group.id]|default([]) %}
-            <div>
-                <strong>{{ member.user.displayName }}</strong>
-                <span>{{ ('group_role.' ~ member.role)|trans }}</span>
+            <div class="member-row">
+                <div>
+                    <strong>{{ member.user.displayName }}</strong>
+                    <span>{{ ('group_role.' ~ member.role)|trans }}</span>
+                </div>
+
+                {% if editable_groups[group.id]|default(false) %}
+                    <form method="post" action="{{ path('app_group_member_delete', {'_locale': app.request.locale, groupId: group.id, memberId: member.id}) }}" onsubmit="return confirm('{{ 'groups.member.delete_confirm'|trans({'%name%': member.user.displayName}, 'management')|e('js') }}');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('group_member_delete_' ~ member.id) }}">
+                        <button type="submit" class="danger-button compact-button">{{ 'common.remove'|trans({}, 'management') }}</button>
+                    </form>
+                {% endif %}
             </div>
         {% else %}
             <em>{{ 'groups.no_members'|trans }}</em>
         {% endfor %}
     </div>
 
-    {% if is_granted('ROLE_ADMIN') %}
-    <form method="post" action="{{ path('app_group_member_add', {id: group.id}) }}" class="inline-form compact">
+    {% if editable_groups[group.id]|default(false) %}
+    <form method="post" action="{{ path('app_group_member_add', {'_locale': app.request.locale, id: group.id}) }}" class="inline-form compact">
         <input type="hidden" name="_token" value="{{ csrf_token('group_' ~ group.id) }}">
         <input type="email" name="email" placeholder="{{ 'groups.member.email'|trans }}" required>
         <select name="role">
@@ -46,7 +83,7 @@
             <option value="manager">{{ 'group_role.manager'|trans }}</option>
             <option value="owner">{{ 'group_role.owner'|trans }}</option>
         </select>
-        <button>{{ 'groups.member.save'|trans }}</button>
+        <button type="submit">{{ 'groups.member.save'|trans }}</button>
     </form>
     {% endif %}
 </section>

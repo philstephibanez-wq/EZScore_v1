@@ -1,0 +1,18 @@
+common:
+  delete: Supprimer
+  remove: Retirer
+playlists:
+  updated: Playlist mise à jour.
+  deleted: Playlist supprimée.
+  owner:
+    label: Propriétaire
+  delete:
+    confirm: 'Supprimer définitivement la playlist « %name% » ?'
+groups:
+  updated: Groupe mis à jour.
+  deleted: Groupe supprimé. Les playlists appartenant à ce groupe ont également été supprimées.
+  delete:
+    confirm: 'Supprimer définitivement le groupe « %name% » et ses playlists ?'
+  member:
+    deleted: Membre retiré du groupe.
+    delete_confirm: 'Retirer %name% de ce groupe ?'
