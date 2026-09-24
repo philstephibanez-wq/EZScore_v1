@@ -10,7 +10,7 @@
 
 <section class="panel">
     <h2>{{ 'playlists.create.heading'|trans }}</h2>
-    <form method="post" class="playlist-form">
+    <form method="post" class="playlist-form" data-dirty-track>
         <input type="hidden" name="_token" value="{{ csrf_token('create_playlist') }}">
         <input name="name" placeholder="{{ 'playlists.name'|trans }}" required>
         <input name="description" placeholder="{{ 'playlists.description'|trans }}">
@@ -29,17 +29,48 @@
             {{ 'playlists.public'|trans }}
         </label>
 
-        <button class="primary">{{ 'common.create'|trans }}</button>
+        <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
     </form>
 </section>
 
 <div class="card-grid">
 {% for playlist in playlists %}
 <section class="panel">
-    <div class="eyebrow">{{ playlist.ownerType == 'group' ? ('playlists.owner.group'|trans) : ('playlists.owner.personal'|trans) }}</div>
-    <h2>{{ playlist.name }}</h2>
-    <p>{{ playlist.description ?: '—' }}</p>
-    <small>{{ playlist.public ? ('playlists.visibility.public'|trans) : ('playlists.visibility.private'|trans) }}</small>
+    {% if editable_playlists[playlist.id]|default(false) %}
+        <form method="post" action="{{ path('app_playlist_update', {'_locale': app.request.locale, id: playlist.id}) }}" class="playlist-form" data-dirty-track>
+            <input type="hidden" name="_token" value="{{ csrf_token('playlist_update_' ~ playlist.id) }}">
+            <input name="name" value="{{ playlist.name }}" placeholder="{{ 'playlists.name'|trans }}" required>
+            <input name="description" value="{{ playlist.description }}" placeholder="{{ 'playlists.description'|trans }}">
+
+            <select name="owner_type" class="owner-type">
+                <option value="user" {{ playlist.ownerType == 'user' ? 'selected' : '' }}>{{ 'playlists.owner.personal'|trans }}</option>
+                {% if groups %}<option value="group" {{ playlist.ownerType == 'group' ? 'selected' : '' }}>{{ 'playlists.owner.group'|trans }}</option>{% endif %}
+            </select>
+
+            <select name="group_id" class="group-owner" {{ playlist.ownerType != 'group' ? 'hidden' : '' }}>
+                {% for group in groups %}
+                    <option value="{{ group.id }}" {{ playlist.ownerType == 'group' and playlist.ownerId == group.id ? 'selected' : '' }}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="check">
+                <input type="checkbox" name="public" value="1" {{ playlist.public ? 'checked' : '' }}>
+                {{ 'playlists.public'|trans }}
+            </label>
+
+            <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
+        </form>
+
+        <form method="post" action="{{ path('app_playlist_delete', {'_locale': app.request.locale, id: playlist.id}) }}" class="inline-form compact" onsubmit="return confirm('{{ 'playlists.delete.confirm'|trans({'%name%': playlist.name}, 'management')|e('js') }}');">
+            <input type="hidden" name="_token" value="{{ csrf_token('playlist_delete_' ~ playlist.id) }}">
+            <button type="submit">{{ 'common.delete'|trans({}, 'management') }}</button>
+        </form>
+    {% else %}
+        <div class="eyebrow">{{ playlist.ownerType == 'group' ? ('playlists.owner.group'|trans) : ('playlists.owner.personal'|trans) }}</div>
+        <h2>{{ playlist.name }}</h2>
+        <p>{{ playlist.description ?: '—' }}</p>
+        <small>{{ playlist.public ? ('playlists.visibility.public'|trans) : ('playlists.visibility.private'|trans) }}</small>
+    {% endif %}
 </section>
 {% else %}
     <div class="empty">{{ 'playlists.empty'|trans }}</div>

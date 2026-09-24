@@ -1,92 +1,62 @@
-# EZScore_v1 — URLs localisées + retour applicatif + hover global
+# EZScore_v1 — Groupes / Playlists CRUD sans modification du socle visuel
 
-Base GitHub vérifiée avant modification :
-
-```text
-6c0ca23b28cf7fc8f007459732e3ad7b9958d744
-```
-
-## 1. Langue dans l'URL
-
-Les pages métier deviennent :
+Base de référence obligatoire :
 
 ```text
-/fr/dashboard
-/fr/catalog
-/fr/playlists
-/fr/groups
-/fr/admin/users
-/fr/profile
-
-/en/dashboard
-/en/catalog
-/en/playlists
-/en/groups
-/en/admin/users
-/en/profile
+e736731db363b6f614e8d050f4fab41a1e4f877b
+EZScore_v1_LOCALIZED_URLS_NAV_HOVER OK
 ```
 
-La locale portée par l'URL est prioritaire pour le rendu.
+## Principe
 
-Le sélecteur FR/EN :
-- persiste `users.locale`;
-- met à jour la session;
-- remplace le préfixe `/fr` ou `/en` dans l'URL courante.
+Cette livraison ajoute uniquement la gestion des formulaires Groupes / Playlists en réutilisant les classes HTML/CSS déjà présentes dans EZScore_v1.
 
-## 2. Google OAuth
+Aucun fichier CSS, aucun layout global, aucun `base.html.twig` et aucun JavaScript global ne sont modifiés.
 
-Le callback reste strictement :
+Fonctions :
 
-```text
-/connect/google/check
-```
-
-Aucun changement n'est requis dans Google Console.
-
-## 3. E-mail d'activation
-
-Le lien envoyé contient maintenant la langue persistée :
-
-```text
-/fr/activate/<token>
-```
-
-ou :
-
-```text
-/en/activate/<token>
-```
-
-## 4. Bouton Retour
-
-Toutes les pages authentifiées sauf le dashboard affichent un bouton Retour.
-
-Le workspace morceau revient au Répertoire.
-Les autres pages reviennent au Tableau de bord.
-
-## 5. Hover
-
-Le feedback pointeur est intégré directement dans `public/assets/js/app.js`, déjà utilisé par l'application.
-
-Le style est appliqué inline au survol afin qu'aucun CSS spécifique de page ne puisse l'annuler.
+- modification et suppression des playlists ;
+- modification et suppression des groupes ;
+- ajout / modification / retrait des membres d'un groupe ;
+- admin : tous les droits ;
+- owner / manager : gestion selon les droits de la ressource ;
+- suppression d'un groupe : suppression de ses playlists de groupe ;
+- confirmations de suppression ;
+- FR / EN ;
+- conservation explicite de la locale `/fr` ou `/en` après les POST.
 
 ## Installation
 
+Partir impérativement de la base stable :
+
 ```powershell
 cd H:\EZScore_v1
+git reset --hard e736731db363b6f614e8d050f4fab41a1e4f877b
+```
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_LOCALIZED_URLS_NAV_HOVER.zip" -C H:\EZScore_v1
+Puis installer le ZIP :
+
+```powershell
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_GROUPS_PLAYLISTS_FORMS_R3.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
 php bin\console lint:twig templates
+php bin\console doctrine:schema:validate
 php bin\console debug:router
 ```
 
 Aucune migration.
 
-Vérifier ensuite :
+Les routes attendues en plus des routes existantes sont :
 
 ```text
-https://ezscore.logandplay.com/fr/dashboard
-https://ezscore.logandplay.com/en/dashboard
+app_group_update
+app_group_delete
+app_group_member_delete
+app_playlist_update
+app_playlist_delete
 ```
+
+## Contrôle visuel
+
+Le rendu doit rester celui du commit `e736731...`. La livraison ne contient aucun fichier sous `public/assets/css/`, aucun `templates/base.html.twig` et aucun fichier JS.

@@ -11,11 +11,11 @@
 {% if is_granted('ROLE_ADMIN') %}
 <section class="panel">
     <h2>{{ 'groups.create.heading'|trans }}</h2>
-    <form method="post" class="inline-form">
+    <form method="post" class="inline-form" data-dirty-track>
         <input type="hidden" name="_token" value="{{ csrf_token('create_group') }}">
         <input name="name" placeholder="{{ 'groups.name'|trans }}" required>
         <input name="description" placeholder="{{ 'groups.description'|trans }}">
-        <button class="primary">{{ 'common.create'|trans }}</button>
+        <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
     </form>
 </section>
 {% endif %}
@@ -23,22 +23,49 @@
 <div class="card-grid">
 {% for group in groups %}
 <section class="panel group-card">
-    <h2>{{ group.name }}</h2>
-    <p>{{ group.description ?: '—' }}</p>
+    {% if editable_groups[group.id]|default(false) %}
+        <form method="post" action="{{ path('app_group_update', {'_locale': app.request.locale, id: group.id}) }}" class="inline-form" data-dirty-track>
+            <input type="hidden" name="_token" value="{{ csrf_token('group_update_' ~ group.id) }}">
+            <input name="name" value="{{ group.name }}" placeholder="{{ 'groups.name'|trans }}" required>
+            <input name="description" value="{{ group.description }}" placeholder="{{ 'groups.description'|trans }}">
+            <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
+        </form>
+
+        {% if deletable_groups[group.id]|default(false) %}
+            <form method="post" action="{{ path('app_group_delete', {'_locale': app.request.locale, id: group.id}) }}" class="inline-form compact" onsubmit="return confirm('{{ 'groups.delete.confirm'|trans({'%name%': group.name}, 'management')|e('js') }}');">
+                <input type="hidden" name="_token" value="{{ csrf_token('group_delete_' ~ group.id) }}">
+                <button type="submit">{{ 'common.delete'|trans({}, 'management') }}</button>
+            </form>
+        {% endif %}
+    {% else %}
+        <h2>{{ group.name }}</h2>
+        <p>{{ group.description ?: '—' }}</p>
+    {% endif %}
 
     <div class="member-list">
         {% for member in members_by_group[group.id]|default([]) %}
             <div>
-                <strong>{{ member.user.displayName }}</strong>
-                <span>{{ ('group_role.' ~ member.role)|trans }}</span>
+                <span>
+                    <strong>{{ member.user.displayName }}</strong>
+                    <small>{{ ('group_role.' ~ member.role)|trans }}</small>
+                </span>
+
+                {% if editable_groups[group.id]|default(false) %}
+                    <form method="post" action="{{ path('app_group_member_delete', {'_locale': app.request.locale, groupId: group.id, memberId: member.id}) }}" onsubmit="return confirm('{{ 'groups.member.delete_confirm'|trans({'%name%': member.user.displayName}, 'management')|e('js') }}');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('group_member_delete_' ~ member.id) }}">
+                        <button type="submit">{{ 'common.remove'|trans({}, 'management') }}</button>
+                    </form>
+                {% else %}
+                    <span>{{ ('group_role.' ~ member.role)|trans }}</span>
+                {% endif %}
             </div>
         {% else %}
             <em>{{ 'groups.no_members'|trans }}</em>
         {% endfor %}
     </div>
 
-    {% if is_granted('ROLE_ADMIN') %}
-    <form method="post" action="{{ path('app_group_member_add', {id: group.id}) }}" class="inline-form compact">
+    {% if editable_groups[group.id]|default(false) %}
+    <form method="post" action="{{ path('app_group_member_add', {'_locale': app.request.locale, id: group.id}) }}" class="inline-form compact">
         <input type="hidden" name="_token" value="{{ csrf_token('group_' ~ group.id) }}">
         <input type="email" name="email" placeholder="{{ 'groups.member.email'|trans }}" required>
         <select name="role">
@@ -46,7 +73,7 @@
             <option value="manager">{{ 'group_role.manager'|trans }}</option>
             <option value="owner">{{ 'group_role.owner'|trans }}</option>
         </select>
-        <button>{{ 'groups.member.save'|trans }}</button>
+        <button type="submit">{{ 'groups.member.save'|trans }}</button>
     </form>
     {% endif %}
 </section>
