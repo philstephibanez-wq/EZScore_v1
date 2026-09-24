@@ -1,0 +1,5 @@
+layout:
+  search:
+    label: Recherche globale
+    placeholder: Rechercher un morceau ou un artiste
+    submit: Rechercher
