@@ -1,4 +1,7 @@
 parameters:
+    app.supported_locales:
+        - fr
+        - en
 
 services:
     _defaults:

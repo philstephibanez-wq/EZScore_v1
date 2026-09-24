@@ -23,20 +23,22 @@ final class FirstRunController extends AbstractController
         $errors = [];
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('first_run', (string) $request->request->get('_token'))) {
-                $errors[] = 'Session expirée. Recharge la page.';
+                $errors[] = 'auth.first_run.error.session';
             }
+
             $name = trim((string) $request->request->get('display_name'));
             $email = trim((string) $request->request->get('email'));
             $password = (string) $request->request->get('password');
             $confirm = (string) $request->request->get('confirm_password');
-            if ($name === '') $errors[] = 'Nom affiché obligatoire.';
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Adresse e-mail invalide.';
-            if (mb_strlen($password) < 10) $errors[] = 'Le mot de passe doit contenir au moins 10 caractères.';
-            if ($password !== $confirm) $errors[] = 'Les mots de passe ne correspondent pas.';
+
+            if ($name === '') $errors[] = 'auth.first_run.error.name';
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'auth.first_run.error.email';
+            if (mb_strlen($password) < 10) $errors[] = 'auth.first_run.error.password_length';
+            if ($password !== $confirm) $errors[] = 'auth.first_run.error.password_match';
 
             if ($errors === []) {
                 $manager->create($name, $email, $password, 'ROLE_ADMIN');
-                $this->addFlash('success', 'Administrateur créé. Connecte-toi.');
+                $this->addFlash('success', 'auth.first_run.created');
                 return $this->redirectToRoute('app_login');
             }
         }

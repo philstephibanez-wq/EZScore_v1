@@ -1,11 +1,32 @@
 {% extends 'base.html.twig' %}
-{% block title %}Tableau de bord — EZScore_v1{% endblock %}
+{% block title %}{{ 'dashboard.title'|trans }} — EZScore_v1{% endblock %}
 {% block body %}
-<header class="page-head"><div><div class="eyebrow">EZScore_v1</div><h1>Tableau de bord</h1></div><span class="role-badge">{{ app.user.primaryRole|replace({'ROLE_':''}) }}</span></header>
+<header class="page-head">
+    <div>
+        <div class="eyebrow">EZScore_v1</div>
+        <h1>{{ 'dashboard.title'|trans }}</h1>
+    </div>
+    <span class="role-badge">{{ ('role.' ~ app.user.primaryRole)|trans }}</span>
+</header>
+
 <div class="dashboard-grid">
-    <a class="module-card" href="{{ path('app_catalog') }}"><strong>Répertoire</strong><span>Morceaux et workspace UI mock.</span></a>
-    <a class="module-card" href="{{ path('app_playlists') }}"><strong>Playlists</strong><span>Personnelles et de groupe.</span></a>
-    <a class="module-card" href="{{ path('app_groups') }}"><strong>Groupes</strong><span>Membres et rôles de groupe.</span></a>
-    {% if is_granted('ROLE_ADMIN') %}<a class="module-card" href="{{ path('admin_users') }}"><strong>Utilisateurs</strong><span>Admin, éditeur, lecteur.</span></a>{% endif %}
+    <a class="module-card" href="{{ path('app_catalog') }}">
+        <strong>{{ 'nav.catalog'|trans }}</strong>
+        <span>{{ 'dashboard.catalog'|trans }}</span>
+    </a>
+    <a class="module-card" href="{{ path('app_playlists') }}">
+        <strong>{{ 'nav.playlists'|trans }}</strong>
+        <span>{{ 'dashboard.playlists'|trans }}</span>
+    </a>
+    <a class="module-card" href="{{ path('app_groups') }}">
+        <strong>{{ 'nav.groups'|trans }}</strong>
+        <span>{{ 'dashboard.groups'|trans }}</span>
+    </a>
+    {% if is_granted('ROLE_ADMIN') %}
+        <a class="module-card" href="{{ path('admin_users') }}">
+            <strong>{{ 'nav.users'|trans }}</strong>
+            <span>{{ 'dashboard.users'|trans }}</span>
+        </a>
+    {% endif %}
 </div>
 {% endblock %}

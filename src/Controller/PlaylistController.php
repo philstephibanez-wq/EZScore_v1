@@ -22,43 +22,72 @@ final class PlaylistController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+
         $groupMemberships = $em->getRepository(GroupMember::class)->findBy(['user' => $user]);
         $groups = array_map(static fn(GroupMember $m): UserGroup => $m->getGroup(), $groupMemberships);
-        if ($this->isGranted('ROLE_ADMIN')) $groups = $em->getRepository(UserGroup::class)->findBy([], ['name' => 'ASC']);
 
-        if ($request->isMethod('POST') && $this->isCsrfTokenValid('create_playlist', (string) $request->request->get('_token'))) {
-            $name = trim((string) $request->request->get('name'));
-            $ownerType = (string) $request->request->get('owner_type', 'user');
-            $ownerId = $user->getId();
-            if ($ownerType === 'group') {
-                $candidate = (int) $request->request->get('group_id');
-                $allowed = array_filter($groups, static fn(UserGroup $g): bool => $g->getId() === $candidate);
-                if ($allowed === []) throw $this->createAccessDeniedException();
-                $ownerId = $candidate;
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $groups = $em->getRepository(UserGroup::class)->findBy([], ['name' => 'ASC']);
+        }
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('create_playlist', (string) $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException();
             }
-            if ($name !== '') {
-                $playlist = (new Playlist())
-                    ->setName($name)
-                    ->setDescription((string) $request->request->get('description'))
-                    ->setOwnerType($ownerType)
-                    ->setOwnerId((int) $ownerId)
-                    ->setPublic($request->request->getBoolean('public'))
-                    ->setCreatedBy($user);
-                $em->persist($playlist);
-                $em->flush();
-                $this->addFlash('success', 'Playlist créée.');
+
+            $name = trim((string) $request->request->get('name'));
+            if ($name === '') {
+                $this->addFlash('error', 'playlists.validation.name');
                 return $this->redirectToRoute('app_playlists');
             }
+
+            $ownerType = (string) $request->request->get('owner_type', 'user');
+            $ownerId = (int) $user->getId();
+
+            if ($ownerType === 'group') {
+                $candidate = (int) $request->request->get('group_id');
+                $allowed = array_filter(
+                    $groups,
+                    static fn(UserGroup $group): bool => $group->getId() === $candidate,
+                );
+
+                if ($allowed === []) {
+                    throw $this->createAccessDeniedException();
+                }
+
+                $ownerId = $candidate;
+            }
+
+            $playlist = (new Playlist())
+                ->setName($name)
+                ->setDescription((string) $request->request->get('description'))
+                ->setOwnerType($ownerType)
+                ->setOwnerId($ownerId)
+                ->setPublic($request->request->getBoolean('public'))
+                ->setCreatedBy($user);
+
+            $em->persist($playlist);
+            $em->flush();
+
+            $this->addFlash('success', 'playlists.created');
+            return $this->redirectToRoute('app_playlists');
         }
 
         $all = $em->getRepository(Playlist::class)->findBy([], ['name' => 'ASC']);
-        $groupIds = array_map(static fn(UserGroup $g): int => (int) $g->getId(), $groups);
-        $visible = array_values(array_filter($all, static function (Playlist $p) use ($user, $groupIds): bool {
-            return $p->isPublic()
-                || ($p->getOwnerType() === 'user' && $p->getOwnerId() === $user->getId())
-                || ($p->getOwnerType() === 'group' && in_array($p->getOwnerId(), $groupIds, true));
-        }));
+        $groupIds = array_map(static fn(UserGroup $group): int => (int) $group->getId(), $groups);
 
-        return $this->render('playlists/index.html.twig', ['playlists' => $visible, 'groups' => $groups]);
+        $visible = array_values(array_filter(
+            $all,
+            static function (Playlist $playlist) use ($user, $groupIds): bool {
+                return $playlist->isPublic()
+                    || ($playlist->getOwnerType() === 'user' && $playlist->getOwnerId() === $user->getId())
+                    || ($playlist->getOwnerType() === 'group' && in_array($playlist->getOwnerId(), $groupIds, true));
+            },
+        ));
+
+        return $this->render('playlists/index.html.twig', [
+            'playlists' => $visible,
+            'groups' => $groups,
+        ]);
     }
 }

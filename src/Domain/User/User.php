@@ -13,6 +13,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    public const SUPPORTED_LOCALES = ['fr', 'en'];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -39,6 +41,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 600, nullable: true)]
     private ?string $avatarUrl = null;
 
+    #[ORM\Column(length: 2)]
+    private string $locale = 'fr';
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -60,6 +65,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setGoogleSub(?string $sub): self { $this->googleSub = $sub; return $this; }
     public function getAvatarUrl(): ?string { return $this->avatarUrl; }
     public function setAvatarUrl(?string $url): self { $this->avatarUrl = $url; return $this; }
+    public function getLocale(): string { return $this->locale; }
+
+    public function setLocale(string $locale): self
+    {
+        if (!in_array($locale, self::SUPPORTED_LOCALES, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported locale "%s".', $locale));
+        }
+
+        $this->locale = $locale;
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUserIdentifier(): string { return $this->email; }
     public function eraseCredentials(): void { }
@@ -86,6 +103,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 return $role;
             }
         }
+
         return 'ROLE_READER';
     }
 }

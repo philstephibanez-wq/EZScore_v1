@@ -1,6 +1,9 @@
 framework:
     secret: '%env(APP_SECRET)%'
     csrf_protection: true
+    default_locale: fr
     session: true
+    translator:
+        default_path: '%kernel.project_dir%/translations'
     router:
         utf8: true

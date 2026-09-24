@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ app.request.locale }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}EZScore_v1{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/r6.css">
     {% block stylesheets %}{% endblock %}
 </head>
 <body>
@@ -12,27 +13,58 @@
 <div class="app-shell">
     <aside class="sidebar">
         <div class="brand">EZScore<span>v1</span></div>
+
         <div class="user-card">
-            {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">{% else %}<div class="avatar-fallback">{{ app.user.displayName|slice(0,1)|upper }}</div>{% endif %}
-            <div><strong>{{ app.user.displayName }}</strong><span>{{ app.user.email }}</span></div>
+            {% if app.user.avatarUrl %}
+                <img src="{{ app.user.avatarUrl }}" alt="">
+            {% else %}
+                <div class="avatar-fallback">{{ app.user.displayName|slice(0,1)|upper }}</div>
+            {% endif %}
+            <div>
+                <strong>{{ app.user.displayName }}</strong>
+                <span>{{ app.user.email }}</span>
+            </div>
         </div>
+
         <nav>
-            <a href="{{ path('app_dashboard') }}">Tableau de bord</a>
-            <a href="{{ path('app_catalog') }}">Répertoire</a>
-            <a href="{{ path('app_playlists') }}">Playlists</a>
-            <a href="{{ path('app_groups') }}">Groupes</a>
-            {% if is_granted('ROLE_ADMIN') %}<div class="nav-sep">Administration</div><a href="{{ path('admin_users') }}">Utilisateurs</a>{% endif %}
+            <a href="{{ path('app_dashboard') }}">{{ 'nav.dashboard'|trans }}</a>
+            <a href="{{ path('app_catalog') }}">{{ 'nav.catalog'|trans }}</a>
+            <a href="{{ path('app_playlists') }}">{{ 'nav.playlists'|trans }}</a>
+            <a href="{{ path('app_groups') }}">{{ 'nav.groups'|trans }}</a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <div class="nav-sep">{{ 'nav.administration'|trans }}</div>
+                <a href="{{ path('admin_users') }}">{{ 'nav.users'|trans }}</a>
+            {% endif %}
         </nav>
-        <a class="logout" href="{{ path('app_logout') }}">Déconnexion</a>
+
+        <div class="sidebar-footer">
+            <div class="locale-switcher" aria-label="{{ 'locale.label'|trans }}">
+                {% for locale in ['fr', 'en'] %}
+                    <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
+                        <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">
+                            {{ ('locale.' ~ locale)|trans }}
+                        </button>
+                    </form>
+                {% endfor %}
+            </div>
+            <a class="logout" href="{{ path('app_logout') }}">{{ 'nav.logout'|trans }}</a>
+        </div>
     </aside>
     <main class="main-content">
 {% else %}
     <main class="auth-shell">
 {% endif %}
-        {% for label, messages in app.flashes %}{% for message in messages %}<div class="flash flash-{{ label }}">{{ message }}</div>{% endfor %}{% endfor %}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash-{{ label }}">{{ message|trans }}</div>
+            {% endfor %}
+        {% endfor %}
+
         {% block body %}{% endblock %}
     </main>
 {% if app.user %}</div>{% endif %}
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="/assets/js/app.js"></script>
 {% block javascripts %}{% endblock %}

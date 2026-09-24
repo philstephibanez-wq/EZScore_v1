@@ -1,0 +1,164 @@
+locale:
+  label: Language
+  fr: FR
+  en: EN
+
+nav:
+  dashboard: Dashboard
+  catalog: Catalog
+  playlists: Playlists
+  groups: Groups
+  administration: Administration
+  users: Users
+  logout: Sign out
+
+common:
+  create: Create
+  save: Save
+  none: None
+
+role:
+  ROLE_ADMIN: Admin
+  ROLE_EDITOR: Editor
+  ROLE_READER: Reader
+
+group_role:
+  owner: Owner
+  manager: Manager
+  member: Member
+
+auth:
+  first_run:
+    title: Setup
+    eyebrow: First run
+    heading: Create the administrator
+    description: This account becomes the initial EZScore_v1 administrator.
+    create: Create administrator
+    created: Administrator created. Sign in.
+    error:
+      session: Session expired. Reload the page.
+      name: Display name is required.
+      email: Invalid email address.
+      password_length: Password must contain at least 10 characters.
+      password_match: Passwords do not match.
+  login:
+    title: Sign in
+    heading: Sign in
+    submit: Sign in
+    or: or
+    google: Continue with Google
+    google_disabled: Google SSO is not configured
+  google:
+    not_configured: Google SSO is not configured.
+
+dashboard:
+  title: Dashboard
+  catalog: Songs stored in EZScore data.
+  playlists: Personal and group playlists.
+  groups: Group members and roles.
+  users: Accounts, roles and access.
+
+users:
+  title: Users
+  note: Local accounts and accounts authorized to use Google SSO.
+  create:
+    heading: Create a user
+  display_name: Display name
+  email: Email
+  email_login: Email / local login
+  password: Password
+  password_confirm: Confirmation
+  local_password: Local password
+  password_optional: Optional for Google-only accounts
+  password_unchanged: Leave unchanged
+  new_password: New password
+  role: Role
+  active: Active
+  account: Account
+  google_linked: Linked
+  empty: No users.
+  rules: An account without a local password can use Google when its email address matches an authorized account. The last active administrator cannot be disabled or demoted.
+  created: User created.
+  updated: User updated.
+  error:
+    email_used: This email address is already in use.
+    password_length: Password must contain at least 10 characters.
+    password_length_new: The new password must contain at least 10 characters.
+    last_admin: The last active administrator cannot be disabled or demoted.
+    name: Display name is required.
+    email: Invalid email address.
+
+groups:
+  title: Groups
+  eyebrow: Collaboration
+  create:
+    heading: New group
+  name: Name
+  description: Description
+  no_members: No members.
+  empty: No groups.
+  validation:
+    name: Group name is required.
+  created: Group created.
+  member:
+    email: Member email
+    save: Add / update
+    not_found: User not found.
+    saved: Member saved.
+
+playlists:
+  title: Playlists
+  eyebrow: Library
+  create:
+    heading: New playlist
+  name: Name
+  description: Description
+  public: Public
+  empty: No playlists.
+  owner:
+    personal: Personal
+    group: Group
+  visibility:
+    public: Public
+    private: Private
+  validation:
+    name: Playlist name is required.
+  created: Playlist created.
+
+catalog:
+  title: Catalog
+  eyebrow: Music
+  empty: No songs in EZScore data.
+  created: Song created.
+  create:
+    heading: New song
+    submit: Create song
+  validation:
+    required: Title and artist/author are required.
+    editor: The selected editor is invalid.
+
+song:
+  title: Title
+  artist: Author / Performer
+  editor: Editor
+  comment: Comment
+  time_signature: Time signature
+  capo: Capo
+  strumming: Strumming
+
+workspace:
+  lyrics: LYRICS
+  no_analysis:
+    heading: No analysis data
+    body: The workspace never invents results. STEMS, chords, lyrics, sections and timeline events appear only when they exist in persisted data.
+  edit:
+    heading: Song editing
+    body: Musical editing will be connected to persisted data; no mock state or fallback is used.
+
+analysis:
+  status:
+    queued: Queued
+    running: Running
+    completed: Completed
+    failed: Failed
+    cancelled: Cancelled

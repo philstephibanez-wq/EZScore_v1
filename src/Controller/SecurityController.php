@@ -19,9 +19,11 @@ final class SecurityController extends AbstractController
         if ($users->countAll() === 0) {
             return $this->redirectToRoute('app_first_run');
         }
+
         if ($this->getUser()) {
             return $this->redirectToRoute('app_dashboard');
         }
+
         return $this->render('auth/login.html.twig', [
             'last_username' => $auth->getLastUsername(),
             'error' => $auth->getLastAuthenticationError(),
@@ -30,15 +32,19 @@ final class SecurityController extends AbstractController
     }
 
     #[Route('/logout', name: 'app_logout', methods: ['GET'])]
-    public function logout(): never { throw new \LogicException('Intercepted by firewall.'); }
+    public function logout(): never
+    {
+        throw new \LogicException('Intercepted by firewall.');
+    }
 
     #[Route('/connect/google', name: 'connect_google_start', methods: ['GET'])]
     public function connectGoogle(ClientRegistry $clients): Response
     {
         if ((string) ($_ENV['GOOGLE_CLIENT_ID'] ?? '') === '') {
-            $this->addFlash('error', 'Google SSO n’est pas configuré.');
+            $this->addFlash('error', 'auth.google.not_configured');
             return $this->redirectToRoute('app_login');
         }
+
         return $clients->getClient('google_main')->redirect(['email', 'profile']);
     }
 

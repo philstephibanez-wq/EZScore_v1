@@ -1,21 +1,38 @@
 {% extends 'base.html.twig' %}
-{% block title %}Connexion — EZScore_v1{% endblock %}
+{% block title %}{{ 'auth.login.title'|trans }} — EZScore_v1{% endblock %}
 {% block body %}
 <section class="auth-card">
     <div class="eyebrow">EZScore_v1</div>
-    <h1>Connexion</h1>
-    {% if error %}<div class="flash flash-error">{{ error.messageKey }}</div>{% endif %}
+    <h1>{{ 'auth.login.heading'|trans }}</h1>
+
+    <div class="locale-switcher locale-switcher-auth" aria-label="{{ 'locale.label'|trans }}">
+        {% for locale in ['fr', 'en'] %}
+            <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
+                <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">
+                    {{ ('locale.' ~ locale)|trans }}
+                </button>
+            </form>
+        {% endfor %}
+    </div>
+
+    {% if error %}
+        <div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+    {% endif %}
+
     <form method="post" class="form-grid">
-        <label>E-mail<input type="email" name="_username" value="{{ last_username }}" required autofocus></label>
-        <label>Mot de passe<input type="password" name="_password" required></label>
+        <label>{{ 'users.email'|trans }}<input type="email" name="_username" value="{{ last_username }}" required autofocus></label>
+        <label>{{ 'users.password'|trans }}<input type="password" name="_password" required></label>
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-        <button class="primary" type="submit">Se connecter</button>
+        <button class="primary" type="submit">{{ 'auth.login.submit'|trans }}</button>
     </form>
-    <div class="oauth-sep"><span>ou</span></div>
+
+    <div class="oauth-sep"><span>{{ 'auth.login.or'|trans }}</span></div>
+
     {% if google_enabled %}
-        <a class="google-button" href="{{ path('connect_google_start') }}">Continuer avec Google</a>
+        <a class="google-button" href="{{ path('connect_google_start') }}">{{ 'auth.login.google'|trans }}</a>
     {% else %}
-        <button class="google-button disabled" disabled>Google SSO non configuré</button>
+        <button class="google-button disabled" disabled>{{ 'auth.login.google_disabled'|trans }}</button>
     {% endif %}
 </section>
 {% endblock %}

@@ -1,6 +1,64 @@
 {% extends 'base.html.twig' %}
-{% block title %}Répertoire — EZScore_v1{% endblock %}
+{% block title %}{{ 'catalog.title'|trans }} — EZScore_v1{% endblock %}
 {% block body %}
-<header class="page-head"><div><div class="eyebrow">Musique</div><h1>Répertoire</h1></div></header>
-<div class="song-grid">{% for song in songs %}<a class="song-tile" href="{{ path('app_song_workspace',{id:song.id}) }}"><div class="cover-mock">♫</div><div><strong>{{ song.title }}</strong><span>{{ song.artist }}</span><small>{{ song.editor }} · {{ song.comment }}</small></div></a>{% endfor %}</div>
+<header class="page-head">
+    <div>
+        <div class="eyebrow">{{ 'catalog.eyebrow'|trans }}</div>
+        <h1>{{ 'catalog.title'|trans }}</h1>
+    </div>
+</header>
+
+{% if can_create %}
+<section class="panel">
+    <h2>{{ 'catalog.create.heading'|trans }}</h2>
+    <form method="post" class="song-create-grid">
+        <input type="hidden" name="_token" value="{{ csrf_token('create_song') }}">
+        <label>
+            <span>{{ 'song.title'|trans }}</span>
+            <input name="title" required>
+        </label>
+        <label>
+            <span>{{ 'song.artist'|trans }}</span>
+            <input name="artist" required>
+        </label>
+
+        {% if is_granted('ROLE_ADMIN') %}
+        <label>
+            <span>{{ 'song.editor'|trans }}</span>
+            <select name="editor_id">
+                <option value="0">{{ 'common.none'|trans }}</option>
+                {% for editor in editors %}
+                    <option value="{{ editor.id }}">{{ editor.displayName }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        {% endif %}
+
+        <label>
+            <span>{{ 'song.comment'|trans }}</span>
+            <input name="comment">
+        </label>
+
+        <button class="primary" type="submit">{{ 'catalog.create.submit'|trans }}</button>
+    </form>
+</section>
+{% endif %}
+
+<div class="song-grid">
+    {% for song in songs %}
+        <a class="song-tile" href="{{ path('app_song_workspace', {id: song.id}) }}">
+            <div class="cover-mock">♫</div>
+            <div>
+                <strong>{{ song.title }}</strong>
+                <span>{{ song.artist }}</span>
+                <small>
+                    {{ song.editor ? song.editor.displayName : ('common.none'|trans) }}
+                    {% if song.comment %} · {{ song.comment }}{% endif %}
+                </small>
+            </div>
+        </a>
+    {% else %}
+        <div class="empty">{{ 'catalog.empty'|trans }}</div>
+    {% endfor %}
+</div>
 {% endblock %}

@@ -30,15 +30,15 @@ final class AdminUserController extends AbstractController
 
             $errors = $this->validateIdentity($name, $email);
             if ($users->findOneBy(['email' => $email]) !== null) {
-                $errors[] = 'Cette adresse e-mail est déjà utilisée.';
+                $errors[] = 'users.error.email_used';
             }
             if ($password !== '' && mb_strlen($password) < 10) {
-                $errors[] = 'Le mot de passe doit contenir au moins 10 caractères.';
+                $errors[] = 'users.error.password_length';
             }
 
             if ($errors === []) {
                 $manager->create($name, $email, $password !== '' ? $password : null, $role);
-                $this->addFlash('success', 'Utilisateur créé.');
+                $this->addFlash('success', 'users.created');
                 return $this->redirectToRoute('admin_users');
             }
 
@@ -70,21 +70,21 @@ final class AdminUserController extends AbstractController
         $active = $request->request->getBoolean('active');
 
         $errors = $this->validateIdentity($name, $email);
-
         $emailOwner = $users->findOneBy(['email' => $email]);
+
         if ($emailOwner !== null && $emailOwner->getId() !== $user->getId()) {
-            $errors[] = 'Cette adresse e-mail est déjà utilisée.';
+            $errors[] = 'users.error.email_used';
         }
 
         if ($password !== '' && mb_strlen($password) < 10) {
-            $errors[] = 'Le nouveau mot de passe doit contenir au moins 10 caractères.';
+            $errors[] = 'users.error.password_length_new';
         }
 
         $wasActiveAdmin = $user->isActive() && $user->getPrimaryRole() === 'ROLE_ADMIN';
         $willRemainActiveAdmin = $active && $role === 'ROLE_ADMIN';
 
         if ($wasActiveAdmin && !$willRemainActiveAdmin && $users->countActiveAdmins() <= 1) {
-            $errors[] = 'Impossible de désactiver ou rétrograder le dernier administrateur actif.';
+            $errors[] = 'users.error.last_admin';
         }
 
         if ($errors !== []) {
@@ -103,7 +103,7 @@ final class AdminUserController extends AbstractController
             $password !== '' ? $password : null,
         );
 
-        $this->addFlash('success', 'Utilisateur mis à jour.');
+        $this->addFlash('success', 'users.updated');
         return $this->redirectToRoute('admin_users');
     }
 
@@ -115,11 +115,11 @@ final class AdminUserController extends AbstractController
         $errors = [];
 
         if ($name === '') {
-            $errors[] = 'Nom affiché obligatoire.';
+            $errors[] = 'users.error.name';
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Adresse e-mail invalide.';
+            $errors[] = 'users.error.email';
         }
 
         return $errors;

@@ -1,12 +1,31 @@
 {% extends 'base.html.twig' %}
-{% block title %}{{ vm.song.title }} — EZScore_v1{% endblock %}
+{% block title %}{{ song.title }} — EZScore_v1{% endblock %}
 {% block body %}
-<div class="workspace" data-can-edit="{{ can_edit ? '1':'0' }}">
-    <nav class="workflow-tabs"><button class="workflow-tab active" data-step="1">1 · STEMS</button><button class="workflow-tab" data-step="2">2 · PAROLES</button></nav>
-    <section class="song-cartouche"><div><span>Titre</span><strong>{{ vm.song.title }}</strong></div><div><span>Auteur / Interprète</span><strong>{{ vm.song.artist }}</strong></div><div><span>Éditeur</span><strong>{{ vm.song.editor }}</strong></div><div><span>Time sig</span><strong>{{ vm.song.time_signature }}</strong></div><div><span>Capo</span><strong>{{ vm.song.capo }}</strong></div><div><span>Strumming</span><strong>{{ vm.song.strumming }}</strong></div></section>
-    {% if can_edit %}<details class="panel"><summary>📝 Formulaire morceau</summary><div class="mock-form"><input value="{{ vm.song.title }}"><input value="{{ vm.song.artist }}"><select><option>{{ vm.song.editor }}</option></select><select><option>4/4</option><option>2/4</option><option>3/4</option><option>6/8</option></select><input value="{{ vm.song.capo }}"><input value="{{ vm.song.strumming }}"><button disabled>Enregistrer (mock)</button></div></details>{% endif %}
-    <details class="panel" open><summary>🎚️ STEMS + table de mixage</summary><div class="mixer"><div class="mix-head"><span>Piste</span><span>ON</span><span>Volume</span><span>Graves</span><span>Médiums</span><span>Aigus</span></div>{% for stem in vm.stems %}<div class="mix-row"><strong>{{ stem }}</strong><input type="checkbox" {{ loop.first ? 'checked' : '' }}><input type="range" min="0" max="100" value="{{ loop.first ? 100 : 72 }}"><input type="range" min="-12" max="12" value="0"><input type="range" min="-12" max="12" value="0"><input type="range" min="-12" max="12" value="0"></div>{% endfor %}</div></details>
-    <details class="panel" open><summary>▶ Player mock</summary><div class="player"><div class="waveform"></div><div class="playhead"></div><div class="diagram">G<small>diagramme</small></div><div class="measure-strip">{% for measure in vm.measures %}<div class="measure"><div class="measure-no">#{{ measure.number }}</div><div class="beats">{% for beat in measure.beats %}<span class="beat {{ measure.number == 12 and loop.index == 2 ? 'current':'' }}">{{ beat }}</span>{% endfor %}</div></div>{% endfor %}</div><div class="lyrics-line step-lyrics">{% for word in vm.words %}<span class="word {{ loop.index == 7 ? 'current':'' }}">{{ word }}</span>{% endfor %}</div><input class="seek" type="range" min="0" max="100" value="38"><div class="transport"><button>▶</button><button>⏸</button><button>⏹</button><select><option>1,00×</option><option>0,75×</option><option>1,25×</option></select><span>1:08 / 4:22</span></div></div></details>
-    {% if can_edit %}<details class="panel editor-panel"><summary>✏️ Édition paroles / accords / blocs</summary><div class="editor-mock"><div>Sections</div><div>Accords</div><div>Chant</div><div>Chœurs</div></div></details>{% endif %}
+<div class="workspace" data-can-edit="{{ can_edit ? '1' : '0' }}">
+    <nav class="workflow-tabs">
+        <button class="workflow-tab active" data-step="1">1 · STEMS</button>
+        <button class="workflow-tab" data-step="2">2 · {{ 'workspace.lyrics'|trans }}</button>
+    </nav>
+
+    <section class="song-cartouche">
+        <div><span>{{ 'song.title'|trans }}</span><strong>{{ song.title }}</strong></div>
+        <div><span>{{ 'song.artist'|trans }}</span><strong>{{ song.artist }}</strong></div>
+        <div><span>{{ 'song.editor'|trans }}</span><strong>{{ song.editor ? song.editor.displayName : ('common.none'|trans) }}</strong></div>
+        <div><span>{{ 'song.time_signature'|trans }}</span><strong>{{ song.timeSignature }}</strong></div>
+        <div><span>{{ 'song.capo'|trans }}</span><strong>{{ song.capo }}</strong></div>
+        <div><span>{{ 'song.strumming'|trans }}</span><strong>{{ song.strummingPrimary ?: ('common.none'|trans) }}</strong></div>
+    </section>
+
+    <section class="panel source-truth-panel">
+        <h2>{{ 'workspace.no_analysis.heading'|trans }}</h2>
+        <p>{{ 'workspace.no_analysis.body'|trans }}</p>
+    </section>
+
+    {% if can_edit %}
+        <section class="panel">
+            <h2>{{ 'workspace.edit.heading'|trans }}</h2>
+            <p>{{ 'workspace.edit.body'|trans }}</p>
+        </section>
+    {% endif %}
 </div>
 {% endblock %}

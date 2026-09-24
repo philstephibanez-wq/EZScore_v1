@@ -1,0 +1,164 @@
+locale:
+  label: Langue
+  fr: FR
+  en: EN
+
+nav:
+  dashboard: Tableau de bord
+  catalog: Répertoire
+  playlists: Playlists
+  groups: Groupes
+  administration: Administration
+  users: Utilisateurs
+  logout: Déconnexion
+
+common:
+  create: Créer
+  save: Enregistrer
+  none: Aucun
+
+role:
+  ROLE_ADMIN: Admin
+  ROLE_EDITOR: Éditeur
+  ROLE_READER: Lecteur
+
+group_role:
+  owner: Propriétaire
+  manager: Gestionnaire
+  member: Membre
+
+auth:
+  first_run:
+    title: Initialisation
+    eyebrow: Premier démarrage
+    heading: Création de l’administrateur
+    description: Ce compte devient l’administrateur initial d’EZScore_v1.
+    create: Créer l’administrateur
+    created: Administrateur créé. Connecte-toi.
+    error:
+      session: Session expirée. Recharge la page.
+      name: Nom affiché obligatoire.
+      email: Adresse e-mail invalide.
+      password_length: Le mot de passe doit contenir au moins 10 caractères.
+      password_match: Les mots de passe ne correspondent pas.
+  login:
+    title: Connexion
+    heading: Connexion
+    submit: Se connecter
+    or: ou
+    google: Continuer avec Google
+    google_disabled: Google SSO non configuré
+  google:
+    not_configured: Google SSO n’est pas configuré.
+
+dashboard:
+  title: Tableau de bord
+  catalog: Morceaux enregistrés dans les données EZScore.
+  playlists: Playlists personnelles et de groupe.
+  groups: Membres et rôles de groupe.
+  users: Comptes, rôles et accès.
+
+users:
+  title: Utilisateurs
+  note: Comptes locaux et comptes autorisés à utiliser Google SSO.
+  create:
+    heading: Créer un utilisateur
+  display_name: Nom affiché
+  email: E-mail
+  email_login: E-mail / login local
+  password: Mot de passe
+  password_confirm: Confirmation
+  local_password: Mot de passe local
+  password_optional: Optionnel si Google uniquement
+  password_unchanged: Laisser inchangé
+  new_password: Nouveau mot de passe
+  role: Rôle
+  active: Actif
+  account: Compte
+  google_linked: Lié
+  empty: Aucun utilisateur.
+  rules: Un compte sans mot de passe local peut être utilisé via Google si son adresse e-mail correspond à un compte autorisé. Le dernier administrateur actif ne peut pas être désactivé ni rétrogradé.
+  created: Utilisateur créé.
+  updated: Utilisateur mis à jour.
+  error:
+    email_used: Cette adresse e-mail est déjà utilisée.
+    password_length: Le mot de passe doit contenir au moins 10 caractères.
+    password_length_new: Le nouveau mot de passe doit contenir au moins 10 caractères.
+    last_admin: Impossible de désactiver ou rétrograder le dernier administrateur actif.
+    name: Nom affiché obligatoire.
+    email: Adresse e-mail invalide.
+
+groups:
+  title: Groupes
+  eyebrow: Collaboration
+  create:
+    heading: Nouveau groupe
+  name: Nom
+  description: Description
+  no_members: Aucun membre.
+  empty: Aucun groupe.
+  validation:
+    name: Le nom du groupe est obligatoire.
+  created: Groupe créé.
+  member:
+    email: E-mail du membre
+    save: Ajouter / modifier
+    not_found: Utilisateur introuvable.
+    saved: Membre enregistré.
+
+playlists:
+  title: Playlists
+  eyebrow: Bibliothèque
+  create:
+    heading: Nouvelle playlist
+  name: Nom
+  description: Description
+  public: Publique
+  empty: Aucune playlist.
+  owner:
+    personal: Personnelle
+    group: Groupe
+  visibility:
+    public: Publique
+    private: Privée
+  validation:
+    name: Le nom de la playlist est obligatoire.
+  created: Playlist créée.
+
+catalog:
+  title: Répertoire
+  eyebrow: Musique
+  empty: Aucun morceau dans les données EZScore.
+  created: Morceau créé.
+  create:
+    heading: Nouveau morceau
+    submit: Créer le morceau
+  validation:
+    required: Le titre et l’auteur/interprète sont obligatoires.
+    editor: L’éditeur sélectionné n’est pas valide.
+
+song:
+  title: Titre
+  artist: Auteur / Interprète
+  editor: Éditeur
+  comment: Commentaire
+  time_signature: Signature
+  capo: Capo
+  strumming: Strumming
+
+workspace:
+  lyrics: PAROLES
+  no_analysis:
+    heading: Aucune donnée d’analyse
+    body: Le workspace n’invente aucun résultat. Les STEMS, accords, paroles, blocs et événements temporels apparaîtront uniquement lorsqu’ils existeront dans les données persistées.
+  edit:
+    heading: Édition du morceau
+    body: L’édition musicale sera raccordée aux données persistées ; aucun état mock ou fallback n’est utilisé.
+
+analysis:
+  status:
+    queued: En attente
+    running: En cours
+    completed: Terminé
+    failed: Échec
+    cancelled: Annulé
