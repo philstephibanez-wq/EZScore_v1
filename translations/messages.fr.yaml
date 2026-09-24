@@ -17,6 +17,15 @@ common:
   save: Enregistrer
   none: Aucun
 
+layout:
+  sidebar:
+    toggle: Ouvrir le menu
+    navigation: Navigation principale
+  search:
+    label: Rechercher
+    placeholder: Rechercher un morceau…
+    submit: Rechercher
+
 role:
   ROLE_ADMIN: Admin
   ROLE_EDITOR: Éditeur
@@ -205,3 +214,6 @@ registration:
     button: Activer mon compte
     expiry: Ce lien est valable pendant 24 heures.
     ignore: Si vous n’êtes pas à l’origine de cette inscription, ignorez ce message.
+
+profile:
+  title: Profil

@@ -1,62 +1,28 @@
-# EZScore_v1 — Groupes / Playlists CRUD sans modification du socle visuel
+# EZScore_v1 — correction i18n profil R5
 
-Base de référence obligatoire :
+Livrable ciblé : **aucun CSS, aucun Twig, aucun JavaScript, aucun contrôleur modifié**.
 
-```text
-e736731db363b6f614e8d050f4fab41a1e4f877b
-EZScore_v1_LOCALIZED_URLS_NAV_HOVER OK
-```
+## Correction
 
-## Principe
+Ajout de la dernière clé manquante dans `translations/messages.fr.yaml` et `translations/messages.en.yaml` :
 
-Cette livraison ajoute uniquement la gestion des formulaires Groupes / Playlists en réutilisant les classes HTML/CSS déjà présentes dans EZScore_v1.
+- `profile.title` → `Profil` (FR)
+- `profile.title` → `Profile` (EN)
 
-Aucun fichier CSS, aucun layout global, aucun `base.html.twig` et aucun JavaScript global ne sont modifiés.
-
-Fonctions :
-
-- modification et suppression des playlists ;
-- modification et suppression des groupes ;
-- ajout / modification / retrait des membres d'un groupe ;
-- admin : tous les droits ;
-- owner / manager : gestion selon les droits de la ressource ;
-- suppression d'un groupe : suppression de ses playlists de groupe ;
-- confirmations de suppression ;
-- FR / EN ;
-- conservation explicite de la locale `/fr` ou `/en` après les POST.
+Le livrable inclut également les 5 clés `layout.*` de la R4 afin que les fichiers de traduction restent complets et cohérents.
 
 ## Installation
 
-Partir impérativement de la base stable :
-
 ```powershell
 cd H:\EZScore_v1
-git reset --hard e736731db363b6f614e8d050f4fab41a1e4f877b
-```
 
-Puis installer le ZIP :
-
-```powershell
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_GROUPS_PLAYLISTS_FORMS_R3.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_I18N_PROFILE_R5.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
-php bin\console lint:twig templates
-php bin\console doctrine:schema:validate
-php bin\console debug:router
+php bin\console debug:translation fr --domain=messages --only-missing
+php bin\console debug:translation en --domain=messages --only-missing
 ```
+
+Résultat attendu : aucune traduction `missing` dans le domaine `messages`.
 
 Aucune migration.
-
-Les routes attendues en plus des routes existantes sont :
-
-```text
-app_group_update
-app_group_delete
-app_group_member_delete
-app_playlist_update
-app_playlist_delete
-```
-
-## Contrôle visuel
-
-Le rendu doit rester celui du commit `e736731...`. La livraison ne contient aucun fichier sous `public/assets/css/`, aucun `templates/base.html.twig` et aucun fichier JS.

@@ -17,6 +17,15 @@ common:
   save: Save
   none: None
 
+layout:
+  sidebar:
+    toggle: Open menu
+    navigation: Main navigation
+  search:
+    label: Search
+    placeholder: Search for a song…
+    submit: Search
+
 role:
   ROLE_ADMIN: Admin
   ROLE_EDITOR: Editor
@@ -205,3 +214,6 @@ registration:
     button: Activate my account
     expiry: This link is valid for 24 hours.
     ignore: If you did not create this account, ignore this message.
+
+profile:
+  title: Profile
