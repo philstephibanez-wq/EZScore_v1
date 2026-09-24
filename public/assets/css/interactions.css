@@ -3,7 +3,6 @@
  * Every element the user can act on must react visually.
  */
 
-/* Common transition + pointer semantics */
 a[href],
 button:not(:disabled),
 input[type="submit"]:not(:disabled),
@@ -24,78 +23,54 @@ label[for],
         color .14s ease;
 }
 
-/* Clickable links/cards */
-a[href]:hover,
-summary:hover,
-label[for]:hover,
-[role="button"]:not([aria-disabled="true"]):hover{
-    filter:brightness(1.18)!important;
+/* JS-driven hover: deliberately explicit and visible. */
+.is-ui-hover{
+    filter:brightness(1.22)!important;
 }
 
-/* Links rendered as cards/panels */
-a.module-card:hover,
-a.song-tile:hover,
-.dashboard-grid a[href]:hover,
-.card-grid a[href]:hover{
-    transform:translateY(-3px)!important;
-    background:#1c2a36!important;
+/* Clickable cards / navigation blocks */
+a.module-card.is-ui-hover,
+a.song-tile.is-ui-hover,
+.dashboard-grid a.is-ui-hover,
+.card-grid a.is-ui-hover{
+    transform:translateY(-4px)!important;
+    background:#203446!important;
     border-color:#8bd0ff!important;
     box-shadow:
-        0 0 0 2px rgba(107,182,255,.42),
-        0 12px 26px rgba(0,0,0,.50)!important;
+        0 0 0 3px rgba(107,182,255,.48),
+        0 14px 30px rgba(0,0,0,.52)!important;
 }
 
 /* Standard buttons */
-button:not(:disabled):hover,
-input[type="submit"]:not(:disabled):hover,
-input[type="button"]:not(:disabled):hover{
-    transform:translateY(-1px)!important;
-    filter:brightness(1.30)!important;
+button.is-ui-hover:not(:disabled),
+input[type="submit"].is-ui-hover:not(:disabled),
+input[type="button"].is-ui-hover:not(:disabled){
+    transform:translateY(-2px)!important;
+    filter:brightness(1.32)!important;
     border-color:#8bd0ff!important;
     box-shadow:
-        0 0 0 2px rgba(107,182,255,.34),
-        0 6px 16px rgba(0,0,0,.44)!important;
+        0 0 0 2px rgba(107,182,255,.36),
+        0 7px 18px rgba(0,0,0,.46)!important;
 }
 
-/* Editable/selectable controls */
-select:not(:disabled):hover,
-input[type="text"]:not(:disabled):hover,
-input[type="email"]:not(:disabled):hover,
-input[type="password"]:not(:disabled):hover,
-input[type="search"]:not(:disabled):hover,
-input[type="number"]:not(:disabled):hover,
-textarea:not(:disabled):hover{
+/* Inputs/selects users can act on */
+select.is-ui-hover:not(:disabled),
+input.is-ui-hover:not(:disabled),
+textarea.is-ui-hover:not(:disabled){
     border-color:#6bb6ff!important;
-    box-shadow:0 0 0 2px rgba(107,182,255,.20)!important;
+    box-shadow:0 0 0 2px rgba(107,182,255,.24)!important;
 }
 
-/* Checkbox/radio feedback */
-input[type="checkbox"]:not(:disabled):hover,
-input[type="radio"]:not(:disabled):hover{
-    filter:brightness(1.35)!important;
-    box-shadow:0 0 0 3px rgba(107,182,255,.24)!important;
+/* Header and drawer actions */
+.ez-brand.is-ui-hover,
+.ez-user-badge.is-ui-hover,
+.ez-drawer-nav a.is-ui-hover,
+.ez-logout.is-ui-hover{
+    box-shadow:0 0 0 2px rgba(107,182,255,.30)!important;
 }
 
-/* Header/menu links are actions too */
-.ez-brand:hover,
-.ez-user-badge:hover,
-.ez-drawer-nav a:hover,
-.ez-logout:hover{
-    filter:brightness(1.22)!important;
-    box-shadow:0 0 0 2px rgba(107,182,255,.28)!important;
-}
-
-/* Pressed feedback */
-a[href]:active,
-button:not(:disabled):active,
-input[type="submit"]:not(:disabled):active,
-input[type="button"]:not(:disabled):active,
-summary:active,
-[role="button"]:not([aria-disabled="true"]):active{
-    transform:translateY(1px)!important;
-}
-
-/* Keyboard accessibility */
+/* Keyboard focus */
+.is-ui-focus,
 a[href]:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -130,23 +105,21 @@ button.is-dirty-action::before{
     font-size:.72em;
 }
 
-button.is-dirty-action:hover,
-input[type="submit"].is-dirty-action:hover{
+button.is-dirty-action.is-ui-hover,
+input[type="submit"].is-dirty-action.is-ui-hover{
     background:#f09a22!important;
     border-color:#ffe0ad!important;
     filter:none!important;
 }
 
-/* Destructive actions stay red while still reacting */
-.danger-button:hover{
+.danger-button.is-ui-hover{
     filter:brightness(1.30)!important;
     border-color:#ef7777!important;
     box-shadow:
-        0 0 0 2px rgba(239,119,119,.28),
-        0 6px 16px rgba(0,0,0,.44)!important;
+        0 0 0 2px rgba(239,119,119,.30),
+        0 7px 18px rgba(0,0,0,.46)!important;
 }
 
-/* Disabled really means non-interactive */
 button:disabled,
 input:disabled,
 select:disabled,

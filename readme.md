@@ -1,20 +1,21 @@
-# EZScore_v1 — contrat global de hover
+# EZScore_v1 — hover global piloté par JS
 
 Base vérifiée sur le HEAD GitHub :
 
 ```text
-c7ffe263a59d801eb9302dd49d8a2afe06588f4b
+5ebf8b484159c49dbf4a6d3f5889e7b3def75014
 ```
 
-Correction structurelle : `interactions.css` est maintenant chargé **après tous les CSS spécifiques aux pages**.
+Le CSS `:hover` seul n'a pas donné de résultat fiable sur le dashboard dans l'environnement courant.
 
-Le hover s'applique à tous les éléments interactifs principaux :
+Ce correctif ajoute un gestionnaire global `interaction-feedback.js` qui applique explicitement une classe `is-ui-hover` à tout contrôle interactif sous le pointeur.
+
+Sont couverts automatiquement :
 
 ```text
 a[href]
 button
 input submit/button
-input éditables
 checkbox/radio
 select
 summary
@@ -22,22 +23,15 @@ label[for]
 [role="button"]
 ```
 
-Les cartes du dashboard ont un feedback volontairement plus visible.
+Le dashboard reçoit donc le même feedback que l'administration, sans règle par page.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_GLOBAL_INTERACTIVE_HOVER.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_GLOBAL_HOVER_JS_FIX.zip" -C H:\EZScore_v1
 php bin\console cache:clear
 php bin\console lint:twig templates
 ```
-
-Test attendu :
-- Dashboard : Répertoire / Playlists / Groupes / Utilisateurs réagissent au survol.
-- Header : logo, langues, avatar, recherche réagissent.
-- Formulaires : champs, selects, checkbox et boutons réagissent.
-- Menu latéral : tous les liens réagissent.
-- Dirty : Save reste orange tant qu'une modification n'est pas sauvée.
 
 Aucune migration.
