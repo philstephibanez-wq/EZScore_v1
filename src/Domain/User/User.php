@@ -11,6 +11,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
 #[ORM\UniqueConstraint(name: 'uniq_users_email', columns: ['email'])]
+#[ORM\UniqueConstraint(name: 'uniq_users_activation_token_hash', columns: ['activation_token_hash'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const SUPPORTED_LOCALES = ['fr', 'en'];
@@ -43,6 +44,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 2)]
     private string $locale = 'fr';
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $emailVerifiedAt = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $activationTokenHash = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $activationExpiresAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $activationRequestedAt = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -77,6 +90,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getEmailVerifiedAt(): ?\DateTimeImmutable { return $this->emailVerifiedAt; }
+    public function isEmailVerified(): bool { return $this->emailVerifiedAt !== null; }
+    public function getActivationTokenHash(): ?string { return $this->activationTokenHash; }
+    public function getActivationExpiresAt(): ?\DateTimeImmutable { return $this->activationExpiresAt; }
+    public function getActivationRequestedAt(): ?\DateTimeImmutable { return $this->activationRequestedAt; }
+
+    public function requestEmailActivation(
+        string $tokenHash,
+        \DateTimeImmutable $requestedAt,
+        \DateTimeImmutable $expiresAt,
+    ): self {
+        if (!preg_match('/^[a-f0-9]{64}$/', $tokenHash)) {
+            throw new \InvalidArgumentException('Activation token hash must be a SHA-256 hexadecimal value.');
+        }
+
+        if ($expiresAt <= $requestedAt) {
+            throw new \InvalidArgumentException('Activation token expiry must be after request time.');
+        }
+
+        $this->activationTokenHash = $tokenHash;
+        $this->activationRequestedAt = $requestedAt;
+        $this->activationExpiresAt = $expiresAt;
+
+        return $this;
+    }
+
+    public function verifyEmail(\DateTimeImmutable $verifiedAt): self
+    {
+        $this->emailVerifiedAt = $verifiedAt;
+        $this->activationTokenHash = null;
+        $this->activationRequestedAt = null;
+        $this->activationExpiresAt = null;
+
+        return $this;
+    }
+
+    public function markEmailVerifiedForManagedAccount(): self
+    {
+        if ($this->emailVerifiedAt === null) {
+            $this->emailVerifiedAt = new \DateTimeImmutable();
+        }
+
+        return $this;
+    }
+
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUserIdentifier(): string { return $this->email; }
     public function eraseCredentials(): void { }
@@ -85,6 +143,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
+
         return array_values(array_unique($roles));
     }
 
@@ -93,6 +152,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $allowed = ['ROLE_ADMIN', 'ROLE_EDITOR', 'ROLE_READER'];
         $filtered = array_values(array_intersect($allowed, $roles));
         $this->roles = $filtered ?: ['ROLE_READER'];
+
         return $this;
     }
 

@@ -1,0 +1,5 @@
+auth:
+  account:
+    disabled: This EZSCORE account is disabled.
+    email_not_verified: This email address has not been verified yet.
+    google_not_registered: This Google account is not registered in EZSCORE yet.

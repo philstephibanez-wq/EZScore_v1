@@ -18,7 +18,11 @@ final class ActiveUserChecker implements UserCheckerInterface
         }
 
         if (!$user->isActive()) {
-            throw new CustomUserMessageAccountStatusException('Ce compte EZScore est désactivé.');
+            throw new CustomUserMessageAccountStatusException('auth.account.disabled');
+        }
+
+        if (!$user->isEmailVerified()) {
+            throw new CustomUserMessageAccountStatusException('auth.account.email_not_verified');
         }
     }
 

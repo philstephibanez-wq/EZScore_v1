@@ -18,12 +18,18 @@ final class UserManager
     ) {
     }
 
+    /**
+     * Creates an administrator-managed account.
+     * The administrator explicitly vouches for the address, so the account is
+     * created as email-verified.
+     */
     public function create(string $name, string $email, ?string $plainPassword, string $role): User
     {
         $user = (new User())
             ->setDisplayName($name)
             ->setEmail($email)
-            ->setRoles([$this->normaliseRole($role)]);
+            ->setRoles([$this->normaliseRole($role)])
+            ->markEmailVerifiedForManagedAccount();
 
         if ($plainPassword !== null && $plainPassword !== '') {
             $this->setPassword($user, $plainPassword);
@@ -62,6 +68,11 @@ final class UserManager
         $this->em->flush();
     }
 
+    public function hashPassword(User $user, string $plainPassword): void
+    {
+        $this->setPassword($user, $plainPassword);
+    }
+
     private function setPassword(User $user, string $plainPassword): void
     {
         $user->setPassword($this->hasher->hashPassword($user, $plainPassword));
@@ -69,6 +80,10 @@ final class UserManager
 
     private function normaliseRole(string $role): string
     {
-        return in_array($role, self::ROLES, true) ? $role : 'ROLE_READER';
+        if (!in_array($role, self::ROLES, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported role "%s".', $role));
+        }
+
+        return $role;
     }
 }

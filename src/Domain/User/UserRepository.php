@@ -24,18 +24,27 @@ final class UserRepository extends ServiceEntityRepository
 
     public function countActiveAdmins(): int
     {
-        return (int) $this->createQueryBuilder('u')
-            ->select('COUNT(u.id)')
-            ->andWhere('u.active = :active')
-            ->andWhere('u.roles LIKE :role')
-            ->setParameter('active', true)
-            ->setParameter('role', '%ROLE_ADMIN%')
-            ->getQuery()
-            ->getSingleScalarResult();
+        $activeUsers = $this->findBy(['active' => true]);
+
+        return count(array_filter(
+            $activeUsers,
+            static fn(User $user): bool => in_array('ROLE_ADMIN', $user->getRoles(), true),
+        ));
     }
 
     public function findByGoogleSub(string $sub): ?User
     {
         return $this->findOneBy(['googleSub' => $sub]);
+    }
+
+    public function findByActivationToken(string $rawToken): ?User
+    {
+        if (!preg_match('/^[a-f0-9]{64}$/', $rawToken)) {
+            return null;
+        }
+
+        return $this->findOneBy([
+            'activationTokenHash' => hash('sha256', $rawToken),
+        ]);
     }
 }

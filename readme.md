@@ -1,40 +1,48 @@
-# EZScore_v1 R6.5.1 — Twig block hotfix
+# EZScore_v1 R7.1 — schema locale hotfix
 
-## Cause
+Le delta Doctrine venait uniquement de `users.locale`.
 
-`base.html.twig` déclarait `{% block body %}` deux fois :
-- une fois dans la branche utilisateur authentifié ;
-- une seconde fois dans la branche non authentifiée.
+La base réelle contient :
 
-Twig interdit deux définitions du même bloc dans un même template, même si elles se trouvent dans des branches `{% if %}` distinctes.
-
-Erreur :
-
-```text
-The block 'body' has already been defined
+```sql
+locale VARCHAR(2) NOT NULL
 ```
 
-## Correction
+alors que le mapping R7 demandait :
 
-Le template garde les deux wrappers conditionnels (`ez-shell` / `auth-shell`) mais ne déclare désormais qu'un seul :
-
-```twig
-{% block body %}{% endblock %}
+```sql
+locale VARCHAR(2) DEFAULT 'fr' NOT NULL
 ```
 
-Le header ChordU-like, le drawer, la recherche, FR/EN et le badge utilisateur restent inchangés.
+R7 avait ajouté par erreur `options: ['default' => 'fr']` au mapping Doctrine.
+
+La valeur par défaut métier reste bien `fr` dans l'entité :
+
+```php
+private string $locale = 'fr';
+```
+
+Il n'est pas nécessaire d'imposer un DEFAULT SQL supplémentaire.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R6_5_1_TWIG_BLOCK_HOTFIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R7_1_SCHEMA_LOCALE_HOTFIX.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
-php bin\console lint:twig templates
+php bin\console doctrine:schema:validate
+php bin\console doctrine:schema:update --dump-sql
 ```
 
-Puis relancer le serveur et faire `Ctrl+F5`.
+Résultat attendu :
 
-Aucune migration. Aucune modification de DATA.
+```text
+Mapping  [OK]
+Database [OK]
+```
+
+et `doctrine:schema:update --dump-sql` ne doit plus proposer de reconstruction de `users`.
+
+Aucune migration et aucune modification des données.

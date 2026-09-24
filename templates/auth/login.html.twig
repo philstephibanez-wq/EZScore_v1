@@ -1,20 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'auth.login.title'|trans }} — EZScore_v1{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/r7.css">{% endblock %}
 {% block body %}
 <section class="auth-card">
     <div class="eyebrow">EZScore_v1</div>
     <h1>{{ 'auth.login.heading'|trans }}</h1>
-
-    <div class="locale-switcher locale-switcher-auth" aria-label="{{ 'locale.label'|trans }}">
-        {% for locale in ['fr', 'en'] %}
-            <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-                <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">
-                    {{ ('locale.' ~ locale)|trans }}
-                </button>
-            </form>
-        {% endfor %}
-    </div>
 
     {% if error %}
         <div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
@@ -26,6 +16,11 @@
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
         <button class="primary" type="submit">{{ 'auth.login.submit'|trans }}</button>
     </form>
+
+    <div class="auth-secondary-action">
+        <span>{{ 'registration.login_prompt'|trans({}, 'registration') }}</span>
+        <a href="{{ path('app_register') }}">{{ 'registration.register_link'|trans({}, 'registration') }}</a>
+    </div>
 
     <div class="oauth-sep"><span>{{ 'auth.login.or'|trans }}</span></div>
 

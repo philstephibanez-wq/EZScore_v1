@@ -1,0 +1,34 @@
+registration:
+  title: Inscription
+  heading: Créer votre compte
+  description: Votre adresse e-mail devra être validée avant la première connexion.
+  submit: Créer mon compte
+  login_prompt: Pas encore de compte ?
+  register_link: S’inscrire
+  already_registered: Déjà inscrit ?
+  activation_sent: Le compte a été créé. Un e-mail d’activation a été envoyé.
+  activation_delivery_failed: Le compte a été créé mais l’e-mail d’activation n’a pas pu être envoyé. Vérifiez la configuration SMTP puis utilisez le renvoi d’activation.
+  activated: Votre adresse e-mail est validée. Vous pouvez vous connecter.
+  activation_invalid: Ce lien d’activation est invalide ou expiré.
+  resend_generic: Si ce compte existe, n’est pas encore validé et peut recevoir un nouveau lien, un e-mail d’activation a été envoyé.
+  email_already_used: Cette adresse e-mail est déjà utilisée.
+  error:
+    name: Nom affiché obligatoire.
+    email: Adresse e-mail invalide.
+    email_used: Cette adresse e-mail est déjà utilisée.
+    password_length: Le mot de passe doit contenir au moins 10 caractères.
+    password_match: Les mots de passe ne correspondent pas.
+  pending:
+    title: Activation du compte
+    heading: Vérifiez votre e-mail
+    body: L’accès à EZSCORE reste bloqué tant que l’adresse e-mail n’a pas été validée. Le lien d’activation est valable 24 heures.
+    resend: Renvoyer le mail d’activation
+    back_login: Retour à la connexion
+  email:
+    subject: Activez votre compte EZSCORE
+    heading: Activation de votre compte
+    hello: Bonjour %name%,
+    body: Confirmez votre adresse e-mail pour activer votre compte EZSCORE.
+    button: Activer mon compte
+    expiry: Ce lien est valable pendant 24 heures.
+    ignore: Si vous n’êtes pas à l’origine de cette inscription, ignorez ce message.

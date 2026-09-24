@@ -27,7 +27,8 @@ final class GoogleAuthenticator extends OAuth2Authenticator
         private readonly UserRepository $users,
         private readonly EntityManagerInterface $em,
         private readonly UrlGeneratorInterface $urls,
-    ) {}
+    ) {
+    }
 
     public function supports(Request $request): ?bool
     {
@@ -38,6 +39,7 @@ final class GoogleAuthenticator extends OAuth2Authenticator
     {
         $client = $this->clients->getClient('google_main');
         $accessToken = $this->fetchAccessToken($client);
+
         /** @var GoogleUser $googleUser */
         $googleUser = $client->fetchUserFromToken($accessToken);
 
@@ -46,11 +48,15 @@ final class GoogleAuthenticator extends OAuth2Authenticator
         $avatar = method_exists($googleUser, 'getAvatar') ? $googleUser->getAvatar() : null;
 
         $user = $this->users->findByGoogleSub($sub) ?? $this->users->findOneBy(['email' => $email]);
+
         if ($user === null) {
-            throw new CustomUserMessageAuthenticationException('Ce compte Google n’est pas encore autorisé dans EZScore.');
+            throw new CustomUserMessageAuthenticationException('auth.account.google_not_registered');
         }
         if (!$user->isActive()) {
-            throw new CustomUserMessageAuthenticationException('Ce compte EZScore est désactivé.');
+            throw new CustomUserMessageAuthenticationException('auth.account.disabled');
+        }
+        if (!$user->isEmailVerified()) {
+            throw new CustomUserMessageAuthenticationException('auth.account.email_not_verified');
         }
 
         if ($user->getGoogleSub() === null) {
@@ -59,19 +65,28 @@ final class GoogleAuthenticator extends OAuth2Authenticator
         if (is_string($avatar) && $avatar !== '') {
             $user->setAvatarUrl($avatar);
         }
+
         $this->em->flush();
 
-        return new SelfValidatingPassport(new UserBadge($user->getUserIdentifier(), fn() => $user));
+        return new SelfValidatingPassport(
+            new UserBadge($user->getUserIdentifier(), fn() => $user),
+        );
     }
 
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
-    {
+    public function onAuthenticationSuccess(
+        Request $request,
+        TokenInterface $token,
+        string $firewallName,
+    ): ?Response {
         return new RedirectResponse($this->urls->generate('app_dashboard'));
     }
 
-    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
-    {
+    public function onAuthenticationFailure(
+        Request $request,
+        AuthenticationException $exception,
+    ): ?Response {
         $request->getSession()->getFlashBag()->add('error', $exception->getMessageKey());
+
         return new RedirectResponse($this->urls->generate('app_login'));
     }
 }

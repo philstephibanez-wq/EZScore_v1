@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ 'registration.pending.title'|trans({}, 'registration') }} — EZScore_v1{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/r7.css">{% endblock %}
+{% block body %}
+<section class="auth-card">
+    <div class="eyebrow">EZSCORE v1</div>
+    <h1>{{ 'registration.pending.heading'|trans({}, 'registration') }}</h1>
+    <p>{{ 'registration.pending.body'|trans({}, 'registration') }}</p>
+
+    <form method="post" action="{{ path('app_registration_resend') }}" class="form-grid activation-resend">
+        <input type="hidden" name="_token" value="{{ csrf_token('resend_activation') }}">
+        <label>
+            {{ 'users.email'|trans }}
+            <input type="email" name="email" required autocomplete="email">
+        </label>
+        <button type="submit">{{ 'registration.pending.resend'|trans({}, 'registration') }}</button>
+    </form>
+
+    <div class="auth-secondary-action">
+        <a href="{{ path('app_login') }}">{{ 'registration.pending.back_login'|trans({}, 'registration') }}</a>
+    </div>
+</section>
+{% endblock %}
