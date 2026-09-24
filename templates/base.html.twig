@@ -41,7 +41,11 @@
                     placeholder="{{ 'layout.search.placeholder'|trans }}"
                     autocomplete="off"
                 >
-                <button type="submit" aria-label="{{ 'layout.search.submit'|trans }}" title="{{ 'layout.search.submit'|trans }}">
+                <button
+                    type="submit"
+                    aria-label="{{ 'layout.search.submit'|trans }}"
+                    title="{{ 'layout.search.submit'|trans }}"
+                >
                     <span aria-hidden="true"></span>
                 </button>
             </form>
@@ -104,18 +108,13 @@
     </aside>
 
     <main class="ez-main" id="main-content">
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="flash flash-{{ label }}">{{ message|trans }}</div>
-            {% endfor %}
-        {% endfor %}
-        {% block body %}{% endblock %}
-    </main>
-</div>
 {% else %}
 <main class="auth-shell">
     <div class="auth-topbar">
-        <a class="ez-brand" href="{{ path('app_home') }}"><strong>EZSCORE</strong><small>v1</small></a>
+        <a class="ez-brand" href="{{ path('app_home') }}">
+            <strong>EZSCORE</strong><small>v1</small>
+        </a>
+
         <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
             {% for locale in ['fr', 'en'] %}
                 <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
@@ -127,14 +126,19 @@
             {% endfor %}
         </div>
     </div>
+{% endif %}
 
-    {% for label, messages in app.flashes %}
-        {% for message in messages %}
-            <div class="flash flash-{{ label }}">{{ message|trans }}</div>
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash-{{ label }}">{{ message|trans }}</div>
+            {% endfor %}
         {% endfor %}
-    {% endfor %}
-    {% block body %}{% endblock %}
-</main>
+
+        {% block body %}{% endblock %}
+    </main>
+
+{% if app.user %}
+</div>
 {% endif %}
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

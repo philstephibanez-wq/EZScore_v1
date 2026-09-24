@@ -1,57 +1,40 @@
-# EZScore_v1 R6.5 — header type ChordU
+# EZScore_v1 R6.5.1 — Twig block hotfix
 
-R6.5 rapproche le header de la géométrie demandée à partir de la capture ChordU fournie.
+## Cause
 
-## Disposition
+`base.html.twig` déclarait `{% block body %}` deux fois :
+- une fois dans la branche utilisateur authentifié ;
+- une seconde fois dans la branche non authentifiée.
+
+Twig interdit deux définitions du même bloc dans un même template, même si elles se trouvent dans des branches `{% if %}` distinctes.
+
+Erreur :
 
 ```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ ☰  EZSCORE v1      [ Rechercher un morceau ou un artiste ]  FR EN A │
-└──────────────────────────────────────────────────────────────────────┘
+The block 'body' has already been defined
 ```
 
-- hamburger totalement à gauche ;
-- `EZSCORE v1` immédiatement après ;
-- champ de recherche horizontal centré/droite ;
-- FR / EN ;
-- badge utilisateur/avatar à droite ;
-- header fixe ;
-- drawer gauche off-canvas.
+## Correction
 
-## Recherche
+Le template garde les deux wrappers conditionnels (`ez-shell` / `auth-shell`) mais ne déclare désormais qu'un seul :
 
-La recherche n'est pas factice : le formulaire envoie un `GET q=...` vers la route réelle `app_catalog`.
+```twig
+{% block body %}{% endblock %}
+```
 
-Le filtrage serveur du catalogue pourra être raccordé au paramètre `q` dans le prochain lot si nécessaire. Le header ne simule aucun résultat.
-
-## Responsive
-
-### Desktop
-Header complet, champ de recherche large, badge utilisateur complet.
-
-### Tablette
-Champ réduit automatiquement ; badge utilisateur compact.
-
-### Smartphone
-FR/EN et texte du badge sont masqués si l'espace devient insuffisant ; le champ de recherche conserve la priorité.
-
-## Contraintes
-
-- aucun fallback ;
-- aucune DATA modifiée ;
-- aucune permission dans JavaScript ;
-- drawer géré en JavaScript natif ;
-- DATA reste la seule source de vérité métier ;
-- aucune migration.
+Le header ChordU-like, le drawer, la recherche, FR/EN et le badge utilisateur restent inchangés.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R6_5_CHORDU_HEADER.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R6_5_1_TWIG_BLOCK_HOTFIX.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
+php bin\console lint:twig templates
 ```
 
-Puis `Ctrl+F5`.
+Puis relancer le serveur et faire `Ctrl+F5`.
+
+Aucune migration. Aucune modification de DATA.
