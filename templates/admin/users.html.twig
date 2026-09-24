@@ -2,98 +2,42 @@
 {% block title %}{{ 'users.title'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}<link rel="stylesheet" href="/assets/css/r7-admin.css">{% endblock %}
 {% block body %}
-<header class="page-head">
-    <div>
-        <div class="eyebrow">{{ 'nav.administration'|trans }}</div>
-        <h1>{{ 'users.title'|trans }}</h1>
-        <p class="page-note">{{ 'users.note'|trans }}</p>
-    </div>
-</header>
+<header class="page-head"><div><div class="eyebrow">{{ 'nav.administration'|trans }}</div><h1>{{ 'users.title'|trans }}</h1><p class="page-note">{{ 'users.note'|trans }}</p></div></header>
 
 <section class="panel">
-    <h2>{{ 'users.create.heading'|trans }}</h2>
-    <form method="post" class="user-create-grid">
-        <input type="hidden" name="_token" value="{{ csrf_token('create_user') }}">
-        <label><span>{{ 'users.display_name'|trans }}</span><input name="display_name" required></label>
-        <label><span>{{ 'users.email_login'|trans }}</span><input type="email" name="email" required></label>
-        <label><span>{{ 'users.local_password'|trans }}</span><input type="password" name="password" minlength="10" placeholder="{{ 'users.password_optional'|trans }}"></label>
-        <label>
-            <span>{{ 'users.role'|trans }}</span>
-            <select name="role">
-                <option value="ROLE_READER">{{ 'role.ROLE_READER'|trans }}</option>
-                <option value="ROLE_EDITOR">{{ 'role.ROLE_EDITOR'|trans }}</option>
-                <option value="ROLE_ADMIN">{{ 'role.ROLE_ADMIN'|trans }}</option>
-            </select>
-        </label>
-        <label>
-            <span>{{ 'locale.label'|trans }}</span>
-            <select name="locale">
-                {% for locale in supported_locales %}
-                    <option value="{{ locale }}" {{ locale == 'fr' ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
-    </form>
+<h2>{{ 'users.create.heading'|trans }}</h2>
+<form method="post" class="user-create-grid" data-dirty-track>
+<input type="hidden" name="_token" value="{{ csrf_token('create_user') }}">
+<label><span>{{ 'users.display_name'|trans }}</span><input name="display_name" required></label>
+<label><span>{{ 'users.email_login'|trans }}</span><input type="email" name="email" required></label>
+<label><span>{{ 'users.local_password'|trans }}</span><input type="password" name="password" minlength="10" placeholder="{{ 'users.password_optional'|trans }}"></label>
+<label><span>{{ 'users.role'|trans }}</span><select name="role"><option value="ROLE_READER">{{ 'role.ROLE_READER'|trans }}</option><option value="ROLE_EDITOR">{{ 'role.ROLE_EDITOR'|trans }}</option><option value="ROLE_ADMIN">{{ 'role.ROLE_ADMIN'|trans }}</option></select></label>
+<label><span>{{ 'locale.label'|trans }}</span><select name="locale">{% for locale in supported_locales %}<option value="{{ locale }}" {{ locale == 'fr' ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>{% endfor %}</select></label>
+<button class="primary" type="submit">{{ 'common.create'|trans }}</button>
+</form>
 </section>
 
-<section class="panel">
-    <div class="table-wrap">
-        <table class="users-table">
-            <thead>
-            <tr>
-                <th>{{ 'users.account'|trans }}</th>
-                <th>{{ 'users.role'|trans }}</th>
-                <th>{{ 'locale.label'|trans }}</th>
-                <th>{{ 'users.active'|trans }}</th>
-                <th>Google</th>
-                <th>{{ 'users.password'|trans }}</th>
-                <th>{{ 'users.actions'|trans }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for user in users %}
-                <tr>
-                    <td colspan="7">
-                        <div class="user-admin-row">
-                            <form method="post" action="{{ path('admin_user_update', {id: user.id}) }}" class="user-edit-grid">
-                                <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
-                                <div class="identity-fields">
-                                    <input name="display_name" value="{{ user.displayName }}" required aria-label="{{ 'users.display_name'|trans }}">
-                                    <input type="email" name="email" value="{{ user.email }}" required aria-label="{{ 'users.email'|trans }}">
-                                </div>
-                                <select name="role" aria-label="{{ 'users.role'|trans }}">
-                                    <option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>{{ 'role.ROLE_READER'|trans }}</option>
-                                    <option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>{{ 'role.ROLE_EDITOR'|trans }}</option>
-                                    <option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>{{ 'role.ROLE_ADMIN'|trans }}</option>
-                                </select>
-                                <select name="locale" aria-label="{{ 'locale.label'|trans }}">
-                                    {% for locale in supported_locales %}
-                                        <option value="{{ locale }}" {{ user.locale == locale ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>
-                                    {% endfor %}
-                                </select>
-                                <label class="check active-check">
-                                    <input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>
-                                    {{ 'users.active'|trans }}
-                                </label>
-                                <span class="provider-state">{{ user.googleSub ? ('users.google_linked'|trans) : '—' }}</span>
-                                <input type="password" name="password" minlength="10" placeholder="{{ 'users.password_unchanged'|trans }}">
-                                <button type="submit">{{ 'common.save'|trans }}</button>
-                            </form>
-
-                            <form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" class="user-delete-form"
-                                  onsubmit="return confirm('{{ 'users.delete.confirm'|trans({'%name%': user.displayName})|e('js') }}');">
-                                <input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ user.id) }}">
-                                <button type="submit" class="danger-button">{{ 'users.delete.button'|trans }}</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
-                <tr><td colspan="7">{{ 'users.empty'|trans }}</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+<section class="panel"><div class="table-wrap"><table class="users-table">
+<thead><tr><th>{{ 'users.account'|trans }}</th><th>{{ 'users.role'|trans }}</th><th>{{ 'locale.label'|trans }}</th><th>{{ 'users.active'|trans }}</th><th>Google</th><th>{{ 'users.password'|trans }}</th><th>{{ 'users.actions'|trans }}</th></tr></thead>
+<tbody>
+{% for user in users %}
+<tr><td colspan="7"><div class="user-admin-row">
+<form id="user-edit-{{ user.id }}" method="post" action="{{ path('admin_user_update', {id: user.id}) }}" class="user-edit-grid" data-dirty-track>
+<input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
+<div class="identity-fields"><input name="display_name" value="{{ user.displayName }}" required><input type="email" name="email" value="{{ user.email }}" required></div>
+<select name="role"><option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>{{ 'role.ROLE_READER'|trans }}</option><option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>{{ 'role.ROLE_EDITOR'|trans }}</option><option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>{{ 'role.ROLE_ADMIN'|trans }}</option></select>
+<select name="locale">{% for locale in supported_locales %}<option value="{{ locale }}" {{ user.locale == locale ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>{% endfor %}</select>
+<label class="check active-check"><input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>{{ 'users.active'|trans }}</label>
+<span class="provider-state">{{ user.googleSub ? ('users.google_linked'|trans) : '—' }}</span>
+<input type="password" name="password" minlength="10" placeholder="{{ 'users.password_unchanged'|trans }}">
+</form>
+<div class="user-actions">
+<button type="submit" form="user-edit-{{ user.id }}" class="save-button">{{ 'common.save'|trans }}</button>
+<form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" class="user-delete-form" onsubmit="return confirm('{{ 'users.delete.confirm'|trans({'%name%': user.displayName})|e('js') }}');">
+<input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ user.id) }}"><button type="submit" class="danger-button">{{ 'users.delete.button'|trans }}</button>
+</form>
+</div>
+</div></td></tr>
+{% else %}<tr><td colspan="7">{{ 'users.empty'|trans }}</td></tr>{% endfor %}
+</tbody></table></div></section>
 {% endblock %}

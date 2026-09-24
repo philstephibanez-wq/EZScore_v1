@@ -6,6 +6,7 @@
     <title>{% block title %}EZSCORE v1{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/app.css">
     <link rel="stylesheet" href="/assets/css/r6.css">
+    <link rel="stylesheet" href="/assets/css/r7-interactions.css">
     {% block stylesheets %}{% endblock %}
 </head>
 <body>
@@ -16,7 +17,6 @@
             <button type="button" class="ez-menu-button" data-ez-menu-button aria-controls="ez-drawer" aria-expanded="false" aria-label="{{ 'layout.sidebar.toggle'|trans }}" title="{{ 'layout.sidebar.toggle'|trans }}"><span aria-hidden="true"></span></button>
             <a class="ez-brand" href="{{ path('app_dashboard') }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
         </div>
-
         <div class="ez-search-slot">
             <form class="ez-search-form" method="get" action="{{ path('app_catalog') }}" role="search">
                 <label class="sr-only" for="ez-global-search">{{ 'layout.search.label'|trans }}</label>
@@ -24,7 +24,6 @@
                 <button type="submit" aria-label="{{ 'layout.search.submit'|trans }}" title="{{ 'layout.search.submit'|trans }}"><span aria-hidden="true"></span></button>
             </form>
         </div>
-
         <div class="ez-topbar-right">
             <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
                 {% for locale in ['fr', 'en'] %}
@@ -34,23 +33,14 @@
                     </form>
                 {% endfor %}
             </div>
-
             <a class="ez-user-badge" href="{{ path('app_profile') }}" title="{{ app.user.email }}">
-                {% if app.user.avatarUrl %}
-                    <img src="{{ app.user.avatarUrl }}" alt="">
-                {% else %}
-                    <span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>
-                {% endif %}
-                <span class="ez-user-copy">
-                    <strong>{{ app.user.displayName }}</strong>
-                    <small>{{ ('role.' ~ app.user.primaryRole)|trans }}</small>
-                </span>
+                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">
+                {% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
+                <span class="ez-user-copy"><strong>{{ app.user.displayName }}</strong><small>{{ ('role.' ~ app.user.primaryRole)|trans }}</small></span>
             </a>
         </div>
     </header>
-
     <button type="button" class="ez-drawer-backdrop" data-ez-drawer-backdrop aria-hidden="true" tabindex="-1"></button>
-
     <aside class="ez-drawer" id="ez-drawer" data-ez-drawer aria-label="{{ 'layout.sidebar.navigation'|trans }}">
         <nav class="ez-drawer-nav">
             <a href="{{ path('app_dashboard') }}">{{ 'nav.dashboard'|trans }}</a>
@@ -58,18 +48,13 @@
             <a href="{{ path('app_playlists') }}">{{ 'nav.playlists'|trans }}</a>
             <a href="{{ path('app_groups') }}">{{ 'nav.groups'|trans }}</a>
             <a href="{{ path('app_profile') }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
-            {% if is_granted('ROLE_ADMIN') %}
-                <div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div>
-                <a href="{{ path('admin_users') }}">{{ 'nav.users'|trans }}</a>
-            {% endif %}
+            {% if is_granted('ROLE_ADMIN') %}<div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div><a href="{{ path('admin_users') }}">{{ 'nav.users'|trans }}</a>{% endif %}
         </nav>
-
         <div class="ez-drawer-footer">
             <div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div>
             <a class="ez-logout" href="{{ path('app_logout') }}">{{ 'nav.logout'|trans }}</a>
         </div>
     </aside>
-
     <main class="ez-main" id="main-content">
 {% else %}
 <main class="auth-shell">
@@ -85,17 +70,10 @@
         </div>
     </div>
 {% endif %}
-
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="flash flash-{{ label }}">{{ message|trans }}</div>
-            {% endfor %}
-        {% endfor %}
+        {% for label, messages in app.flashes %}{% for message in messages %}<div class="flash flash-{{ label }}">{{ message|trans }}</div>{% endfor %}{% endfor %}
         {% block body %}{% endblock %}
     </main>
-
 {% if app.user %}</div>{% endif %}
-
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="/assets/js/app.js"></script>
 {% block javascripts %}{% endblock %}
