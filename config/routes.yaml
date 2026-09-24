@@ -1,5 +1,74 @@
-controllers:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
+localized_home:
+    resource: ../src/Controller/HomeController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_security:
+    resource: ../src/Controller/SecurityController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_catalog:
+    resource: ../src/Controller/CatalogController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_groups:
+    resource: ../src/Controller/GroupController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_playlists:
+    resource: ../src/Controller/PlaylistController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_admin_users:
+    resource: ../src/Controller/AdminUserController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_profile:
+    resource: ../src/Controller/ProfileController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_registration:
+    resource: ../src/Controller/RegistrationController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_first_run:
+    resource: ../src/Controller/FirstRunController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+root_controller:
+    resource: ../src/Controller/RootController.php
+    type: attribute
+
+locale_controller:
+    resource: ../src/Controller/LocaleController.php
+    type: attribute
+
+google_oauth_controller:
+    resource: ../src/Controller/GoogleOAuthController.php
     type: attribute

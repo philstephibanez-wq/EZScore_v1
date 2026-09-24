@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/assets/css/base.css?v=20260924">
     <link rel="stylesheet" href="/assets/css/layout.css?v=20260924">
     {% block stylesheets %}{% endblock %}
-    <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924d">
+    <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
 </head>
 <body>
 {% if app.user %}
@@ -15,15 +15,17 @@
     <header class="ez-topbar">
         <div class="ez-topbar-left">
             <button type="button" class="ez-menu-button" data-ez-menu-button aria-controls="ez-drawer" aria-expanded="false" aria-label="{{ 'layout.sidebar.toggle'|trans }}" title="{{ 'layout.sidebar.toggle'|trans }}"><span aria-hidden="true"></span></button>
-            <a class="ez-brand" href="{{ path('app_dashboard') }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
+            <a class="ez-brand" href="{{ path('app_dashboard', {'_locale': app.request.locale}) }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
         </div>
+
         <div class="ez-search-slot">
-            <form class="ez-search-form" method="get" action="{{ path('app_catalog') }}" role="search">
+            <form class="ez-search-form" method="get" action="{{ path('app_catalog', {'_locale': app.request.locale}) }}" role="search">
                 <label class="sr-only" for="ez-global-search">{{ 'layout.search.label'|trans }}</label>
                 <input id="ez-global-search" name="q" type="search" value="{{ app.request.query.get('q') }}" placeholder="{{ 'layout.search.placeholder'|trans }}" autocomplete="off">
                 <button type="submit" aria-label="{{ 'layout.search.submit'|trans }}" title="{{ 'layout.search.submit'|trans }}"><span aria-hidden="true"></span></button>
             </form>
         </div>
+
         <div class="ez-topbar-right">
             <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
                 {% for locale in ['fr', 'en'] %}
@@ -33,8 +35,10 @@
                     </form>
                 {% endfor %}
             </div>
-            <a class="ez-user-badge" href="{{ path('app_profile') }}" title="{{ app.user.email }}">
-                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">{% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
+
+            <a class="ez-user-badge" href="{{ path('app_profile', {'_locale': app.request.locale}) }}" title="{{ app.user.email }}">
+                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">
+                {% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
                 <span class="ez-user-copy"><strong>{{ app.user.displayName }}</strong><small>{{ ('role.' ~ app.user.primaryRole)|trans }}</small></span>
             </a>
         </div>
@@ -44,26 +48,36 @@
 
     <aside class="ez-drawer" id="ez-drawer" data-ez-drawer aria-label="{{ 'layout.sidebar.navigation'|trans }}">
         <nav class="ez-drawer-nav">
-            <a href="{{ path('app_dashboard') }}">{{ 'nav.dashboard'|trans }}</a>
-            <a href="{{ path('app_catalog') }}">{{ 'nav.catalog'|trans }}</a>
-            <a href="{{ path('app_playlists') }}">{{ 'nav.playlists'|trans }}</a>
-            <a href="{{ path('app_groups') }}">{{ 'nav.groups'|trans }}</a>
-            <a href="{{ path('app_profile') }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
+            <a href="{{ path('app_dashboard', {'_locale': app.request.locale}) }}">{{ 'nav.dashboard'|trans }}</a>
+            <a href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'nav.catalog'|trans }}</a>
+            <a href="{{ path('app_playlists', {'_locale': app.request.locale}) }}">{{ 'nav.playlists'|trans }}</a>
+            <a href="{{ path('app_groups', {'_locale': app.request.locale}) }}">{{ 'nav.groups'|trans }}</a>
+            <a href="{{ path('app_profile', {'_locale': app.request.locale}) }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
+
             {% if is_granted('ROLE_ADMIN') %}
                 <div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div>
-                <a href="{{ path('admin_users') }}">{{ 'nav.users'|trans }}</a>
+                <a href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'nav.users'|trans }}</a>
             {% endif %}
         </nav>
+
         <div class="ez-drawer-footer">
             <div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div>
-            <a class="ez-logout" href="{{ path('app_logout') }}">{{ 'nav.logout'|trans }}</a>
+            <a class="ez-logout" href="{{ path('app_logout', {'_locale': app.request.locale}) }}">{{ 'nav.logout'|trans }}</a>
         </div>
     </aside>
+
     <main class="ez-main" id="main-content">
+        {% if app.request.attributes.get('_route') != 'app_dashboard' %}
+            {% set back_route = app.request.attributes.get('_route') == 'app_song_workspace' ? 'app_catalog' : 'app_dashboard' %}
+            <a class="ez-back-link" href="{{ path(back_route, {'_locale': app.request.locale}) }}">
+                ← {{ 'common.back'|trans({}, 'navigation') }}
+            </a>
+        {% endif %}
 {% else %}
 <main class="auth-shell">
     <div class="auth-topbar">
         <a class="ez-brand" href="{{ path('app_home') }}"><strong>EZSCORE</strong><small>v1</small></a>
+
         <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
             {% for locale in ['fr', 'en'] %}
                 <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
@@ -80,14 +94,15 @@
                 <div class="flash flash-{{ label }}">{{ message|trans }}</div>
             {% endfor %}
         {% endfor %}
+
         {% block body %}{% endblock %}
     </main>
 
 {% if app.user %}</div>{% endif %}
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="/assets/js/app.js?v=20260924"></script>
+<script src="/assets/js/app.js?v=20260924f"></script>
 <script src="/assets/js/dirty-tracker.js?v=20260924"></script>
-<script src="/assets/js/interaction-feedback.js?v=20260924d"></script>
 {% block javascripts %}{% endblock %}
 </body>
 </html>

@@ -38,11 +38,30 @@ final class LocaleController extends AbstractController
             $em->flush();
         }
 
-        $target = (string) $request->headers->get('referer', '');
-        if ($target === '') {
-            return $this->redirectToRoute($user instanceof User ? 'app_dashboard' : 'app_login');
+        $referer = (string) $request->headers->get('referer', '');
+        $path = parse_url($referer, PHP_URL_PATH);
+        $query = parse_url($referer, PHP_URL_QUERY);
+
+        if (is_string($path) && $path !== '') {
+            $count = 0;
+            $localizedPath = preg_replace(
+                '#^/(fr|en)(?=/|$)#',
+                '/'.$locale,
+                $path,
+                1,
+                $count,
+            );
+
+            if ($count === 1 && is_string($localizedPath)) {
+                return new RedirectResponse(
+                    $localizedPath.(is_string($query) && $query !== '' ? '?'.$query : ''),
+                );
+            }
         }
 
-        return new RedirectResponse($target);
+        return $this->redirectToRoute(
+            $user instanceof User ? 'app_dashboard' : 'app_login',
+            ['_locale' => $locale],
+        );
     }
 }

@@ -5,6 +5,7 @@
         var shell = document.querySelector('[data-ez-shell]');
         var button = document.querySelector('[data-ez-menu-button]');
         var backdrop = document.querySelector('[data-ez-drawer-backdrop]');
+
         if (!shell || !button || !backdrop) return;
 
         function setOpen(open) {
@@ -13,64 +14,98 @@
             document.body.classList.toggle('ez-no-scroll', open);
         }
 
-        button.addEventListener('click', function () { setOpen(!shell.classList.contains('ez-drawer-open')); });
+        button.addEventListener('click', function () {
+            setOpen(!shell.classList.contains('ez-drawer-open'));
+        });
+
         backdrop.addEventListener('click', function () { setOpen(false); });
+
         shell.querySelectorAll('.ez-drawer-nav a').forEach(function (link) {
             link.addEventListener('click', function () { setOpen(false); });
         });
+
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && shell.classList.contains('ez-drawer-open')) {
                 setOpen(false);
                 button.focus();
             }
         });
+
         setOpen(false);
     }
 
-    function formState(form) {
-        var values = [];
-        Array.from(form.elements).forEach(function (field) {
-            if (!field.name || field.disabled || field.name === '_token') return;
-            if ((field.type === 'checkbox' || field.type === 'radio') && !field.checked) {
-                values.push(field.name + '=');
+    function initInteractionFeedback() {
+        var selector = [
+            'a[href]',
+            'button:not(:disabled)',
+            'input:not([type="hidden"]):not(:disabled)',
+            'select:not(:disabled)',
+            'textarea:not(:disabled)',
+            'summary',
+            '[role="button"]:not([aria-disabled="true"])'
+        ].join(',');
+
+        var previousStyles = new WeakMap();
+
+        function interactive(target) {
+            return target instanceof Element ? target.closest(selector) : null;
+        }
+
+        function enter(element) {
+            if (previousStyles.has(element)) return;
+
+            previousStyles.set(element, {
+                transform: element.style.transform,
+                filter: element.style.filter,
+                boxShadow: element.style.boxShadow,
+                borderColor: element.style.borderColor,
+                backgroundColor: element.style.backgroundColor
+            });
+
+            if (element.matches('a.module-card, a.song-tile, .dashboard-grid a, .card-grid a')) {
+                element.style.transform = 'translateY(-4px)';
+                element.style.filter = 'brightness(1.22)';
+                element.style.borderColor = '#8bd0ff';
+                element.style.backgroundColor = '#203446';
+                element.style.boxShadow =
+                    '0 0 0 3px rgba(107,182,255,.48), 0 14px 30px rgba(0,0,0,.52)';
                 return;
             }
-            values.push(field.name + '=' + String(field.value));
-        });
-        return values.join('&');
-    }
 
-    function actionButtons(form) {
-        var buttons = Array.from(form.querySelectorAll('button[type="submit"],input[type="submit"]'));
-        if (form.id) {
-            document.querySelectorAll('[form="' + form.id + '"]').forEach(function (button) {
-                if (!buttons.includes(button)) buttons.push(button);
-            });
+            element.style.filter = 'brightness(1.24)';
+            element.style.borderColor = '#8bd0ff';
+            element.style.boxShadow =
+                '0 0 0 2px rgba(107,182,255,.30), 0 6px 16px rgba(0,0,0,.38)';
         }
-        return buttons;
-    }
 
-    function initDirtyTracking() {
-        document.querySelectorAll('form[data-dirty-track]').forEach(function (form) {
-            var initial = formState(form);
+        function leave(element) {
+            var previous = previousStyles.get(element);
+            if (!previous) return;
 
-            function refresh() {
-                var dirty = formState(form) !== initial;
-                form.classList.toggle('is-dirty', dirty);
-                actionButtons(form).forEach(function (button) {
-                    button.classList.toggle('is-dirty-action', dirty);
-                });
+            Object.assign(element.style, previous);
+            previousStyles.delete(element);
+        }
+
+        document.addEventListener('pointerover', function (event) {
+            var element = interactive(event.target);
+            if (element) enter(element);
+        }, true);
+
+        document.addEventListener('pointerout', function (event) {
+            var element = interactive(event.target);
+            if (!element) return;
+
+            if (event.relatedTarget instanceof Node && element.contains(event.relatedTarget)) {
+                return;
             }
 
-            form.addEventListener('input', refresh);
-            form.addEventListener('change', refresh);
-            form.addEventListener('reset', function () { window.setTimeout(refresh, 0); });
-            refresh();
-        });
+            leave(element);
+        }, true);
     }
 
     function initExistingUi() {
         if (!window.jQuery) return;
+
         var $ = window.jQuery;
 
         $('.owner-type').on('change', function () {
@@ -89,7 +124,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.documentElement.classList.add('js-ready');
         initShell();
-        initDirtyTracking();
+        initInteractionFeedback();
         initExistingUi();
     });
 })();

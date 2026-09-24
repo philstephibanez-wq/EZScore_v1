@@ -34,7 +34,7 @@ final class RegistrationMailer
         $locale = $user->getLocale();
         $activationUrl = $this->urls->generate(
             'app_registration_activate',
-            ['token' => $rawToken],
+            ['_locale' => $locale, 'token' => $rawToken],
             UrlGeneratorInterface::ABSOLUTE_URL,
         );
 
