@@ -21,7 +21,7 @@ final class SecurityController extends AbstractController
         }
 
         if ($this->getUser()) {
-            return $this->redirectToRoute('app_dashboard', ['_locale' => $request->getLocale()]);
+            return $this->redirectToRoute('app_catalog', ['_locale' => $request->getLocale()]);
         }
 
         return $this->render('auth/login.html.twig', [

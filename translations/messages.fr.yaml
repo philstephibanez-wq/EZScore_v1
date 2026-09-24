@@ -57,6 +57,7 @@ auth:
     or: ou
     google: Continuer avec Google
     google_disabled: Google SSO non configuré
+    back_catalog: Retour au Répertoire
   google:
     not_configured: Google SSO n’est pas configuré.
 
@@ -145,14 +146,38 @@ playlists:
 catalog:
   title: Répertoire
   eyebrow: Musique
-  empty: Aucun morceau dans les données EZScore.
-  created: Morceau créé.
-  create:
-    heading: Nouveau morceau
-    submit: Créer le morceau
-  validation:
-    required: Le titre et l’auteur/interprète sont obligatoires.
-    editor: L’éditeur sélectionné n’est pas valide.
+  empty: Aucun morceau disponible pour le moment.
+  member_lead: Votre bibliothèque EZScore selon vos droits d’accès.
+  public:
+    eyebrow: Jouez. Chantez. Partagez.
+    heading: Vos chansons prennent vie.
+    lead: Explorez les morceaux publiés et découvrez EZScore. Créez gratuitement votre compte pour profiter du karaoké complet, écouter les morceaux et organiser votre musique avec vos playlists et vos groupes.
+    register: Créer un compte gratuitement
+    free_note: Inscription gratuite actuellement · aucune carte bancaire requise.
+    benefits_heading: Avantages de l’inscription
+    benefit:
+      karaoke:
+        title: Karaoké complet et illimité
+        body: Paroles, accords et synchronisation sur toute la chanson.
+      audio:
+        title: Écoute MP3 complète
+        body: Retrouvez et écoutez les morceaux publiés depuis votre compte.
+      organise:
+        title: Playlists et groupes
+        body: Organisez vos chansons, créez vos playlists et rejoignez vos groupes.
+    future_label: Offres et quotas avancés
+    future_value: Prochainement
+    catalog_lead: Parcourez les chansons publiées. La démo karaoké publique est limitée à 20 secondes.
+    preview_badge: Démo 20 s
+    empty_hint: Les chansons apparaîtront ici dès leur publication.
+  import:
+    label: Import
+    pending: Raccordement analyse à venir
+    pending_help: L’import est réservé aux éditeurs et administrateurs et sera activé avec la chaîne d’analyse.
+  search:
+    results_for: 'Résultats pour « %query% »'
+    clear: Effacer
+    none: Aucun morceau ne correspond à cette recherche.
 
 song:
   title: Titre
@@ -162,9 +187,24 @@ song:
   time_signature: Signature
   capo: Capo
   strumming: Strumming
+  publication:
+    published_badge: Publié
+    draft_badge: Brouillon
+    publish: Publier
+    unpublish: Dépublier
+    published: Morceau publié.
+    unpublished: Morceau retiré du catalogue public.
 
 workspace:
   lyrics: PAROLES
+  access:
+    preview: 'Démo karaoké · %seconds% s'
+    karaoke_full: Karaoké complet
+    audio_full: MP3 complet
+  public_gate:
+    eyebrow: Aperçu public
+    heading: Découvrez le karaoké EZScore
+    body: 'Vous pouvez découvrir %seconds% secondes de karaoké. Créez gratuitement votre compte pour accéder au karaoké complet et à l’écoute MP3.'
   no_analysis:
     heading: Aucune donnée d’analyse
     body: Le workspace n’invente aucun résultat. Les STEMS, accords, paroles, blocs et événements temporels apparaîtront uniquement lorsqu’ils existeront dans les données persistées.
@@ -217,3 +257,15 @@ registration:
 
 profile:
   title: Profil
+  account:
+    heading: Compte et préférences
+  subscription:
+    eyebrow: Abonnement
+    heading: Votre offre EZScore
+    body: EZScore est gratuit actuellement. Les futures offres concerneront notamment les quotas d’opérations coûteuses d’import et d’analyse, sans limiter l’usage courant du karaoké.
+    current_label: Offre actuelle
+    current_value: Gratuit
+    karaoke_label: Karaoké
+    karaoke_value: Illimité selon vos droits
+    future_label: Offres et quotas
+    future_value: Prochainement

@@ -57,6 +57,7 @@ auth:
     or: or
     google: Continue with Google
     google_disabled: Google SSO is not configured
+    back_catalog: Back to Catalog
   google:
     not_configured: Google SSO is not configured.
 
@@ -145,14 +146,38 @@ playlists:
 catalog:
   title: Catalog
   eyebrow: Music
-  empty: No songs in EZScore data.
-  created: Song created.
-  create:
-    heading: New song
-    submit: Create song
-  validation:
-    required: Title and artist/author are required.
-    editor: The selected editor is invalid.
+  empty: No songs available yet.
+  member_lead: Your EZScore library according to your access rights.
+  public:
+    eyebrow: Play. Sing. Share.
+    heading: Bring your songs to life.
+    lead: Explore published songs and discover EZScore. Create your free account to enjoy full karaoke, listen to tracks, and organize your music with playlists and groups.
+    register: Create a free account
+    free_note: Registration is currently free · no payment card required.
+    benefits_heading: Benefits of registering
+    benefit:
+      karaoke:
+        title: Full, unlimited karaoke
+        body: Lyrics, chords and synchronization across the complete song.
+      audio:
+        title: Full MP3 playback
+        body: Find and listen to published tracks from your account.
+      organise:
+        title: Playlists and groups
+        body: Organize your songs, create playlists and join your groups.
+    future_label: Advanced plans and quotas
+    future_value: Coming soon
+    catalog_lead: Browse published songs. Public karaoke previews are limited to 20 seconds.
+    preview_badge: 20 s preview
+    empty_hint: Songs will appear here as soon as they are published.
+  import:
+    label: Import
+    pending: Analysis connection coming
+    pending_help: Import is reserved for editors and administrators and will be enabled with the analysis pipeline.
+  search:
+    results_for: 'Results for “%query%”'
+    clear: Clear
+    none: No songs match this search.
 
 song:
   title: Title
@@ -162,9 +187,24 @@ song:
   time_signature: Time signature
   capo: Capo
   strumming: Strumming
+  publication:
+    published_badge: Published
+    draft_badge: Draft
+    publish: Publish
+    unpublish: Unpublish
+    published: Song published.
+    unpublished: Song removed from the public catalog.
 
 workspace:
   lyrics: LYRICS
+  access:
+    preview: 'Karaoke preview · %seconds% s'
+    karaoke_full: Full karaoke
+    audio_full: Full MP3
+  public_gate:
+    eyebrow: Public preview
+    heading: Discover EZScore karaoke
+    body: 'You can preview %seconds% seconds of karaoke. Create your free account for full karaoke and MP3 playback.'
   no_analysis:
     heading: No analysis data
     body: The workspace never invents results. STEMS, chords, lyrics, sections and timeline events appear only when they exist in persisted data.
@@ -217,3 +257,15 @@ registration:
 
 profile:
   title: Profile
+  account:
+    heading: Account and preferences
+  subscription:
+    eyebrow: Subscription
+    heading: Your EZScore plan
+    body: EZScore is currently free. Future plans will mainly cover quotas for resource-intensive import and analysis operations without limiting normal karaoke use.
+    current_label: Current plan
+    current_value: Free
+    karaoke_label: Karaoke
+    karaoke_value: Unlimited within your access rights
+    future_label: Plans and quotas
+    future_value: Coming soon

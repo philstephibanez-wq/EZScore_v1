@@ -41,6 +41,9 @@ class Song
     #[ORM\Column(length: 1000, nullable: true)]
     private ?string $comment = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $publishedAt = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -90,6 +93,21 @@ class Song
     public function setStrummingAlternate(?string $value): self { $this->strummingAlternate = $this->normaliseNullable($value); return $this->touch(); }
     public function getComment(): ?string { return $this->comment; }
     public function setComment(?string $comment): self { $this->comment = $this->normaliseNullable($comment); return $this->touch(); }
+    public function getPublishedAt(): ?\DateTimeImmutable { return $this->publishedAt; }
+    public function isPublished(): bool { return $this->publishedAt !== null; }
+
+    public function publish(?\DateTimeImmutable $publishedAt = null): self
+    {
+        $this->publishedAt = $publishedAt ?? new \DateTimeImmutable();
+        return $this->touch();
+    }
+
+    public function unpublish(): self
+    {
+        $this->publishedAt = null;
+        return $this->touch();
+    }
+
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 

@@ -30,10 +30,6 @@ final class RootController extends AbstractController
             return $this->redirectToRoute('app_first_run', ['_locale' => $locale]);
         }
 
-        if (!$user instanceof User) {
-            return $this->redirectToRoute('app_login', ['_locale' => $locale]);
-        }
-
-        return $this->redirectToRoute('app_dashboard', ['_locale' => $locale]);
+        return $this->redirectToRoute('app_catalog', ['_locale' => $locale]);
     }
 }

@@ -4,7 +4,9 @@
 <header class="page-head">
     <div><div class="eyebrow">EZSCORE v1</div><h1>{{ 'profile.title'|trans }}</h1></div>
 </header>
+
 <section class="panel" style="max-width:720px">
+    <h2>{{ 'profile.account.heading'|trans }}</h2>
     <p><strong>{{ app.user.displayName }}</strong><br>{{ app.user.email }}</p>
     <form method="post" class="row-form">
         <input type="hidden" name="_token" value="{{ csrf_token('profile_locale') }}">
@@ -18,5 +20,26 @@
         </label>
         <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
     </form>
+</section>
+
+<section class="panel" style="max-width:720px">
+    <div class="eyebrow">{{ 'profile.subscription.eyebrow'|trans }}</div>
+    <h2>{{ 'profile.subscription.heading'|trans }}</h2>
+    <p class="page-note">{{ 'profile.subscription.body'|trans }}</p>
+
+    <div class="subscription-summary">
+        <div>
+            <span>{{ 'profile.subscription.current_label'|trans }}</span>
+            <strong>{{ 'profile.subscription.current_value'|trans }}</strong>
+        </div>
+        <div>
+            <span>{{ 'profile.subscription.karaoke_label'|trans }}</span>
+            <strong>{{ 'profile.subscription.karaoke_value'|trans }}</strong>
+        </div>
+        <div>
+            <span>{{ 'profile.subscription.future_label'|trans }}</span>
+            <strong>{{ 'profile.subscription.future_value'|trans }}</strong>
+        </div>
+    </div>
 </section>
 {% endblock %}

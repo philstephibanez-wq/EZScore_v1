@@ -10,12 +10,14 @@
     <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
 </head>
 <body>
+{% set public_catalog = not app.user and app.request.attributes.get('_route') == 'app_catalog' %}
+
 {% if app.user %}
 <div class="ez-shell" data-ez-shell>
     <header class="ez-topbar">
         <div class="ez-topbar-left">
             <button type="button" class="ez-menu-button" data-ez-menu-button aria-controls="ez-drawer" aria-expanded="false" aria-label="{{ 'layout.sidebar.toggle'|trans }}" title="{{ 'layout.sidebar.toggle'|trans }}"><span aria-hidden="true"></span></button>
-            <a class="ez-brand" href="{{ path('app_dashboard', {'_locale': app.request.locale}) }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
+            <a class="ez-brand" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
         </div>
 
         <div class="ez-search-slot">
@@ -48,7 +50,6 @@
 
     <aside class="ez-drawer" id="ez-drawer" data-ez-drawer aria-label="{{ 'layout.sidebar.navigation'|trans }}">
         <nav class="ez-drawer-nav">
-            <a href="{{ path('app_dashboard', {'_locale': app.request.locale}) }}">{{ 'nav.dashboard'|trans }}</a>
             <a href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'nav.catalog'|trans }}</a>
             <a href="{{ path('app_playlists', {'_locale': app.request.locale}) }}">{{ 'nav.playlists'|trans }}</a>
             <a href="{{ path('app_groups', {'_locale': app.request.locale}) }}">{{ 'nav.groups'|trans }}</a>
@@ -67,24 +68,30 @@
     </aside>
 
     <main class="ez-main" id="main-content">
-        {% if app.request.attributes.get('_route') != 'app_dashboard' %}
-            {% set back_route = app.request.attributes.get('_route') == 'app_song_workspace' ? 'app_catalog' : 'app_dashboard' %}
-            <a class="ez-back-link" href="{{ path(back_route, {'_locale': app.request.locale}) }}">
+        {% if app.request.attributes.get('_route') not in ['app_catalog', 'app_dashboard'] %}
+            <a class="ez-back-link" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">
                 ← {{ 'common.back'|trans({}, 'navigation') }}
             </a>
         {% endif %}
 {% else %}
-<main class="auth-shell">
+<main class="{{ public_catalog ? 'public-shell' : 'auth-shell' }}">
     <div class="auth-topbar">
         <a class="ez-brand" href="{{ path('app_home') }}"><strong>EZSCORE</strong><small>v1</small></a>
 
-        <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
-            {% for locale in ['fr', 'en'] %}
-                <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
-                    <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-                    <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">{{ ('locale.' ~ locale)|trans }}</button>
-                </form>
-            {% endfor %}
+        <div class="public-topbar-actions">
+            {% if public_catalog %}
+                <a class="public-login-link" href="{{ path('app_login', {'_locale': app.request.locale}) }}">{{ 'auth.login.submit'|trans }}</a>
+                <a class="public-register-link" href="{{ path('app_register', {'_locale': app.request.locale}) }}">{{ 'registration.register_link'|trans }}</a>
+            {% endif %}
+
+            <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
+                {% for locale in ['fr', 'en'] %}
+                    <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
+                        <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">{{ ('locale.' ~ locale)|trans }}</button>
+                    </form>
+                {% endfor %}
+            </div>
         </div>
     </div>
 {% endif %}

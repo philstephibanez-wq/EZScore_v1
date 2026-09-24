@@ -59,9 +59,7 @@ final class LocaleController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute(
-            $user instanceof User ? 'app_dashboard' : 'app_login',
-            ['_locale' => $locale],
-        );
+        // Public catalog is the landing page for everyone, including anonymous visitors.
+        return $this->redirectToRoute('app_catalog', ['_locale' => $locale]);
     }
 }

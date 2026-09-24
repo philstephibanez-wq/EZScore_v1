@@ -23,16 +23,19 @@ security:
                 login_path: app_login
                 check_path: app_login
                 enable_csrf: true
-                default_target_path: app_dashboard
+                default_target_path: app_catalog
             logout:
                 path: app_logout
-                target: app_login
+                target: /
 
     access_control:
         - { path: ^/$, roles: PUBLIC_ACCESS }
+        - { path: ^/(fr|en)/?$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/assets/, roles: PUBLIC_ACCESS }
         - { path: ^/locale/, roles: PUBLIC_ACCESS }
         - { path: ^/connect/google/check$, roles: PUBLIC_ACCESS }
+        - { path: ^/(fr|en)/catalog$, roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/(fr|en)/song/\d+$, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/(fr|en)/(first-run|login|register|registration/pending|activation/resend|activate/|connect/google), roles: PUBLIC_ACCESS }
         - { path: ^/(fr|en)/admin, roles: ROLE_ADMIN }
         - { path: ^/(fr|en)/, roles: ROLE_USER }

@@ -1,64 +1,126 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'catalog.title'|trans }} — EZScore_v1{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r8">
+{% endblock %}
+
 {% block body %}
-<header class="page-head">
-    <div>
-        <div class="eyebrow">{{ 'catalog.eyebrow'|trans }}</div>
-        <h1>{{ 'catalog.title'|trans }}</h1>
+{% if is_public_catalog %}
+<section class="catalog-hero">
+    <div class="catalog-hero-copy">
+        <div class="eyebrow">{{ 'catalog.public.eyebrow'|trans }}</div>
+        <h1>{{ 'catalog.public.heading'|trans }}</h1>
+        <p>{{ 'catalog.public.lead'|trans }}</p>
+
+        <div class="catalog-hero-actions">
+            <a class="catalog-cta primary-cta" href="{{ path('app_register', {'_locale': app.request.locale}) }}">
+                {{ 'catalog.public.register'|trans }}
+            </a>
+            <a class="catalog-cta secondary-cta" href="{{ path('app_login', {'_locale': app.request.locale}) }}">
+                {{ 'auth.login.submit'|trans }}
+            </a>
+        </div>
+
+        <p class="catalog-free-note">{{ 'catalog.public.free_note'|trans }}</p>
     </div>
-</header>
 
-{% if can_create %}
-<section class="panel">
-    <h2>{{ 'catalog.create.heading'|trans }}</h2>
-    <form method="post" class="song-create-grid">
-        <input type="hidden" name="_token" value="{{ csrf_token('create_song') }}">
-        <label>
-            <span>{{ 'song.title'|trans }}</span>
-            <input name="title" required>
-        </label>
-        <label>
-            <span>{{ 'song.artist'|trans }}</span>
-            <input name="artist" required>
-        </label>
-
-        {% if is_granted('ROLE_ADMIN') %}
-        <label>
-            <span>{{ 'song.editor'|trans }}</span>
-            <select name="editor_id">
-                <option value="0">{{ 'common.none'|trans }}</option>
-                {% for editor in editors %}
-                    <option value="{{ editor.id }}">{{ editor.displayName }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        {% endif %}
-
-        <label>
-            <span>{{ 'song.comment'|trans }}</span>
-            <input name="comment">
-        </label>
-
-        <button class="primary" type="submit">{{ 'catalog.create.submit'|trans }}</button>
-    </form>
+    <div class="catalog-benefits" aria-label="{{ 'catalog.public.benefits_heading'|trans }}">
+        <article>
+            <span class="benefit-icon" aria-hidden="true">♪</span>
+            <div>
+                <strong>{{ 'catalog.public.benefit.karaoke.title'|trans }}</strong>
+                <span>{{ 'catalog.public.benefit.karaoke.body'|trans }}</span>
+            </div>
+        </article>
+        <article>
+            <span class="benefit-icon" aria-hidden="true">▶</span>
+            <div>
+                <strong>{{ 'catalog.public.benefit.audio.title'|trans }}</strong>
+                <span>{{ 'catalog.public.benefit.audio.body'|trans }}</span>
+            </div>
+        </article>
+        <article>
+            <span class="benefit-icon" aria-hidden="true">≡</span>
+            <div>
+                <strong>{{ 'catalog.public.benefit.organise.title'|trans }}</strong>
+                <span>{{ 'catalog.public.benefit.organise.body'|trans }}</span>
+            </div>
+        </article>
+        <div class="catalog-coming-soon">
+            <span>{{ 'catalog.public.future_label'|trans }}</span>
+            <strong>{{ 'catalog.public.future_value'|trans }}</strong>
+        </div>
+    </div>
 </section>
 {% endif %}
 
-<div class="song-grid">
+<header class="catalog-heading">
+    <div>
+        <div class="eyebrow">{{ 'catalog.eyebrow'|trans }}</div>
+        <h1>{{ 'catalog.title'|trans }}</h1>
+        {% if app.user %}
+            <p>{{ 'catalog.member_lead'|trans }}</p>
+        {% else %}
+            <p>{{ 'catalog.public.catalog_lead'|trans }}</p>
+        {% endif %}
+    </div>
+
+    {% if can_import %}
+        <div class="catalog-rights-note" title="{{ 'catalog.import.pending_help'|trans }}">
+            <span>{{ 'catalog.import.label'|trans }}</span>
+            <small>{{ 'catalog.import.pending'|trans }}</small>
+        </div>
+    {% endif %}
+</header>
+
+{% if not app.user %}
+<form class="public-catalog-search" method="get" action="{{ path('app_catalog', {'_locale': app.request.locale}) }}" role="search">
+    <label class="sr-only" for="public-catalog-search">{{ 'layout.search.label'|trans }}</label>
+    <input id="public-catalog-search" type="search" name="q" value="{{ query }}" placeholder="{{ 'layout.search.placeholder'|trans }}" autocomplete="off">
+    <button type="submit">{{ 'layout.search.submit'|trans }}</button>
+</form>
+{% endif %}
+
+{% if query %}
+<div class="catalog-search-context">
+    {{ 'catalog.search.results_for'|trans({'%query%': query}) }}
+    <a href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'catalog.search.clear'|trans }}</a>
+</div>
+{% endif %}
+
+<div class="catalog-song-grid">
     {% for song in songs %}
-        <a class="song-tile" href="{{ path('app_song_workspace', {id: song.id}) }}">
-            <div class="cover-mock">♫</div>
-            <div>
-                <strong>{{ song.title }}</strong>
-                <span>{{ song.artist }}</span>
-                <small>
-                    {{ song.editor ? song.editor.displayName : ('common.none'|trans) }}
-                    {% if song.comment %} · {{ song.comment }}{% endif %}
-                </small>
+        <a class="catalog-song-card" href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">
+            <div class="catalog-cover" aria-hidden="true">♫</div>
+            <div class="catalog-song-copy">
+                <div class="catalog-song-title-row">
+                    <strong>{{ song.title }}</strong>
+                    {% if app.user and (is_granted('ROLE_ADMIN') or is_granted('ROLE_EDITOR')) %}
+                        <span class="publication-badge {{ song.published ? 'published' : 'draft' }}">
+                            {{ song.published ? ('song.publication.published_badge'|trans) : ('song.publication.draft_badge'|trans) }}
+                        </span>
+                    {% elseif not app.user %}
+                        <span class="preview-badge">{{ 'catalog.public.preview_badge'|trans }}</span>
+                    {% endif %}
+                </div>
+                <span class="catalog-artist">{{ song.artist }}</span>
+                {% if song.editor and app.user %}
+                    <small>{{ 'song.editor'|trans }} · {{ song.editor.displayName }}</small>
+                {% endif %}
+                {% if song.comment and app.user %}
+                    <small>{{ song.comment }}</small>
+                {% endif %}
             </div>
+            <span class="catalog-card-arrow" aria-hidden="true">→</span>
         </a>
     {% else %}
-        <div class="empty">{{ 'catalog.empty'|trans }}</div>
+        <div class="catalog-empty">
+            <strong>{{ query ? ('catalog.search.none'|trans) : ('catalog.empty'|trans) }}</strong>
+            {% if is_public_catalog %}
+                <span>{{ 'catalog.public.empty_hint'|trans }}</span>
+            {% endif %}
+        </div>
     {% endfor %}
 </div>
 {% endblock %}

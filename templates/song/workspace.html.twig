@@ -1,5 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ song.title }} — EZScore_v1{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r8">
+{% endblock %}
+
 {% block body %}
 <div class="workspace" data-can-edit="{{ can_edit ? '1' : '0' }}">
     <nav class="workflow-tabs">
@@ -15,6 +20,49 @@
         <div><span>{{ 'song.capo'|trans }}</span><strong>{{ song.capo }}</strong></div>
         <div><span>{{ 'song.strumming'|trans }}</span><strong>{{ song.strummingPrimary ?: ('common.none'|trans) }}</strong></div>
     </section>
+
+    <section class="song-access-bar">
+        <div>
+            <span class="publication-badge {{ song.published ? 'published' : 'draft' }}">
+                {{ song.published ? ('song.publication.published_badge'|trans) : ('song.publication.draft_badge'|trans) }}
+            </span>
+
+            {% if karaoke_preview_seconds > 0 %}
+                <span class="access-chip preview">{{ 'workspace.access.preview'|trans({'%seconds%': karaoke_preview_seconds}) }}</span>
+            {% elseif can_use_karaoke %}
+                <span class="access-chip">{{ 'workspace.access.karaoke_full'|trans }}</span>
+            {% endif %}
+
+            {% if can_play_audio %}
+                <span class="access-chip">{{ 'workspace.access.audio_full'|trans }}</span>
+            {% endif %}
+        </div>
+
+        {% if can_publish %}
+            <form method="post" action="{{ path('app_song_publication', {'_locale': app.request.locale, id: song.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('song_publication_' ~ song.id) }}">
+                {% if song.published %}
+                    <button type="submit" name="action" value="unpublish">{{ 'song.publication.unpublish'|trans }}</button>
+                {% else %}
+                    <button class="primary" type="submit" name="action" value="publish">{{ 'song.publication.publish'|trans }}</button>
+                {% endif %}
+            </form>
+        {% endif %}
+    </section>
+
+    {% if not app.user %}
+        <section class="panel public-song-gate">
+            <div>
+                <div class="eyebrow">{{ 'workspace.public_gate.eyebrow'|trans }}</div>
+                <h2>{{ 'workspace.public_gate.heading'|trans }}</h2>
+                <p>{{ 'workspace.public_gate.body'|trans({'%seconds%': karaoke_preview_seconds}) }}</p>
+            </div>
+            <div class="catalog-hero-actions">
+                <a class="catalog-cta primary-cta" href="{{ path('app_register', {'_locale': app.request.locale}) }}">{{ 'catalog.public.register'|trans }}</a>
+                <a class="catalog-cta secondary-cta" href="{{ path('app_login', {'_locale': app.request.locale}) }}">{{ 'auth.login.submit'|trans }}</a>
+            </div>
+        </section>
+    {% endif %}
 
     <section class="panel source-truth-panel">
         <h2>{{ 'workspace.no_analysis.heading'|trans }}</h2>
