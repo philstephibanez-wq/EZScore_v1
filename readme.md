@@ -1,36 +1,43 @@
-# EZScore_v1 — hover global cartes/liens interactifs
+# EZScore_v1 — contrat global de hover
 
-Correctif ciblé sur les composants interactifs qui sont des `<a>` et non des `<button>`.
+Base vérifiée sur le HEAD GitHub :
 
-Le dashboard utilise :
-
-```html
-<a class="module-card">...</a>
+```text
+c7ffe263a59d801eb9302dd49d8a2afe06588f4b
 ```
 
-Il n'était donc pas couvert par les règles précédentes.
+Correction structurelle : `interactions.css` est maintenant chargé **après tous les CSS spécifiques aux pages**.
 
-Ajouts :
-- `a.module-card`
-- `a.song-tile`
-- `.dashboard-grid a`
-- `.card-grid a`
+Le hover s'applique à tous les éléments interactifs principaux :
 
-Effet :
-- légère élévation ;
-- halo bleu ;
-- fond éclairci ;
-- bordure renforcée.
+```text
+a[href]
+button
+input submit/button
+input éditables
+checkbox/radio
+select
+summary
+label[for]
+[role="button"]
+```
 
-Le fichier `interactions.css` est cache-busté en `20260924b`.
+Les cartes du dashboard ont un feedback volontairement plus visible.
 
-Installation :
+## Installation
 
 ```powershell
 cd H:\EZScore_v1
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_GLOBAL_HOVER_CARDS_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_GLOBAL_INTERACTIVE_HOVER.zip" -C H:\EZScore_v1
 php bin\console cache:clear
 php bin\console lint:twig templates
 ```
+
+Test attendu :
+- Dashboard : Répertoire / Playlists / Groupes / Utilisateurs réagissent au survol.
+- Header : logo, langues, avatar, recherche réagissent.
+- Formulaires : champs, selects, checkbox et boutons réagissent.
+- Menu latéral : tous les liens réagissent.
+- Dirty : Save reste orange tant qu'une modification n'est pas sauvée.
 
 Aucune migration.
