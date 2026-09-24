@@ -1,5 +1,8 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'users.title'|trans }} — EZScore_v1{% endblock %}
+{% block stylesheets %}
+    <link rel="stylesheet" href="/assets/css/r7-admin.css">
+{% endblock %}
 {% block body %}
 <header class="page-head">
     <div>
@@ -52,38 +55,48 @@
                     <th>{{ 'users.active'|trans }}</th>
                     <th>Google</th>
                     <th>{{ 'users.password'|trans }}</th>
-                    <th></th>
+                    <th>{{ 'users.actions'|trans }}</th>
                 </tr>
             </thead>
             <tbody>
             {% for user in users %}
                 <tr>
                     <td colspan="6">
-                        <form method="post" action="{{ path('admin_user_update', {id: user.id}) }}" class="user-edit-grid">
-                            <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
+                        <div class="user-admin-row">
+                            <form method="post" action="{{ path('admin_user_update', {id: user.id}) }}" class="user-edit-grid">
+                                <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
 
-                            <div class="identity-fields">
-                                <input name="display_name" value="{{ user.displayName }}" required aria-label="{{ 'users.display_name'|trans }}">
-                                <input type="email" name="email" value="{{ user.email }}" required aria-label="{{ 'users.email'|trans }}">
-                            </div>
+                                <div class="identity-fields">
+                                    <input name="display_name" value="{{ user.displayName }}" required aria-label="{{ 'users.display_name'|trans }}">
+                                    <input type="email" name="email" value="{{ user.email }}" required aria-label="{{ 'users.email'|trans }}">
+                                </div>
 
-                            <select name="role" aria-label="{{ 'users.role'|trans }}">
-                                <option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>{{ 'role.ROLE_READER'|trans }}</option>
-                                <option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>{{ 'role.ROLE_EDITOR'|trans }}</option>
-                                <option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>{{ 'role.ROLE_ADMIN'|trans }}</option>
-                            </select>
+                                <select name="role" aria-label="{{ 'users.role'|trans }}">
+                                    <option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>{{ 'role.ROLE_READER'|trans }}</option>
+                                    <option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>{{ 'role.ROLE_EDITOR'|trans }}</option>
+                                    <option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>{{ 'role.ROLE_ADMIN'|trans }}</option>
+                                </select>
 
-                            <label class="check active-check">
-                                <input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>
-                                {{ 'users.active'|trans }}
-                            </label>
+                                <label class="check active-check">
+                                    <input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>
+                                    {{ 'users.active'|trans }}
+                                </label>
 
-                            <span class="provider-state">{{ user.googleSub ? ('users.google_linked'|trans) : '—' }}</span>
+                                <span class="provider-state">{{ user.googleSub ? ('users.google_linked'|trans) : '—' }}</span>
 
-                            <input type="password" name="password" minlength="10" placeholder="{{ 'users.password_unchanged'|trans }}" aria-label="{{ 'users.new_password'|trans }}">
+                                <input type="password" name="password" minlength="10" placeholder="{{ 'users.password_unchanged'|trans }}" aria-label="{{ 'users.new_password'|trans }}">
 
-                            <button type="submit">{{ 'common.save'|trans }}</button>
-                        </form>
+                                <button type="submit">{{ 'common.save'|trans }}</button>
+                            </form>
+
+                            <form method="post"
+                                  action="{{ path('admin_user_delete', {id: user.id}) }}"
+                                  class="user-delete-form"
+                                  onsubmit="return confirm('{{ 'users.delete.confirm'|trans({'%name%': user.displayName})|e('js') }}');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ user.id) }}">
+                                <button type="submit" class="danger-button">{{ 'users.delete.button'|trans }}</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             {% else %}

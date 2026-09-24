@@ -1,0 +1,34 @@
+.user-admin-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+}
+
+.user-delete-form{
+    margin:0;
+}
+
+.danger-button{
+    border:1px solid #b64a4a !important;
+    background:#6f2525 !important;
+    color:#fff !important;
+    white-space:nowrap;
+}
+
+.danger-button:hover,
+.danger-button:focus-visible{
+    background:#8a2f2f !important;
+    border-color:#d06161 !important;
+}
+
+@media(max-width:980px){
+    .user-admin-row{
+        grid-template-columns:1fr;
+    }
+
+    .user-delete-form{
+        display:flex;
+        justify-content:flex-end;
+    }
+}

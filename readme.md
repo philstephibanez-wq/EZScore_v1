@@ -1,48 +1,63 @@
-# EZScore_v1 R7.1 — schema locale hotfix
+# EZScore_v1 R7.2 — suppression administrateur d'un utilisateur
 
-Le delta Doctrine venait uniquement de `users.locale`.
+## Fonction
 
-La base réelle contient :
+L'administrateur dispose maintenant d'un bouton **Supprimer** pour chaque utilisateur.
 
-```sql
-locale VARCHAR(2) NOT NULL
+La suppression est définitive, avec confirmation navigateur et contrôle CSRF côté serveur.
+
+## Règles d'intégrité
+
+La suppression est refusée si :
+
+- l'administrateur tente de supprimer son propre compte ;
+- la cible est le dernier administrateur actif ;
+- la cible possède des `analysis_jobs`, car `created_by` constitue une donnée d'audit et la base impose `ON DELETE RESTRICT`.
+
+Lorsqu'une suppression est autorisée :
+
+- les appartenances aux groupes disparaissent via `ON DELETE CASCADE` ;
+- les morceaux édités par cet utilisateur conservent leurs données et `editor_id` devient `NULL` via `ON DELETE SET NULL` ;
+- ses playlists personnelles sont supprimées ;
+- les playlists de groupe qu'il a créées sont conservées et leur champ technique `created_by` est transféré à l'administrateur qui effectue la suppression.
+
+Aucune donnée d'analyse n'est supprimée ou réattribuée silencieusement.
+
+## MAILER_FROM
+
+L'exception :
+
+```text
+Environment variable not found: "MAILER_FROM"
 ```
 
-alors que le mapping R7 demandait :
+signifie que R7 est bien chargé mais que le transport mail n'est pas encore complètement configuré.
 
-```sql
-locale VARCHAR(2) DEFAULT 'fr' NOT NULL
+Dans `H:\EZScore_v1\.env.local`, fournir des valeurs réelles :
+
+```dotenv
+MAILER_DSN="smtp://USER:PASSWORD@smtp.example.com:587"
+MAILER_FROM="no-reply@votre-domaine.tld"
 ```
 
-R7 avait ajouté par erreur `options: ['default' => 'fr']` au mapping Doctrine.
+Ne pas utiliser de valeur factice en production. `MAILER_FROM` doit être une adresse autorisée par le fournisseur SMTP.
 
-La valeur par défaut métier reste bien `fr` dans l'entité :
+Après modification :
 
-```php
-private string $locale = 'fr';
+```powershell
+php bin\console cache:clear
 ```
 
-Il n'est pas nécessaire d'imposer un DEFAULT SQL supplémentaire.
-
-## Installation
+## Installation R7.2
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R7_1_SCHEMA_LOCALE_HOTFIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R7_2_ADMIN_DELETE_USER.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
+php bin\console lint:twig templates
 php bin\console doctrine:schema:validate
-php bin\console doctrine:schema:update --dump-sql
 ```
 
-Résultat attendu :
-
-```text
-Mapping  [OK]
-Database [OK]
-```
-
-et `doctrine:schema:update --dump-sql` ne doit plus proposer de reconstruction de `users`.
-
-Aucune migration et aucune modification des données.
+Aucune migration dans ce lot.

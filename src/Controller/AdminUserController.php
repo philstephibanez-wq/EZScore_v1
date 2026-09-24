@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Domain\User\User;
 use App\Domain\User\UserRepository;
+use App\Service\UserDeletionService;
 use App\Service\UserManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,6 +40,7 @@ final class AdminUserController extends AbstractController
             if ($errors === []) {
                 $manager->create($name, $email, $password !== '' ? $password : null, $role);
                 $this->addFlash('success', 'users.created');
+
                 return $this->redirectToRoute('admin_users');
             }
 
@@ -91,6 +93,7 @@ final class AdminUserController extends AbstractController
             foreach ($errors as $error) {
                 $this->addFlash('error', $error);
             }
+
             return $this->redirectToRoute('admin_users');
         }
 
@@ -104,6 +107,32 @@ final class AdminUserController extends AbstractController
         );
 
         $this->addFlash('success', 'users.updated');
+
+        return $this->redirectToRoute('admin_users');
+    }
+
+    #[Route('/{id}/delete', name: 'admin_user_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function delete(
+        User $user,
+        Request $request,
+        UserDeletionService $deletion,
+    ): Response {
+        if (!$this->isCsrfTokenValid('delete_user_'.$user->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $actor = $this->getUser();
+        if (!$actor instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        try {
+            $deletion->delete($user, $actor);
+            $this->addFlash('success', 'users.deleted');
+        } catch (\DomainException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+        }
+
         return $this->redirectToRoute('admin_users');
     }
 

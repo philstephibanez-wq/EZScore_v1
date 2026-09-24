@@ -75,11 +75,16 @@ users:
   role: Role
   active: Active
   account: Account
+  actions: Actions
   google_linked: Linked
   empty: No users.
-  rules: An account without a local password can use Google when its email address matches an authorized account. The last active administrator cannot be disabled or demoted.
+  rules: An account without a local password can use Google when its email address matches an authorized account. The last active administrator cannot be disabled, demoted, or deleted.
   created: User created.
   updated: User updated.
+  deleted: User deleted.
+  delete:
+    button: Delete
+    confirm: 'Permanently delete %name%?'
   error:
     email_used: This email address is already in use.
     password_length: Password must contain at least 10 characters.
@@ -87,6 +92,9 @@ users:
     last_admin: The last active administrator cannot be disabled or demoted.
     name: Display name is required.
     email: Invalid email address.
+    delete_self: You cannot delete your own administrator account.
+    delete_last_admin: The last active administrator cannot be deleted.
+    delete_analysis_history: This user owns analysis history. To preserve auditability, disable the account instead of deleting it.
 
 groups:
   title: Groups
@@ -162,3 +170,38 @@ analysis:
     completed: Completed
     failed: Failed
     cancelled: Cancelled
+
+registration:
+  title: Registration
+  heading: Create your account
+  description: Your email address must be verified before your first sign-in.
+  submit: Create my account
+  login_prompt: No account yet?
+  register_link: Register
+  already_registered: Already registered?
+  activation_sent: The account was created. An activation email has been sent.
+  activation_delivery_failed: The account was created but the activation email could not be sent. Check the SMTP configuration, then use activation resend.
+  activated: Your email address is verified. You can now sign in.
+  activation_invalid: This activation link is invalid or has expired.
+  resend_generic: If this account exists, is not yet verified, and is eligible for a new link, an activation email has been sent.
+  email_already_used: This email address is already in use.
+  error:
+    name: Display name is required.
+    email: Invalid email address.
+    email_used: This email address is already in use.
+    password_length: Password must contain at least 10 characters.
+    password_match: Passwords do not match.
+  pending:
+    title: Account activation
+    heading: Check your email
+    body: Access to EZSCORE remains blocked until the email address is verified. The activation link is valid for 24 hours.
+    resend: Resend activation email
+    back_login: Back to sign in
+  email:
+    subject: Activate your EZSCORE account
+    heading: Account activation
+    hello: 'Hello %name%,'
+    body: Confirm your email address to activate your EZSCORE account.
+    button: Activate my account
+    expiry: This link is valid for 24 hours.
+    ignore: If you did not create this account, ignore this message.
