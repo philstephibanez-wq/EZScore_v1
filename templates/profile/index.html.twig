@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ 'profile.title'|trans }} — EZSCORE v1{% endblock %}
+{% block body %}
+<header class="page-head">
+    <div><div class="eyebrow">EZSCORE v1</div><h1>{{ 'profile.title'|trans }}</h1></div>
+</header>
+<section class="panel" style="max-width:720px">
+    <p><strong>{{ app.user.displayName }}</strong><br>{{ app.user.email }}</p>
+    <form method="post" class="row-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('profile_locale') }}">
+        <label>
+            <span>{{ 'locale.label'|trans }}</span>
+            <select name="locale">
+                {% for locale in supported_locales %}
+                    <option value="{{ locale }}" {{ app.user.locale == locale ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
+    </form>
+</section>
+{% endblock %}

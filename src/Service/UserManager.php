@@ -18,17 +18,18 @@ final class UserManager
     ) {
     }
 
-    /**
-     * Creates an administrator-managed account.
-     * The administrator explicitly vouches for the address, so the account is
-     * created as email-verified.
-     */
-    public function create(string $name, string $email, ?string $plainPassword, string $role): User
-    {
+    public function create(
+        string $name,
+        string $email,
+        ?string $plainPassword,
+        string $role,
+        string $locale = 'fr',
+    ): User {
         $user = (new User())
             ->setDisplayName($name)
             ->setEmail($email)
             ->setRoles([$this->normaliseRole($role)])
+            ->setLocale($this->normaliseLocale($locale))
             ->markEmailVerifiedForManagedAccount();
 
         if ($plainPassword !== null && $plainPassword !== '') {
@@ -48,12 +49,17 @@ final class UserManager
         string $role,
         bool $active,
         ?string $plainPassword = null,
+        ?string $locale = null,
     ): void {
         $user
             ->setDisplayName($name)
             ->setEmail($email)
             ->setRoles([$this->normaliseRole($role)])
             ->setActive($active);
+
+        if ($locale !== null) {
+            $user->setLocale($this->normaliseLocale($locale));
+        }
 
         if ($plainPassword !== null && $plainPassword !== '') {
             $this->setPassword($user, $plainPassword);
@@ -83,7 +89,14 @@ final class UserManager
         if (!in_array($role, self::ROLES, true)) {
             throw new \InvalidArgumentException(sprintf('Unsupported role "%s".', $role));
         }
-
         return $role;
+    }
+
+    private function normaliseLocale(string $locale): string
+    {
+        if (!in_array($locale, User::SUPPORTED_LOCALES, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported locale "%s".', $locale));
+        }
+        return $locale;
     }
 }

@@ -13,41 +13,15 @@
 <div class="ez-shell" data-ez-shell>
     <header class="ez-topbar">
         <div class="ez-topbar-left">
-            <button
-                type="button"
-                class="ez-menu-button"
-                data-ez-menu-button
-                aria-controls="ez-drawer"
-                aria-expanded="false"
-                aria-label="{{ 'layout.sidebar.toggle'|trans }}"
-                title="{{ 'layout.sidebar.toggle'|trans }}"
-            >
-                <span aria-hidden="true"></span>
-            </button>
-
-            <a class="ez-brand" href="{{ path('app_dashboard') }}" aria-label="EZSCORE v1">
-                <strong>EZSCORE</strong><small>v1</small>
-            </a>
+            <button type="button" class="ez-menu-button" data-ez-menu-button aria-controls="ez-drawer" aria-expanded="false" aria-label="{{ 'layout.sidebar.toggle'|trans }}" title="{{ 'layout.sidebar.toggle'|trans }}"><span aria-hidden="true"></span></button>
+            <a class="ez-brand" href="{{ path('app_dashboard') }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
         </div>
 
         <div class="ez-search-slot">
             <form class="ez-search-form" method="get" action="{{ path('app_catalog') }}" role="search">
                 <label class="sr-only" for="ez-global-search">{{ 'layout.search.label'|trans }}</label>
-                <input
-                    id="ez-global-search"
-                    name="q"
-                    type="search"
-                    value="{{ app.request.query.get('q') }}"
-                    placeholder="{{ 'layout.search.placeholder'|trans }}"
-                    autocomplete="off"
-                >
-                <button
-                    type="submit"
-                    aria-label="{{ 'layout.search.submit'|trans }}"
-                    title="{{ 'layout.search.submit'|trans }}"
-                >
-                    <span aria-hidden="true"></span>
-                </button>
+                <input id="ez-global-search" name="q" type="search" value="{{ app.request.query.get('q') }}" placeholder="{{ 'layout.search.placeholder'|trans }}" autocomplete="off">
+                <button type="submit" aria-label="{{ 'layout.search.submit'|trans }}" title="{{ 'layout.search.submit'|trans }}"><span aria-hidden="true"></span></button>
             </form>
         </div>
 
@@ -56,14 +30,12 @@
                 {% for locale in ['fr', 'en'] %}
                     <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
                         <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-                        <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">
-                            {{ ('locale.' ~ locale)|trans }}
-                        </button>
+                        <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">{{ ('locale.' ~ locale)|trans }}</button>
                     </form>
                 {% endfor %}
             </div>
 
-            <div class="ez-user-badge" title="{{ app.user.email }}">
+            <a class="ez-user-badge" href="{{ path('app_profile') }}" title="{{ app.user.email }}">
                 {% if app.user.avatarUrl %}
                     <img src="{{ app.user.avatarUrl }}" alt="">
                 {% else %}
@@ -73,17 +45,11 @@
                     <strong>{{ app.user.displayName }}</strong>
                     <small>{{ ('role.' ~ app.user.primaryRole)|trans }}</small>
                 </span>
-            </div>
+            </a>
         </div>
     </header>
 
-    <button
-        type="button"
-        class="ez-drawer-backdrop"
-        data-ez-drawer-backdrop
-        aria-hidden="true"
-        tabindex="-1"
-    ></button>
+    <button type="button" class="ez-drawer-backdrop" data-ez-drawer-backdrop aria-hidden="true" tabindex="-1"></button>
 
     <aside class="ez-drawer" id="ez-drawer" data-ez-drawer aria-label="{{ 'layout.sidebar.navigation'|trans }}">
         <nav class="ez-drawer-nav">
@@ -91,7 +57,7 @@
             <a href="{{ path('app_catalog') }}">{{ 'nav.catalog'|trans }}</a>
             <a href="{{ path('app_playlists') }}">{{ 'nav.playlists'|trans }}</a>
             <a href="{{ path('app_groups') }}">{{ 'nav.groups'|trans }}</a>
-
+            <a href="{{ path('app_profile') }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
             {% if is_granted('ROLE_ADMIN') %}
                 <div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div>
                 <a href="{{ path('admin_users') }}">{{ 'nav.users'|trans }}</a>
@@ -99,10 +65,7 @@
         </nav>
 
         <div class="ez-drawer-footer">
-            <div class="ez-drawer-user">
-                <strong>{{ app.user.displayName }}</strong>
-                <small>{{ app.user.email }}</small>
-            </div>
+            <div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div>
             <a class="ez-logout" href="{{ path('app_logout') }}">{{ 'nav.logout'|trans }}</a>
         </div>
     </aside>
@@ -111,17 +74,12 @@
 {% else %}
 <main class="auth-shell">
     <div class="auth-topbar">
-        <a class="ez-brand" href="{{ path('app_home') }}">
-            <strong>EZSCORE</strong><small>v1</small>
-        </a>
-
+        <a class="ez-brand" href="{{ path('app_home') }}"><strong>EZSCORE</strong><small>v1</small></a>
         <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
             {% for locale in ['fr', 'en'] %}
                 <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-                    <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">
-                        {{ ('locale.' ~ locale)|trans }}
-                    </button>
+                    <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">{{ ('locale.' ~ locale)|trans }}</button>
                 </form>
             {% endfor %}
         </div>
@@ -133,13 +91,10 @@
                 <div class="flash flash-{{ label }}">{{ message|trans }}</div>
             {% endfor %}
         {% endfor %}
-
         {% block body %}{% endblock %}
     </main>
 
-{% if app.user %}
-</div>
-{% endif %}
+{% if app.user %}</div>{% endif %}
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="/assets/js/app.js"></script>

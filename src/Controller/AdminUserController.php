@@ -28,6 +28,7 @@ final class AdminUserController extends AbstractController
             $email = mb_strtolower(trim((string) $request->request->get('email')));
             $password = (string) $request->request->get('password');
             $role = (string) $request->request->get('role', 'ROLE_READER');
+            $locale = (string) $request->request->get('locale', 'fr');
 
             $errors = $this->validateIdentity($name, $email);
             if ($users->findOneBy(['email' => $email]) !== null) {
@@ -36,11 +37,13 @@ final class AdminUserController extends AbstractController
             if ($password !== '' && mb_strlen($password) < 10) {
                 $errors[] = 'users.error.password_length';
             }
+            if (!in_array($locale, User::SUPPORTED_LOCALES, true)) {
+                throw new \InvalidArgumentException(sprintf('Unsupported locale "%s".', $locale));
+            }
 
             if ($errors === []) {
-                $manager->create($name, $email, $password !== '' ? $password : null, $role);
+                $manager->create($name, $email, $password !== '' ? $password : null, $role, $locale);
                 $this->addFlash('success', 'users.created');
-
                 return $this->redirectToRoute('admin_users');
             }
 
@@ -51,16 +54,13 @@ final class AdminUserController extends AbstractController
 
         return $this->render('admin/users.html.twig', [
             'users' => $users->findBy([], ['displayName' => 'ASC']),
+            'supported_locales' => User::SUPPORTED_LOCALES,
         ]);
     }
 
     #[Route('/{id}/update', name: 'admin_user_update', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function update(
-        User $user,
-        Request $request,
-        UserRepository $users,
-        UserManager $manager,
-    ): Response {
+    public function update(User $user, Request $request, UserRepository $users, UserManager $manager): Response
+    {
         if (!$this->isCsrfTokenValid('user_'.$user->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
@@ -69,22 +69,23 @@ final class AdminUserController extends AbstractController
         $email = mb_strtolower(trim((string) $request->request->get('email')));
         $password = (string) $request->request->get('password');
         $role = (string) $request->request->get('role', 'ROLE_READER');
+        $locale = (string) $request->request->get('locale', 'fr');
         $active = $request->request->getBoolean('active');
 
         $errors = $this->validateIdentity($name, $email);
         $emailOwner = $users->findOneBy(['email' => $email]);
-
         if ($emailOwner !== null && $emailOwner->getId() !== $user->getId()) {
             $errors[] = 'users.error.email_used';
         }
-
         if ($password !== '' && mb_strlen($password) < 10) {
             $errors[] = 'users.error.password_length_new';
+        }
+        if (!in_array($locale, User::SUPPORTED_LOCALES, true)) {
+            throw new \InvalidArgumentException(sprintf('Unsupported locale "%s".', $locale));
         }
 
         $wasActiveAdmin = $user->isActive() && $user->getPrimaryRole() === 'ROLE_ADMIN';
         $willRemainActiveAdmin = $active && $role === 'ROLE_ADMIN';
-
         if ($wasActiveAdmin && !$willRemainActiveAdmin && $users->countActiveAdmins() <= 1) {
             $errors[] = 'users.error.last_admin';
         }
@@ -93,30 +94,22 @@ final class AdminUserController extends AbstractController
             foreach ($errors as $error) {
                 $this->addFlash('error', $error);
             }
-
             return $this->redirectToRoute('admin_users');
         }
 
         $manager->update(
-            $user,
-            $name,
-            $email,
-            $role,
-            $active,
+            $user, $name, $email, $role, $active,
             $password !== '' ? $password : null,
+            $locale
         );
 
         $this->addFlash('success', 'users.updated');
-
         return $this->redirectToRoute('admin_users');
     }
 
     #[Route('/{id}/delete', name: 'admin_user_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function delete(
-        User $user,
-        Request $request,
-        UserDeletionService $deletion,
-    ): Response {
+    public function delete(User $user, Request $request, UserDeletionService $deletion): Response
+    {
         if (!$this->isCsrfTokenValid('delete_user_'.$user->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
@@ -136,21 +129,11 @@ final class AdminUserController extends AbstractController
         return $this->redirectToRoute('admin_users');
     }
 
-    /**
-     * @return list<string>
-     */
     private function validateIdentity(string $name, string $email): array
     {
         $errors = [];
-
-        if ($name === '') {
-            $errors[] = 'users.error.name';
-        }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'users.error.email';
-        }
-
+        if ($name === '') $errors[] = 'users.error.name';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'users.error.email';
         return $errors;
     }
 }

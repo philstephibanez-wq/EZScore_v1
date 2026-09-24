@@ -1,0 +1,9 @@
+profile:
+  nav: Profile
+  title: My profile
+  description: Personal preferences for the EZSCORE account.
+  name: Name
+  email: Email
+  language: Language
+  save: Save
+  saved: Profile language saved.
