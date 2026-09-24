@@ -61,6 +61,10 @@ localized_first_run:
         fr: /fr
         en: /en
 
+analysis_worker_controller:
+    resource: ../src/Controller/AnalysisWorkerController.php
+    type: attribute
+
 root_controller:
     resource: ../src/Controller/RootController.php
     type: attribute

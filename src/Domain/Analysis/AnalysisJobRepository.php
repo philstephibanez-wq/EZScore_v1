@@ -13,4 +13,16 @@ final class AnalysisJobRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, AnalysisJob::class);
     }
+
+    public function findNextQueued(): ?AnalysisJob
+    {
+        return $this->createQueryBuilder('job')
+            ->andWhere('job.status = :status')
+            ->setParameter('status', AnalysisJobStatus::Queued->value)
+            ->orderBy('job.createdAt', 'ASC')
+            ->addOrderBy('job.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }
