@@ -1,9 +1,8 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'users.title'|trans }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/r7-admin.css">{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/admin-users.css?v=20260924">{% endblock %}
 {% block body %}
 <header class="page-head"><div><div class="eyebrow">{{ 'nav.administration'|trans }}</div><h1>{{ 'users.title'|trans }}</h1><p class="page-note">{{ 'users.note'|trans }}</p></div></header>
-
 <section class="panel">
 <h2>{{ 'users.create.heading'|trans }}</h2>
 <form method="post" class="user-create-grid" data-dirty-track>
@@ -16,7 +15,6 @@
 <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
 </form>
 </section>
-
 <section class="panel"><div class="table-wrap"><table class="users-table">
 <thead><tr><th>{{ 'users.account'|trans }}</th><th>{{ 'users.role'|trans }}</th><th>{{ 'locale.label'|trans }}</th><th>{{ 'users.active'|trans }}</th><th>Google</th><th>{{ 'users.password'|trans }}</th><th>{{ 'users.actions'|trans }}</th></tr></thead>
 <tbody>

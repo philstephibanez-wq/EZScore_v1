@@ -1,33 +1,19 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'auth.login.title'|trans }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/r7.css">{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/authentication.css?v=20260924">{% endblock %}
 {% block body %}
 <section class="auth-card">
     <div class="eyebrow">EZScore_v1</div>
     <h1>{{ 'auth.login.heading'|trans }}</h1>
-
-    {% if error %}
-        <div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-    {% endif %}
-
+    {% if error %}<div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>{% endif %}
     <form method="post" class="form-grid">
         <label>{{ 'users.email'|trans }}<input type="email" name="_username" value="{{ last_username }}" required autofocus></label>
         <label>{{ 'users.password'|trans }}<input type="password" name="_password" required></label>
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
         <button class="primary" type="submit">{{ 'auth.login.submit'|trans }}</button>
     </form>
-
-    <div class="auth-secondary-action">
-        <span>{{ 'registration.login_prompt'|trans({}, 'registration') }}</span>
-        <a href="{{ path('app_register') }}">{{ 'registration.register_link'|trans({}, 'registration') }}</a>
-    </div>
-
+    <div class="auth-secondary-action"><span>{{ 'registration.login_prompt'|trans({}, 'registration') }}</span><a href="{{ path('app_register') }}">{{ 'registration.register_link'|trans({}, 'registration') }}</a></div>
     <div class="oauth-sep"><span>{{ 'auth.login.or'|trans }}</span></div>
-
-    {% if google_enabled %}
-        <a class="google-button" href="{{ path('connect_google_start') }}">{{ 'auth.login.google'|trans }}</a>
-    {% else %}
-        <button class="google-button disabled" disabled>{{ 'auth.login.google_disabled'|trans }}</button>
-    {% endif %}
+    {% if google_enabled %}<a class="google-button" href="{{ path('connect_google_start') }}">{{ 'auth.login.google'|trans }}</a>{% else %}<button class="google-button disabled" disabled>{{ 'auth.login.google_disabled'|trans }}</button>{% endif %}
 </section>
 {% endblock %}

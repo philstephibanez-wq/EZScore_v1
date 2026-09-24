@@ -1,45 +1,18 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'registration.title'|trans({}, 'registration') }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/r7.css">{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/authentication.css?v=20260924">{% endblock %}
 {% block body %}
 <section class="auth-card">
-    <div class="eyebrow">EZSCORE v1</div>
-    <h1>{{ 'registration.heading'|trans({}, 'registration') }}</h1>
-    <p>{{ 'registration.description'|trans({}, 'registration') }}</p>
-
-    {% for error in errors %}
-        <div class="flash flash-error">{{ error|trans({}, 'registration') }}</div>
-    {% endfor %}
-
+    <div class="eyebrow">EZSCORE v1</div><h1>{{ 'registration.heading'|trans({}, 'registration') }}</h1><p>{{ 'registration.description'|trans({}, 'registration') }}</p>
+    {% for error in errors %}<div class="flash flash-error">{{ error|trans({}, 'registration') }}</div>{% endfor %}
     <form method="post" class="form-grid">
         <input type="hidden" name="_token" value="{{ csrf_token('register') }}">
-
-        <label>
-            {{ 'users.display_name'|trans }}
-            <input name="display_name" required autofocus autocomplete="name">
-        </label>
-
-        <label>
-            {{ 'users.email'|trans }}
-            <input type="email" name="email" required autocomplete="email">
-        </label>
-
-        <label>
-            {{ 'users.password'|trans }}
-            <input type="password" name="password" minlength="10" required autocomplete="new-password">
-        </label>
-
-        <label>
-            {{ 'users.password_confirm'|trans }}
-            <input type="password" name="confirm_password" minlength="10" required autocomplete="new-password">
-        </label>
-
+        <label>{{ 'users.display_name'|trans }}<input name="display_name" required autofocus autocomplete="name"></label>
+        <label>{{ 'users.email'|trans }}<input type="email" name="email" required autocomplete="email"></label>
+        <label>{{ 'users.password'|trans }}<input type="password" name="password" minlength="10" required autocomplete="new-password"></label>
+        <label>{{ 'users.password_confirm'|trans }}<input type="password" name="confirm_password" minlength="10" required autocomplete="new-password"></label>
         <button class="primary" type="submit">{{ 'registration.submit'|trans({}, 'registration') }}</button>
     </form>
-
-    <div class="auth-secondary-action">
-        <span>{{ 'registration.already_registered'|trans({}, 'registration') }}</span>
-        <a href="{{ path('app_login') }}">{{ 'auth.login.submit'|trans }}</a>
-    </div>
+    <div class="auth-secondary-action"><span>{{ 'registration.already_registered'|trans({}, 'registration') }}</span><a href="{{ path('app_login') }}">{{ 'auth.login.submit'|trans }}</a></div>
 </section>
 {% endblock %}

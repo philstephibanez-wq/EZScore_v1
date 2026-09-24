@@ -1,41 +1,45 @@
-# EZScore_v1 R7.5.1 — hotfix cache assets dirty UI
+# EZScore_v1 — renommage CSS sémantique + hover/dirty global
 
-Base vérifiée sur le HEAD GitHub :
+Les noms de versions `r6.css`, `r7.css`, `r7-admin.css`, `r7-interactions.css` sont supprimés de l'architecture active.
 
-```text
-d0b9045eb2c2b00a59ba76f1a3dc413ae612f9ec
-```
-
-Le code dirty est déjà présent dans `public/assets/js/app.js` et `public/assets/css/r7-interactions.css`.
-
-Le problème restant est cohérent avec une ancienne version de ces assets encore servie/cachée.
-
-Ce hotfix force une nouvelle URL :
+Nouveaux noms :
 
 ```text
-/assets/js/app.js?v=R7.5.1
-/assets/css/r7-interactions.css?v=R7.5.1
+base.css
+layout.css
+authentication.css
+admin-users.css
+interactions.css
 ```
+
+Le JS du dirty state devient :
+
+```text
+dirty-tracker.js
+```
+
+Le hover est défini globalement dans `interactions.css` et chargé en dernier.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R7_5_1_DIRTY_ASSET_CACHEFIX.zip" -C H:\EZScore_v1
+
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_UI_CSS_SEMANTIC_HOVER.zip" -C H:\EZScore_v1
+
+Remove-Item .\public\assets\css\r6.css -ErrorAction SilentlyContinue
+Remove-Item .\public\assets\css\r7.css -ErrorAction SilentlyContinue
+Remove-Item .\public\assets\css\r7-admin.css -ErrorAction SilentlyContinue
+Remove-Item .\public\assets\css\r7-interactions.css -ErrorAction SilentlyContinue
+Remove-Item .\public\assets\css\app.css -ErrorAction SilentlyContinue
+
 php bin\console cache:clear
 php bin\console lint:twig templates
 ```
 
-Ensuite recharger `Administration > Utilisateurs`.
+## Vérification attendue
 
-Test attendu :
-
-```text
-Save neutre
-changer FR -> EN
-Save devient orange/highlight
-remettre EN -> FR avant de sauver
-Save redevient neutre
-```
-
-Aucune migration.
+- Survol de n'importe quel bouton : halo bleu + légère élévation.
+- Survol des liens interactifs principaux : même feedback.
+- Modification d'un formulaire `data-dirty-track` : bouton Save orange.
+- Retour à la valeur initiale : bouton Save neutre.

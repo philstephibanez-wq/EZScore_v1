@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{% block title %}EZSCORE v1{% endblock %}</title>
-    <link rel="stylesheet" href="/assets/css/app.css">
-    <link rel="stylesheet" href="/assets/css/r6.css">
-    <link rel="stylesheet" href="/assets/css/r7-interactions.css?v=R7.5.1">
+    <link rel="stylesheet" href="/assets/css/base.css?v=20260924">
+    <link rel="stylesheet" href="/assets/css/layout.css?v=20260924">
+    <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924">
     {% block stylesheets %}{% endblock %}
 </head>
 <body>
@@ -34,8 +34,7 @@
                 {% endfor %}
             </div>
             <a class="ez-user-badge" href="{{ path('app_profile') }}" title="{{ app.user.email }}">
-                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">
-                {% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
+                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">{% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
                 <span class="ez-user-copy"><strong>{{ app.user.displayName }}</strong><small>{{ ('role.' ~ app.user.primaryRole)|trans }}</small></span>
             </a>
         </div>
@@ -50,10 +49,7 @@
             <a href="{{ path('app_profile') }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
             {% if is_granted('ROLE_ADMIN') %}<div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div><a href="{{ path('admin_users') }}">{{ 'nav.users'|trans }}</a>{% endif %}
         </nav>
-        <div class="ez-drawer-footer">
-            <div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div>
-            <a class="ez-logout" href="{{ path('app_logout') }}">{{ 'nav.logout'|trans }}</a>
-        </div>
+        <div class="ez-drawer-footer"><div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div><a class="ez-logout" href="{{ path('app_logout') }}">{{ 'nav.logout'|trans }}</a></div>
     </aside>
     <main class="ez-main" id="main-content">
 {% else %}
@@ -75,7 +71,8 @@
     </main>
 {% if app.user %}</div>{% endif %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="/assets/js/app.js?v=R7.5.1"></script>
+<script src="/assets/js/app.js?v=20260924"></script>
+<script src="/assets/js/dirty-tracker.js?v=20260924"></script>
 {% block javascripts %}{% endblock %}
 </body>
 </html>
