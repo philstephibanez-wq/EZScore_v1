@@ -1,67 +1,40 @@
-# EZScore_v1 — R24.10 STEMS : progression utilisateur uniquement
+# EZScore_v1 — R24.15 Reuse du serveur PHP deja actif
 
-La console Python/RoFormer est supprimée de la page STEMS.
+Le splash R24.14 affichait une erreur si le port 8501 etait deja occupe, meme lorsque le processus etait justement le bon serveur EZScore.
 
-Un utilisateur ne doit pas voir :
+R24.15 inspecte maintenant la ligne de commande du processus qui ecoute sur 8501.
 
-```text
-Traceback
-chemins Python
-warnings Torch
-commandes RoFormer
-logs techniques
+Si elle correspond a :
+
+```powershell
+php -S 127.0.0.1:8501 -t H:\EZScore_v1\public
 ```
 
-Ces informations restent disponibles côté fichiers/logs pour le diagnostic développeur, mais ne sont plus exposées dans l'interface.
+le launcher :
 
-## Interface pendant une extraction
+1. reconnait le serveur comme valide ;
+2. memorise son PID ;
+3. le reutilise ;
+4. poursuit vers Analysis Worker puis le navigateur.
 
-La page montre uniquement :
+Si 8501 est utilise par un autre processus ou par un serveur PHP avec un autre document root, le launcher conserve une erreur explicite.
 
-```text
-EN ATTENTE / EN COURS
-étape courante
-progression globale
-progression moteur si disponible
-temps de l'étape
-heure de dernière activité
-barre de progression
-```
-
-avec le message :
-
-```text
-Analyse en cours. Vous pouvez quitter cette page :
-le traitement continue en arrière-plan.
-```
-
-## Fin du clignotement
-
-Le polling continue toutes les 2 secondes uniquement pendant un job actif.
-
-À la fin :
-
-1. le polling est arrêté ;
-2. un seul rechargement est effectué pour afficher les STEMS persistants ;
-3. après ce rechargement, aucun hook de polling n'est présent puisque `job_active=false`.
-
-Il n'y a donc plus de boucle de `window.location.reload()`.
-
-## Confirmation de réanalyse
-
-La modale EZScore intégrée de R24.7 est conservée.
-Aucun `confirm()` natif Chrome n'est réintroduit.
+Les scripts PowerShell sont egalement ecrits avec BOM UTF-8, et les messages visibles utilisent des caracteres simples pour eviter les textes corrompus de type `DÃ©marrage`.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_10_STEMS_PROGRESS_ONLY.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_15_REUSE_EXISTING_PHP_SERVER.zip" -C H:\EZScore_v1
 
-php tests\stems_progress_only_r24_10_contract.php
-php bin\console lint:twig templates
-php bin\console cache:clear
+php tests\launcher_r24_15_contract.php
+```
+
+Puis :
+
+```powershell
+.\EZScore-Launcher.cmd
 ```
 
 Aucune migration Doctrine.
