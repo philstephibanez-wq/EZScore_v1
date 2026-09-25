@@ -17,7 +17,7 @@ class GroupMember
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: UserGroup::class)]
+    #[ORM\ManyToOne(targetEntity: UserGroup::class, inversedBy: 'memberships')]
     #[ORM\JoinColumn(name: 'group_id', nullable: false, onDelete: 'CASCADE')]
     private UserGroup $group;
 

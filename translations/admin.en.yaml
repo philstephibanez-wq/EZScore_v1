@@ -1,0 +1,39 @@
+title: Administration
+eyebrow: Back office
+note: Cross-application view of users, groups and playlists with ownership and attributes.
+manage_users: Manage users
+stats:
+  users: Users
+  active: '%count% active'
+  groups: Groups
+  playlists: Playlists
+  roles: Role distribution
+role_reader: Reader
+role_editor: Editor
+role_admin: Admin
+groups:
+  eyebrow: Groups
+  heading: Ownership and members
+  name: Group
+  owners: Owner(s)
+  managers: Manager(s)
+  members: Members
+  playlists: Playlists
+  created: Created
+  description: Description
+  no_owner: No owner
+  empty: No groups.
+playlists:
+  eyebrow: Playlists
+  heading: Ownership and attributes
+  name: Playlist
+  owner: Owner
+  groups: Groups
+  creator: Creator
+  visibility: Visibility
+  songs: Songs
+  shares: Personal shares
+  created: Created
+  empty: No playlists.
+visibility_public: Public
+visibility_private: Private

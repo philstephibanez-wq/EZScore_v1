@@ -47,6 +47,20 @@ localized_playlists:
         fr: /fr
         en: /en
 
+localized_picker:
+    resource: ../src/Controller/PickerController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_admin_overview:
+    resource: ../src/Controller/AdminOverviewController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
 localized_admin_users:
     resource: ../src/Controller/AdminUserController.php
     type: attribute

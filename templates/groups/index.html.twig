@@ -1,10 +1,14 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'groups.title'|trans }} — EZScore_v1{% endblock %}
+{% block stylesheets %}
+    <link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r18">
+{% endblock %}
 {% block body %}
 <header class="page-head">
     <div>
         <div class="eyebrow">{{ 'groups.eyebrow'|trans }}</div>
         <h1>{{ 'groups.title'|trans }}</h1>
+        <p class="page-note">{{ 'groups_r18.note'|trans({}, 'picker') }}</p>
     </div>
 </header>
 
@@ -30,7 +34,6 @@
             <input name="description" value="{{ group.description }}" placeholder="{{ 'groups.description'|trans }}">
             <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
         </form>
-
         {% if is_granted('GROUP_DELETE', group) %}
             <form method="post" action="{{ path('app_group_delete', {'_locale': app.request.locale, id: group.id}) }}" class="inline-form compact" onsubmit="return confirm('{{ 'groups.delete.confirm'|trans({'%name%': group.name}, 'management')|e('js') }}');">
                 <input type="hidden" name="_token" value="{{ csrf_token('group_delete_' ~ group.id) }}">
@@ -42,45 +45,96 @@
         <p>{{ group.description ?: '—' }}</p>
     {% endif %}
 
-    <div class="member-list">
-        {% for member in members_by_group[group.id]|default([]) %}
-            <div>
-                <span>
-                    <strong>{{ member.user.displayName }}</strong>
-                    <small>{{ ('group_role.' ~ member.role)|trans }}</small>
-                </span>
+    <div>
+        <h3>{{ 'groups_r18.members'|trans({}, 'picker') }}</h3>
+        <div class="collection-list">
+            {% for member in members_by_group[group.id]|default([]) %}
+                <div class="collection-row">
+                    <div class="collection-row-main">
+                        <strong>{{ member.user.displayName }}</strong>
+                        <small>{{ ('group_role.' ~ member.role)|trans }}</small>
+                    </div>
+                    {% if is_granted('GROUP_MANAGE_MEMBERS', group) %}
+                        {% if member.role != 'owner' or is_granted('GROUP_DELEGATE', group) %}
+                            <form method="post" action="{{ path('app_group_member_role', {'_locale': app.request.locale, groupId: group.id, memberId: member.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('group_member_role_' ~ member.id) }}">
+                                <select name="role" onchange="this.form.submit()">
+                                    <option value="member" {{ member.role == 'member' ? 'selected' : '' }}>{{ 'group_role.member'|trans }}</option>
+                                    <option value="manager" {{ member.role == 'manager' ? 'selected' : '' }}>{{ 'group_role.manager'|trans }}</option>
+                                    {% if is_granted('GROUP_DELEGATE', group) %}
+                                        <option value="owner" {{ member.role == 'owner' ? 'selected' : '' }}>{{ 'group_role.owner'|trans }}</option>
+                                    {% endif %}
+                                </select>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="empty">{{ 'groups.no_members'|trans }}</div>
+            {% endfor %}
+        </div>
 
-                {% if is_granted('GROUP_MANAGE_MEMBERS', group) %}
-                    <form method="post" action="{{ path('app_group_member_delete', {'_locale': app.request.locale, groupId: group.id, memberId: member.id}) }}" onsubmit="return confirm('{{ 'groups.member.delete_confirm'|trans({'%name%': member.user.displayName}, 'management')|e('js') }}');">
-                        <input type="hidden" name="_token" value="{{ csrf_token('group_member_delete_' ~ member.id) }}">
-                        <button type="submit">{{ 'common.remove'|trans({}, 'management') }}</button>
-                    </form>
-                {% else %}
-                    <span>{{ ('group_role.' ~ member.role)|trans }}</span>
-                {% endif %}
+        {% if is_granted('GROUP_MANAGE_MEMBERS', group) %}
+            <div class="collection-actions">
+                <button type="button"
+                        data-entity-picker
+                        data-picker-title="{{ 'groups_r18.add_members'|trans({}, 'picker') }}"
+                        data-picker-url="{{ path('app_picker_users', {'_locale': app.request.locale, group_id: group.id, membership: 'out'}) }}"
+                        data-picker-submit-url="{{ path('app_group_members_bulk_add', {'_locale': app.request.locale, id: group.id}) }}"
+                        data-picker-csrf="{{ csrf_token('group_members_bulk_' ~ group.id) }}">
+                    {{ 'groups_r18.add_members'|trans({}, 'picker') }}
+                </button>
+                <button type="button"
+                        data-entity-picker
+                        data-picker-title="{{ 'groups_r18.remove_members'|trans({}, 'picker') }}"
+                        data-picker-url="{{ path('app_picker_users', {'_locale': app.request.locale, group_id: group.id, membership: 'in'}) }}"
+                        data-picker-submit-url="{{ path('app_group_members_bulk_remove', {'_locale': app.request.locale, id: group.id}) }}"
+                        data-picker-csrf="{{ csrf_token('group_members_bulk_' ~ group.id) }}">
+                    {{ 'groups_r18.remove_members'|trans({}, 'picker') }}
+                </button>
             </div>
-        {% else %}
-            <em>{{ 'groups.no_members'|trans }}</em>
-        {% endfor %}
+        {% endif %}
     </div>
 
-    {% if is_granted('GROUP_MANAGE_MEMBERS', group) %}
-    <form method="post" action="{{ path('app_group_member_add', {'_locale': app.request.locale, id: group.id}) }}" class="inline-form compact">
-        <input type="hidden" name="_token" value="{{ csrf_token('group_' ~ group.id) }}">
-        <input type="email" name="email" placeholder="{{ 'groups.member.email'|trans }}" required>
-        <select name="role">
-            <option value="member">{{ 'group_role.member'|trans }}</option>
-            <option value="manager">{{ 'group_role.manager'|trans }}</option>
-            {% if is_granted('GROUP_DELEGATE', group) %}
-                <option value="owner">{{ 'group_role.owner'|trans }}</option>
-            {% endif %}
-        </select>
-        <button type="submit">{{ 'groups.member.save'|trans }}</button>
-    </form>
-    {% endif %}
+    <div>
+        <h3>{{ 'groups_r18.playlists'|trans({}, 'picker') }}</h3>
+        <div>
+            {% for playlist in playlists_by_group[group.id]|default([]) %}
+                <span class="collection-chip">{{ playlist.name }} · {{ playlist.ownerUser.displayName }}</span>
+            {% else %}
+                <span class="page-note">{{ 'groups_r18.no_playlists'|trans({}, 'picker') }}</span>
+            {% endfor %}
+        </div>
+
+        {% if is_granted('GROUP_MANAGE_PLAYLISTS', group) %}
+            <div class="collection-actions">
+                <button type="button"
+                        data-entity-picker
+                        data-picker-title="{{ 'groups_r18.add_playlists'|trans({}, 'picker') }}"
+                        data-picker-url="{{ path('app_picker_playlists', {'_locale': app.request.locale, group_id: group.id, membership: 'out'}) }}"
+                        data-picker-submit-url="{{ path('app_group_playlists_bulk_add', {'_locale': app.request.locale, id: group.id}) }}"
+                        data-picker-csrf="{{ csrf_token('group_playlists_bulk_' ~ group.id) }}">
+                    {{ 'groups_r18.add_playlists'|trans({}, 'picker') }}
+                </button>
+                <button type="button"
+                        data-entity-picker
+                        data-picker-title="{{ 'groups_r18.remove_playlists'|trans({}, 'picker') }}"
+                        data-picker-url="{{ path('app_picker_playlists', {'_locale': app.request.locale, group_id: group.id, membership: 'in'}) }}"
+                        data-picker-submit-url="{{ path('app_group_playlists_bulk_remove', {'_locale': app.request.locale, id: group.id}) }}"
+                        data-picker-csrf="{{ csrf_token('group_playlists_bulk_' ~ group.id) }}">
+                    {{ 'groups_r18.remove_playlists'|trans({}, 'picker') }}
+                </button>
+            </div>
+        {% endif %}
+    </div>
 </section>
 {% else %}
     <div class="empty">{{ 'groups.empty'|trans }}</div>
 {% endfor %}
 </div>
+
+{% include 'components/_entity_picker_modal.html.twig' %}
+{% endblock %}
+{% block javascripts %}
+    <script src="/assets/js/entity-picker.js?v=20260925r18"></script>
 {% endblock %}

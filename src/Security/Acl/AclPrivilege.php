@@ -1,20 +1,11 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Security\Acl;
 
-/**
- * EZScore authorization attributes.
- *
- * Inspired by OPUS ACL privileges, implemented as native Symfony Security attributes.
- * Controllers and Twig must ask for these attributes instead of duplicating business rules.
- */
 final class AclPrivilege
 {
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     public const PLAYLIST_VIEW = 'PLAYLIST_VIEW';
     public const PLAYLIST_EDIT = 'PLAYLIST_EDIT';
@@ -30,6 +21,7 @@ final class AclPrivilege
     public const GROUP_EDIT = 'GROUP_EDIT';
     public const GROUP_DELETE = 'GROUP_DELETE';
     public const GROUP_MANAGE_MEMBERS = 'GROUP_MANAGE_MEMBERS';
+    public const GROUP_MANAGE_PLAYLISTS = 'GROUP_MANAGE_PLAYLISTS';
     public const GROUP_DELEGATE = 'GROUP_DELEGATE';
 
     public const SONG_VIEW = 'SONG_VIEW';

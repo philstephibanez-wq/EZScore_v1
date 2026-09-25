@@ -1,0 +1,42 @@
+<div class="entity-picker-backdrop" data-entity-picker-modal hidden>
+    <section class="entity-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="entity-picker-title">
+        <header class="entity-picker-head">
+            <div>
+                <div class="eyebrow">{{ 'picker.eyebrow'|trans({}, 'picker') }}</div>
+                <h2 id="entity-picker-title" data-picker-title>{{ 'picker.title'|trans({}, 'picker') }}</h2>
+            </div>
+            <button type="button" data-picker-close aria-label="{{ 'picker.close'|trans({}, 'picker') }}">×</button>
+        </header>
+
+        <div class="entity-picker-toolbar">
+            <input type="search" data-picker-search placeholder="{{ 'picker.search'|trans({}, 'picker') }}" autocomplete="off">
+            <div class="entity-picker-filters" data-picker-filters></div>
+        </div>
+
+        <div class="entity-picker-summary">
+            <label class="check">
+                <input type="checkbox" data-picker-page-toggle>
+                {{ 'picker.select_page'|trans({}, 'picker') }}
+            </label>
+            <span data-picker-selected-count>0</span>
+            <span>{{ 'picker.selected'|trans({}, 'picker') }}</span>
+            <span class="entity-picker-total" data-picker-total></span>
+        </div>
+
+        <div class="entity-picker-results" data-picker-results>
+            <div class="entity-picker-loading">{{ 'picker.loading'|trans({}, 'picker') }}</div>
+        </div>
+
+        <footer class="entity-picker-footer">
+            <div class="entity-picker-pagination">
+                <button type="button" data-picker-prev>← {{ 'picker.previous'|trans({}, 'picker') }}</button>
+                <span data-picker-page></span>
+                <button type="button" data-picker-next>{{ 'picker.next'|trans({}, 'picker') }} →</button>
+            </div>
+            <div class="entity-picker-actions">
+                <button type="button" data-picker-close>{{ 'picker.cancel'|trans({}, 'picker') }}</button>
+                <button type="button" class="primary" data-picker-apply>{{ 'picker.apply'|trans({}, 'picker') }}</button>
+            </div>
+        </footer>
+    </section>
+</div>

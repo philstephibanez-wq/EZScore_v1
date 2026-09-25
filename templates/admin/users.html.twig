@@ -2,7 +2,7 @@
 {% block title %}{{ 'users.title'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}<link rel="stylesheet" href="/assets/css/admin-users.css?v=20260924">{% endblock %}
 {% block body %}
-<header class="page-head"><div><div class="eyebrow">{{ 'nav.administration'|trans }}</div><h1>{{ 'users.title'|trans }}</h1><p class="page-note">{{ 'users.note'|trans }}</p></div></header>
+<header class="page-head"><div><div class="eyebrow">{{ 'nav.administration'|trans }}</div><h1>{{ 'users.title'|trans }}</h1><p class="page-note">{{ 'users.note'|trans }}</p></div><a href="{{ path('admin_overview', {'_locale': app.request.locale}) }}">{{ 'backoffice_overview'|trans({}, 'admin') }}</a></header>
 <section class="panel">
 <h2>{{ 'users.create.heading'|trans }}</h2>
 <form method="post" class="user-create-grid" data-dirty-track>

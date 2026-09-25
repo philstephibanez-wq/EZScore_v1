@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ 'title'|trans({}, 'admin') }} — EZScore_v1{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/admin-overview.css?v=20260925r18">{% endblock %}
+{% block body %}
+<header class="page-head admin-overview-head">
+  <div><div class="eyebrow">{{ 'eyebrow'|trans({}, 'admin') }}</div><h1>{{ 'title'|trans({}, 'admin') }}</h1><p class="page-note">{{ 'note'|trans({}, 'admin') }}</p></div>
+  <a class="admin-overview-users-link" href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'manage_users'|trans({}, 'admin') }}</a>
+</header>
+
+<section class="admin-kpi-grid">
+  <article class="panel admin-kpi"><strong>{{ stats.users }}</strong><span>{{ 'stats.users'|trans({}, 'admin') }}</span><small>{{ 'stats.active'|trans({'%count%': stats.active_users}, 'admin') }}</small></article>
+  <article class="panel admin-kpi"><strong>{{ stats.groups }}</strong><span>{{ 'stats.groups'|trans({}, 'admin') }}</span></article>
+  <article class="panel admin-kpi"><strong>{{ stats.playlists }}</strong><span>{{ 'stats.playlists'|trans({}, 'admin') }}</span></article>
+  <article class="panel admin-kpi"><span>{{ 'stats.roles'|trans({}, 'admin') }}</span><small>{{ 'role_reader'|trans({}, 'admin') }} {{ stats.readers }} · {{ 'role_editor'|trans({}, 'admin') }} {{ stats.editors }} · {{ 'role_admin'|trans({}, 'admin') }} {{ stats.admins }}</small></article>
+</section>
+
+<section class="panel admin-data-section">
+  <div class="admin-section-head"><div><div class="eyebrow">{{ 'groups.eyebrow'|trans({}, 'admin') }}</div><h2>{{ 'groups.heading'|trans({}, 'admin') }}</h2></div><span class="admin-count">{{ group_rows|length }}</span></div>
+  <div class="admin-table-wrap"><table class="admin-overview-table">
+    <thead><tr><th>{{ 'groups.name'|trans({}, 'admin') }}</th><th>{{ 'groups.owners'|trans({}, 'admin') }}</th><th>{{ 'groups.managers'|trans({}, 'admin') }}</th><th>{{ 'groups.members'|trans({}, 'admin') }}</th><th>{{ 'groups.playlists'|trans({}, 'admin') }}</th><th>{{ 'groups.created'|trans({}, 'admin') }}</th><th>{{ 'groups.description'|trans({}, 'admin') }}</th></tr></thead>
+    <tbody>{% for row in group_rows %}
+      <tr>
+        <td><strong>{{ row.group.name }}</strong><small>#{{ row.group.id }}</small></td>
+        <td>{% for owner in row.owners %}<span class="admin-person-chip" title="{{ owner.email }}">{{ owner.name }}</span>{% else %}<span class="admin-warning">{{ 'groups.no_owner'|trans({}, 'admin') }}</span>{% endfor %}</td>
+        <td>{% for manager in row.managers %}<span class="admin-person-chip" title="{{ manager.email }}">{{ manager.name }}</span>{% else %}—{% endfor %}</td>
+        <td><strong>{{ row.member_count }}</strong></td>
+        <td>{{ row.playlist_count }}</td>
+        <td>{{ row.group.createdAt|date('d/m/Y H:i') }}</td>
+        <td>{{ row.group.description ?: '—' }}</td>
+      </tr>
+    {% else %}<tr><td colspan="7">{{ 'groups.empty'|trans({}, 'admin') }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="panel admin-data-section">
+  <div class="admin-section-head"><div><div class="eyebrow">{{ 'playlists.eyebrow'|trans({}, 'admin') }}</div><h2>{{ 'playlists.heading'|trans({}, 'admin') }}</h2></div><span class="admin-count">{{ playlist_rows|length }}</span></div>
+  <div class="admin-table-wrap"><table class="admin-overview-table">
+    <thead><tr><th>{{ 'playlists.name'|trans({}, 'admin') }}</th><th>{{ 'playlists.owner'|trans({}, 'admin') }}</th><th>{{ 'playlists.groups'|trans({}, 'admin') }}</th><th>{{ 'playlists.creator'|trans({}, 'admin') }}</th><th>{{ 'playlists.visibility'|trans({}, 'admin') }}</th><th>{{ 'playlists.songs'|trans({}, 'admin') }}</th><th>{{ 'playlists.shares'|trans({}, 'admin') }}</th><th>{{ 'playlists.created'|trans({}, 'admin') }}</th></tr></thead>
+    <tbody>{% for row in playlist_rows %}
+      <tr>
+        <td><strong>{{ row.playlist.name }}</strong><small>#{{ row.playlist.id }}</small>{% if row.playlist.description %}<small>{{ row.playlist.description }}</small>{% endif %}</td>
+        <td><strong>{{ row.owner_label }}</strong></td>
+        <td>{% for name in row.group_names %}<span class="admin-person-chip">{{ name }}</span>{% else %}—{% endfor %}</td>
+        <td><span title="{{ row.creator.email }}">{{ row.creator.displayName }}</span></td>
+        <td>{{ row.playlist.public ? ('visibility_public'|trans({}, 'admin')) : ('visibility_private'|trans({}, 'admin')) }}</td>
+        <td>{{ row.song_count }}</td>
+        <td><div class="admin-share-stats"><span>⏳ {{ row.invitation_stats.pending }}</span><span>✓ {{ row.invitation_stats.accepted }}</span><span>× {{ row.invitation_stats.declined }}</span><span>– {{ row.invitation_stats.cancelled }}</span></div></td>
+        <td>{{ row.playlist.createdAt|date('d/m/Y H:i') }}</td>
+      </tr>
+    {% else %}<tr><td colspan="8">{{ 'playlists.empty'|trans({}, 'admin') }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

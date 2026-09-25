@@ -4,43 +4,21 @@ common:
 playlists:
   updated: Playlist mise à jour.
   deleted: Playlist supprimée.
-  owner:
-    label: Propriétaire
   delete:
     confirm: 'Supprimer définitivement la playlist « %name% » ?'
   song:
     heading: Chansons
     empty: Aucune chanson dans cette playlist.
-    choose: Choisir une chanson
-    add: Ajouter
-    added: Chanson ajoutée à la playlist.
-    removed: Chanson retirée de la playlist.
-    already_present: Cette chanson est déjà présente dans la playlist.
-    move_up: Monter
-    move_down: Descendre
-    remove_confirm: 'Retirer « %title% » de cette playlist ?'
   invitation:
-    heading: Partage
+    heading: Partage personnel
     received_heading: Invitations reçues
-    reader_personal_only: En tant que Lecteur, vous créez uniquement des playlists personnelles. Elles peuvent être partagées sur invitation avec un autre inscrit.
-    choose_user: Choisir un inscrit
-    invite: Inviter
     from: 'Invitation de %name%'
     accept: Accepter
     decline: Refuser
     leave: Quitter cette playlist
-    cancel: Annuler l'invitation
-    remove_share: Retirer le partage
-    shared_with_me: Playlist partagée avec moi
-    sent: 'Invitation envoyée à %name%.'
     accepted: Invitation acceptée.
     declined: Invitation refusée.
-    cancelled: Invitation ou partage retiré.
     left: Vous avez quitté la playlist partagée.
-    user_invalid: Utilisateur inscrit invalide ou désactivé.
-    self: Vous ne pouvez pas vous inviter vous-même.
-    already_pending: Une invitation est déjà en attente pour cet utilisateur.
-    already_shared: Cette playlist est déjà partagée avec cet utilisateur.
     status:
       pending: En attente
       accepted: Acceptée
@@ -48,11 +26,10 @@ playlists:
       cancelled: Annulée
 groups:
   updated: Groupe mis à jour.
-  deleted: Groupe supprimé. Les playlists appartenant à ce groupe ont également été supprimées.
+  deleted_unlinked: Groupe supprimé. Les playlists sont conservées et simplement détachées du groupe.
   delete:
-    confirm: 'Supprimer définitivement le groupe « %name% » et ses playlists ?'
+    confirm: 'Supprimer le groupe « %name% » ? Les playlists seront conservées.'
   member:
     deleted: Membre retiré du groupe.
-    delete_confirm: 'Retirer %name% de ce groupe ?'
     last_owner: Le groupe doit conserver au moins un propriétaire.
     invalid_role: Rôle de groupe invalide.

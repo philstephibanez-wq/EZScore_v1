@@ -1,13 +1,15 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'playlists.title'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}
-    <link rel="stylesheet" href="/assets/css/playlists.css?v=20260925r16">
+    <link rel="stylesheet" href="/assets/css/playlists.css?v=20260925r18">
+    <link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r18">
 {% endblock %}
 {% block body %}
 <header class="page-head">
     <div>
         <div class="eyebrow">{{ 'playlists.eyebrow'|trans }}</div>
         <h1>{{ 'playlists.title'|trans }}</h1>
+        <p class="page-note">{{ 'playlists_r18.note'|trans({}, 'picker') }}</p>
     </div>
 </header>
 
@@ -43,25 +45,12 @@
         <input type="hidden" name="_token" value="{{ csrf_token('create_playlist') }}">
         <input name="name" placeholder="{{ 'playlists.name'|trans }}" required>
         <input name="description" placeholder="{{ 'playlists.description'|trans }}">
-
-        {% if can_use_groups %}
-            <select name="owner_type" class="owner-type">
-                <option value="user">{{ 'playlists.owner.personal'|trans }}</option>
-                {% if groups %}<option value="group">{{ 'playlists.owner.group'|trans }}</option>{% endif %}
-            </select>
-
-            <select name="group_id" class="group-owner" hidden>
-                {% for group in groups %}<option value="{{ group.id }}">{{ group.name }}</option>{% endfor %}
-            </select>
-
+        {% if can_publish_playlist %}
             <label class="check">
                 <input type="checkbox" name="public" value="1">
                 {{ 'playlists.public'|trans }}
             </label>
-        {% else %}
-            <div class="playlist-personal-note">{{ 'playlists.invitation.reader_personal_only'|trans({}, 'management') }}</div>
         {% endif %}
-
         <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
     </form>
 </section>
@@ -74,78 +63,60 @@
     {% if can_edit %}
         <form method="post" action="{{ path('app_playlist_update', {'_locale': app.request.locale, id: playlist.id}) }}" class="playlist-form" data-dirty-track>
             <input type="hidden" name="_token" value="{{ csrf_token('playlist_update_' ~ playlist.id) }}">
-            <input name="name" value="{{ playlist.name }}" placeholder="{{ 'playlists.name'|trans }}" required>
-            <input name="description" value="{{ playlist.description }}" placeholder="{{ 'playlists.description'|trans }}">
-
-            {% if can_use_groups %}
-                <select name="owner_type" class="owner-type">
-                    <option value="user" {{ playlist.ownerType == 'user' ? 'selected' : '' }}>{{ 'playlists.owner.personal'|trans }}</option>
-                    {% if groups %}<option value="group" {{ playlist.ownerType == 'group' ? 'selected' : '' }}>{{ 'playlists.owner.group'|trans }}</option>{% endif %}
-                </select>
-
-                <select name="group_id" class="group-owner" {{ playlist.ownerType != 'group' ? 'hidden' : '' }}>
-                    {% for group in groups %}
-                        <option value="{{ group.id }}" {{ playlist.ownerType == 'group' and playlist.ownerId == group.id ? 'selected' : '' }}>{{ group.name }}</option>
-                    {% endfor %}
-                </select>
-
+            <input name="name" value="{{ playlist.name }}" required>
+            <input name="description" value="{{ playlist.description }}">
+            {% if can_publish_playlist %}
                 <label class="check">
                     <input type="checkbox" name="public" value="1" {{ playlist.public ? 'checked' : '' }}>
                     {{ 'playlists.public'|trans }}
                 </label>
             {% endif %}
-
             <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
         </form>
 
-        {% if is_granted('PLAYLIST_DELETE', playlist) %}
-            <form method="post" action="{{ path('app_playlist_delete', {'_locale': app.request.locale, id: playlist.id}) }}" class="inline-form compact" onsubmit="return confirm('{{ 'playlists.delete.confirm'|trans({'%name%': playlist.name}, 'management')|e('js') }}');">
-                <input type="hidden" name="_token" value="{{ csrf_token('playlist_delete_' ~ playlist.id) }}">
-                <button type="submit">{{ 'common.delete'|trans({}, 'management') }}</button>
-            </form>
-        {% endif %}
+        <form method="post" action="{{ path('app_playlist_delete', {'_locale': app.request.locale, id: playlist.id}) }}" class="inline-form compact" onsubmit="return confirm('{{ 'playlists.delete.confirm'|trans({'%name%': playlist.name}, 'management')|e('js') }}');">
+            <input type="hidden" name="_token" value="{{ csrf_token('playlist_delete_' ~ playlist.id) }}">
+            <button type="submit">{{ 'common.delete'|trans({}, 'management') }}</button>
+        </form>
     {% else %}
-        <div class="eyebrow">
-            {{ playlist.ownerType == 'group'
-                ? ('playlists.owner.group'|trans)
-                : ('playlists.invitation.shared_with_me'|trans({}, 'management')) }}
-        </div>
         <h2>{{ playlist.name }}</h2>
         <p>{{ playlist.description ?: '—' }}</p>
     {% endif %}
+
+    <div class="playlist-meta-line">
+        <span class="collection-chip">{{ 'playlists_r18.owner'|trans({}, 'picker') }}: {{ playlist.ownerUser.displayName }}</span>
+        {% for group in groups_by_playlist[playlist.id]|default([]) %}
+            <span class="collection-chip">{{ group.name }}</span>
+        {% endfor %}
+    </div>
 
     {% if is_granted('PLAYLIST_INVITE', playlist) %}
     <div class="playlist-share-block">
         <h3>{{ 'playlists.invitation.heading'|trans({}, 'management') }}</h3>
 
-        {% if invite_candidates %}
-            <form method="post" action="{{ path('app_playlist_invite', {'_locale': app.request.locale, id: playlist.id}) }}" class="playlist-share-form">
-                <input type="hidden" name="_token" value="{{ csrf_token('playlist_invite_' ~ playlist.id) }}">
-                <select name="invited_user_id" required>
-                    <option value="">{{ 'playlists.invitation.choose_user'|trans({}, 'management') }}</option>
-                    {% for candidate in invite_candidates %}
-                        <option value="{{ candidate.id }}">{{ candidate.displayName }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit">{{ 'playlists.invitation.invite'|trans({}, 'management') }}</button>
-            </form>
-        {% endif %}
+        <div class="collection-actions">
+            <button type="button"
+                    data-entity-picker
+                    data-picker-title="{{ 'playlists_r18.invite_users'|trans({}, 'picker') }}"
+                    data-picker-url="{{ path('app_picker_users', {'_locale': app.request.locale, playlist_id: playlist.id, membership: 'out'}) }}"
+                    data-picker-submit-url="{{ path('app_playlist_invitations_bulk_add', {'_locale': app.request.locale, id: playlist.id}) }}"
+                    data-picker-csrf="{{ csrf_token('playlist_invitations_bulk_' ~ playlist.id) }}">
+                {{ 'playlists_r18.invite_users'|trans({}, 'picker') }}
+            </button>
+            <button type="button"
+                    data-entity-picker
+                    data-picker-title="{{ 'playlists_r18.remove_shares'|trans({}, 'picker') }}"
+                    data-picker-url="{{ path('app_picker_users', {'_locale': app.request.locale, playlist_id: playlist.id, membership: 'in'}) }}"
+                    data-picker-submit-url="{{ path('app_playlist_invitations_bulk_remove', {'_locale': app.request.locale, id: playlist.id}) }}"
+                    data-picker-csrf="{{ csrf_token('playlist_invitations_bulk_' ~ playlist.id) }}">
+                {{ 'playlists_r18.remove_shares'|trans({}, 'picker') }}
+            </button>
+        </div>
 
         {% for invitation in invitations_by_playlist[playlist.id]|default([]) %}
-            <div class="playlist-share-row">
-                <span>
-                    <strong>{{ invitation.invitedUser.displayName }}</strong>
-                    <small>{{ ('playlists.invitation.status.' ~ invitation.status.value)|trans({}, 'management') }}</small>
-                </span>
-                {% if invitation.status.value in ['pending', 'accepted'] %}
-                    <form method="post" action="{{ path('app_playlist_invitation_cancel', {'_locale': app.request.locale, playlistId: playlist.id, invitationId: invitation.id}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('playlist_invitation_cancel_' ~ invitation.id) }}">
-                        <button type="submit">{{ invitation.status.value == 'accepted'
-                            ? ('playlists.invitation.remove_share'|trans({}, 'management'))
-                            : ('playlists.invitation.cancel'|trans({}, 'management')) }}</button>
-                    </form>
-                {% endif %}
-            </div>
+            <span class="collection-chip">
+                {{ invitation.invitedUser.displayName }} · {{ ('playlists.invitation.status.' ~ invitation.status.value)|trans({}, 'management') }}
+            </span>
         {% endfor %}
     </div>
     {% elseif accepted_invitations_by_playlist[playlist.id]|default(null) %}
@@ -163,53 +134,52 @@
         {% set playlist_items = items_by_playlist[playlist.id]|default([]) %}
         {% if playlist_items %}
             <ol class="playlist-song-list">
-                {% for item in playlist_items %}
-                    <li>
-                        <span class="playlist-song-title">
-                            <strong>{{ item.song.title }}</strong>
-                            <small>{{ item.song.artist }}</small>
+            {% for item in playlist_items %}
+                <li>
+                    <span class="playlist-song-title">
+                        <strong>{{ item.song.title }}</strong>
+                        <small>{{ item.song.artist }}</small>
+                    </span>
+                    {% if can_edit and is_granted('PLAYLIST_REORDER', playlist) %}
+                        <span class="playlist-song-actions">
+                            <form method="post" action="{{ path('app_playlist_song_move', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_move_' ~ item.id) }}">
+                                <input type="hidden" name="direction" value="up">
+                                <button type="submit">↑</button>
+                            </form>
+                            <form method="post" action="{{ path('app_playlist_song_move', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_move_' ~ item.id) }}">
+                                <input type="hidden" name="direction" value="down">
+                                <button type="submit">↓</button>
+                            </form>
                         </span>
-
-                        {% if can_edit %}
-                            <span class="playlist-song-actions">
-                                {% if is_granted('PLAYLIST_REORDER', playlist) %}
-                                <form method="post" action="{{ path('app_playlist_song_move', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_move_' ~ item.id) }}">
-                                    <input type="hidden" name="direction" value="up">
-                                    <button type="submit" title="{{ 'playlists.song.move_up'|trans({}, 'management') }}">↑</button>
-                                </form>
-                                <form method="post" action="{{ path('app_playlist_song_move', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_move_' ~ item.id) }}">
-                                    <input type="hidden" name="direction" value="down">
-                                    <button type="submit" title="{{ 'playlists.song.move_down'|trans({}, 'management') }}">↓</button>
-                                </form>
-                                {% endif %}
-                                {% if is_granted('PLAYLIST_REMOVE_SONG', playlist) %}
-                                <form method="post" action="{{ path('app_playlist_song_delete', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}" onsubmit="return confirm('{{ 'playlists.song.remove_confirm'|trans({'%title%': item.song.title}, 'management')|e('js') }}');">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_delete_' ~ item.id) }}">
-                                    <button type="submit">{{ 'common.remove'|trans({}, 'management') }}</button>
-                                </form>
-                                {% endif %}
-                            </span>
-                        {% endif %}
-                    </li>
-                {% endfor %}
+                    {% endif %}
+                </li>
+            {% endfor %}
             </ol>
         {% else %}
             <p class="playlist-song-empty">{{ 'playlists.song.empty'|trans({}, 'management') }}</p>
         {% endif %}
 
-        {% if is_granted('PLAYLIST_ADD_SONG', playlist) and available_songs %}
-            <form method="post" action="{{ path('app_playlist_song_add', {'_locale': app.request.locale, id: playlist.id}) }}" class="playlist-song-add">
-                <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_add_' ~ playlist.id) }}">
-                <select name="song_id" required>
-                    <option value="">{{ 'playlists.song.choose'|trans({}, 'management') }}</option>
-                    {% for song in available_songs %}
-                        <option value="{{ song.id }}">{{ song.artist }} — {{ song.title }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit">{{ 'playlists.song.add'|trans({}, 'management') }}</button>
-            </form>
+        {% if can_edit %}
+            <div class="collection-actions">
+                <button type="button"
+                        data-entity-picker
+                        data-picker-title="{{ 'playlists_r18.add_songs'|trans({}, 'picker') }}"
+                        data-picker-url="{{ path('app_picker_songs', {'_locale': app.request.locale, playlist_id: playlist.id, membership: 'out'}) }}"
+                        data-picker-submit-url="{{ path('app_playlist_songs_bulk_add', {'_locale': app.request.locale, id: playlist.id}) }}"
+                        data-picker-csrf="{{ csrf_token('playlist_songs_bulk_' ~ playlist.id) }}">
+                    {{ 'playlists_r18.add_songs'|trans({}, 'picker') }}
+                </button>
+                <button type="button"
+                        data-entity-picker
+                        data-picker-title="{{ 'playlists_r18.remove_songs'|trans({}, 'picker') }}"
+                        data-picker-url="{{ path('app_picker_songs', {'_locale': app.request.locale, playlist_id: playlist.id, membership: 'in'}) }}"
+                        data-picker-submit-url="{{ path('app_playlist_songs_bulk_remove', {'_locale': app.request.locale, id: playlist.id}) }}"
+                        data-picker-csrf="{{ csrf_token('playlist_songs_bulk_' ~ playlist.id) }}">
+                    {{ 'playlists_r18.remove_songs'|trans({}, 'picker') }}
+                </button>
+            </div>
         {% endif %}
     </div>
 </section>
@@ -217,4 +187,9 @@
     <div class="empty">{{ 'playlists.empty'|trans }}</div>
 {% endfor %}
 </div>
+
+{% include 'components/_entity_picker_modal.html.twig' %}
+{% endblock %}
+{% block javascripts %}
+    <script src="/assets/js/entity-picker.js?v=20260925r18"></script>
 {% endblock %}

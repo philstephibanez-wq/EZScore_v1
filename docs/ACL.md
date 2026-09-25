@@ -1,100 +1,63 @@
-# EZScore ACL — architecture native Symfony
+# EZScore ACL — Symfony Security natif
 
-## Objectif
+## Principe
 
-Le modèle d'autorisation reprend les concepts utiles de l'ACL OPUS :
+Le modèle reprend les concepts utiles d'OPUS ACL mais utilise uniquement Symfony Security.
 
-- rôle ;
-- ressource ;
-- privilège ;
-- condition ;
-- refus par défaut.
+- rôle global : `ROLE_READER`, `ROLE_EDITOR`, `ROLE_ADMIN`
+- ressource : entité Doctrine
+- privilège : `AclPrivilege`
+- condition : Voter Symfony
+- décision : `is_granted()` / `denyAccessUnlessGranted()`
 
-Il n'embarque pas le moteur ACL historique OPUS. Symfony Security reste l'unique moteur de décision.
+## Playlist
 
-## Correspondance OPUS -> EZScore/Symfony
+Une playlist possède toujours un propriétaire humain.
 
-| OPUS | EZScore |
-| --- | --- |
-| Role | `ROLE_READER`, `ROLE_EDITOR`, `ROLE_ADMIN` + rôles contextuels de groupe |
-| Resource | objets Doctrine `Song`, `Playlist`, `UserGroup` |
-| Privilege | constantes `AclPrivilege::*` |
-| Conditions | logique de `Voter` + état Doctrine |
-| `isAllowed()` | `is_granted()` / `denyAccessUnlessGranted()` |
-| héritage de rôles | `security.role_hierarchy` |
-| deny by default | comportement des Voters Symfony |
+`PLAYLIST_VIEW` est accordé si :
 
-## Règle d'architecture
+- Admin ;
+- playlist publique ;
+- utilisateur propriétaire ;
+- invitation personnelle acceptée ;
+- utilisateur membre d'au moins un groupe associé à la playlist.
 
-Les contrôleurs et templates ne doivent pas reconstruire les droits métier avec des `if` locaux.
+Les privilèges de modification restent au propriétaire humain ou à l'Admin.
 
-Ils demandent une décision :
+## Groupe
 
-```php
-$this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_EDIT, $playlist);
-```
+`GROUP_CREATE` : Editor ou Admin.
 
-ou :
+`GROUP_VIEW` : membre du groupe ou Admin.
 
-```twig
-{% if is_granted('PLAYLIST_EDIT', playlist) %}
-```
+`GROUP_EDIT`, `GROUP_MANAGE_MEMBERS`, `GROUP_MANAGE_PLAYLISTS` :
+owner, manager ou Admin.
 
-Les conditions sont centralisées dans :
+`GROUP_DELETE`, `GROUP_DELEGATE` :
+owner ou Admin.
 
-- `PlaylistVoter`
-- `GroupVoter`
-- `SongVoter`
+## Association Groupe / Playlist
 
-## Rôles globaux
+`PlaylistGroup` matérialise le rattachement.
 
-```text
-ROLE_READER
-ROLE_EDITOR -> ROLE_READER
-ROLE_ADMIN  -> ROLE_EDITOR -> ROLE_READER
-```
+Il donne automatiquement `PLAYLIST_VIEW` aux membres du groupe.
 
-## Règles Lecteur
+Aucune `PlaylistInvitation` n'est créée pour cet accès.
 
-Un Lecteur :
+## Partage personnel
 
-- peut créer une playlist personnelle ;
-- peut gérer ses propres playlists personnelles ;
-- ne peut pas créer un groupe ;
-- ne peut pas administrer un groupe ;
-- peut inviter un autre utilisateur déjà inscrit à sa playlist ;
-- l'invité ne voit la playlist qu'après acceptation ;
-- l'accès invité est lecture seule ;
-- une playlist partagée ne contourne jamais les droits sur une chanson.
+`PlaylistInvitation` est réservé au partage direct utilisateur vers utilisateur.
 
-## Règles Groupe
+États :
 
-La création de groupe est réservée à :
+- pending
+- accepted
+- declined
+- cancelled
 
-```text
-ROLE_EDITOR
-ROLE_ADMIN
-```
+Seul `accepted` accorde la visibilité.
 
-Dans un groupe :
+## Chansons
 
-- `member` : vue ;
-- `manager` : édition + gestion des membres ;
-- `owner` : droits manager + suppression + délégation owner ;
-- `ROLE_ADMIN` : tous droits.
-
-L'invariant "au moins un owner" reste une règle domaine appliquée par le contrôleur lors d'un changement de membership.
-
-## Extension future
-
-Les délégations fines prévues pour les groupes doivent être ajoutées comme données métier, puis consommées par `GroupVoter`.
-
-Exemple futur :
-
-```text
-can_manage_members
-can_manage_playlists
-can_delegate
-```
-
-Aucun contrôleur ne devra être réécrit : seule la condition du Voter évoluera.
+La visibilité d'une playlist ne remplace jamais la politique d'accès aux chansons.
+Chaque chanson affichée reste contrôlée par `SongVoter`.

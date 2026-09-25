@@ -1,0 +1,40 @@
+picker:
+  eyebrow: Selection
+  title: Choose
+  close: Close
+  search: Search by name, title or artist…
+  select_page: Select page
+  selected: selected
+  loading: Loading…
+  previous: Previous
+  next: Next
+  cancel: Cancel
+  apply: Apply
+  filter:
+    all: All
+    role: Role
+    state: State
+    status: Status
+    visibility: Visibility
+  state:
+    active: Active
+    inactive: Inactive
+  visibility:
+    public: Public
+    private: Private
+groups_r18:
+  note: A group is a collection of users and playlists. Members automatically see playlists assigned to the group.
+  members: Members
+  playlists: Group playlists
+  no_playlists: No playlist assigned.
+  add_members: Add members
+  remove_members: Remove members
+  add_playlists: Assign playlists
+  remove_playlists: Remove playlists
+playlists_r18:
+  note: A playlist belongs to a user, contains songs and can be assigned to one or more groups.
+  owner: Owner
+  invite_users: Invite users
+  remove_shares: Remove invitations / shares
+  add_songs: Add songs
+  remove_songs: Remove songs

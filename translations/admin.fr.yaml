@@ -1,0 +1,39 @@
+title: Administration
+eyebrow: Back-office
+note: Vue transversale des utilisateurs, groupes et playlists avec leurs propriétaires et attributs.
+manage_users: Gérer les utilisateurs
+stats:
+  users: Utilisateurs
+  active: '%count% actif(s)'
+  groups: Groupes
+  playlists: Playlists
+  roles: Répartition des rôles
+role_reader: Lecteur
+role_editor: Éditeur
+role_admin: Admin
+groups:
+  eyebrow: Groupes
+  heading: Propriété et membres
+  name: Groupe
+  owners: Propriétaire(s)
+  managers: Gestionnaire(s)
+  members: Membres
+  playlists: Playlists
+  created: Créé le
+  description: Description
+  no_owner: Aucun propriétaire
+  empty: Aucun groupe.
+playlists:
+  eyebrow: Playlists
+  heading: Propriété et attributs
+  name: Playlist
+  owner: Propriétaire
+  groups: Groupes
+  creator: Créateur
+  visibility: Visibilité
+  songs: Chansons
+  shares: Partages personnels
+  created: Créée le
+  empty: Aucune playlist.
+visibility_public: Publique
+visibility_private: Privée

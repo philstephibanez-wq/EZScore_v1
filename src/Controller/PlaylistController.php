@@ -1,12 +1,10 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Domain\Group\GroupMember;
-use App\Domain\Group\UserGroup;
 use App\Domain\Playlist\Playlist;
+use App\Domain\Playlist\PlaylistGroup;
 use App\Domain\Playlist\PlaylistInvitation;
 use App\Domain\Playlist\PlaylistInvitationStatus;
 use App\Domain\Playlist\PlaylistItem;
@@ -16,6 +14,7 @@ use App\Domain\User\User;
 use App\Security\Acl\AclPrivilege;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -25,11 +24,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class PlaylistController extends AbstractController
 {
     #[Route('', name: 'app_playlists', methods: ['GET', 'POST'])]
-    public function index(Request $request, EntityManagerInterface $em, SongRepository $songs): Response
+    public function index(Request $request, EntityManagerInterface $em): Response
     {
         $user = $this->requireUser();
-        $canUseGroups = $this->isGranted(AclPrivilege::GROUP_CREATE);
-        $editableGroups = $canUseGroups ? $this->editableGroups($user, $em) : [];
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('create_playlist', (string) $request->request->get('_token'))) {
@@ -42,22 +39,15 @@ final class PlaylistController extends AbstractController
                 return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
             }
 
-            if ($canUseGroups) {
-                [$ownerType, $ownerId] = $this->resolveOwner($request, $user, $editableGroups, null);
-                $public = $request->request->getBoolean('public');
-            } else {
-                $ownerType = 'user';
-                $ownerId = (int) $user->getId();
-                $public = false;
-            }
+            $public = ($this->isGranted('ROLE_EDITOR') || $this->isGranted('ROLE_ADMIN'))
+                && $request->request->getBoolean('public');
 
             $playlist = (new Playlist())
                 ->setName($name)
                 ->setDescription((string) $request->request->get('description'))
-                ->setOwnerType($ownerType)
-                ->setOwnerId($ownerId)
-                ->setPublic($public)
-                ->setCreatedBy($user);
+                ->setOwnerUser($user)
+                ->setCreatedBy($user)
+                ->setPublic($public);
 
             $em->persist($playlist);
             $em->flush();
@@ -71,12 +61,11 @@ final class PlaylistController extends AbstractController
             'status' => PlaylistInvitationStatus::Pending,
         ], ['createdAt' => 'DESC']);
 
-        $acceptedInvitations = $em->getRepository(PlaylistInvitation::class)->findBy([
+        $acceptedByPlaylist = [];
+        foreach ($em->getRepository(PlaylistInvitation::class)->findBy([
             'invitedUser' => $user,
             'status' => PlaylistInvitationStatus::Accepted,
-        ]);
-        $acceptedByPlaylist = [];
-        foreach ($acceptedInvitations as $invitation) {
+        ]) as $invitation) {
             $acceptedByPlaylist[(int) $invitation->getPlaylist()->getId()] = $invitation;
         }
 
@@ -89,8 +78,11 @@ final class PlaylistController extends AbstractController
 
         $itemsByPlaylist = [];
         $invitationsByPlaylist = [];
+        $groupsByPlaylist = [];
+
         foreach ($visible as $playlist) {
             $playlistId = (int) $playlist->getId();
+
             $itemsByPlaylist[$playlistId] = array_values(array_filter(
                 $em->getRepository(PlaylistItem::class)->findBy(
                     ['playlist' => $playlist],
@@ -98,6 +90,11 @@ final class PlaylistController extends AbstractController
                 ),
                 fn(PlaylistItem $item): bool => $this->isGranted(AclPrivilege::SONG_VIEW, $item->getSong()),
             ));
+
+            $groupsByPlaylist[$playlistId] = array_map(
+                static fn(PlaylistGroup $link) => $link->getGroup(),
+                $em->getRepository(PlaylistGroup::class)->findBy(['playlist' => $playlist]),
+            );
 
             if ($this->isGranted(AclPrivilege::PLAYLIST_INVITE, $playlist)) {
                 $invitationsByPlaylist[$playlistId] = $em->getRepository(PlaylistInvitation::class)->findBy(
@@ -107,21 +104,14 @@ final class PlaylistController extends AbstractController
             }
         }
 
-        $inviteCandidates = array_values(array_filter(
-            $em->getRepository(User::class)->findBy(['active' => true], ['displayName' => 'ASC']),
-            static fn(User $candidate): bool => $candidate->getId() !== $user->getId(),
-        ));
-
         return $this->render('playlists/index.html.twig', [
             'playlists' => $visible,
-            'groups' => $editableGroups,
-            'can_use_groups' => $canUseGroups,
             'items_by_playlist' => $itemsByPlaylist,
-            'available_songs' => $this->accessibleSongs($songs, $user),
+            'groups_by_playlist' => $groupsByPlaylist,
             'pending_invitations' => $pendingInvitations,
             'accepted_invitations_by_playlist' => $acceptedByPlaylist,
             'invitations_by_playlist' => $invitationsByPlaylist,
-            'invite_candidates' => $inviteCandidates,
+            'can_publish_playlist' => $this->isGranted('ROLE_EDITOR') || $this->isGranted('ROLE_ADMIN'),
         ]);
     }
 
@@ -129,7 +119,6 @@ final class PlaylistController extends AbstractController
     public function update(Playlist $playlist, Request $request, EntityManagerInterface $em, TranslatorInterface $translator): Response
     {
         $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_EDIT, $playlist);
-        $user = $this->requireUser();
 
         if (!$this->isCsrfTokenValid('playlist_update_'.$playlist->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
@@ -141,28 +130,11 @@ final class PlaylistController extends AbstractController
             return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
         }
 
-        if ($this->isGranted(AclPrivilege::GROUP_CREATE)) {
-            [$ownerType, $ownerId] = $this->resolveOwner(
-                $request,
-                $user,
-                $this->editableGroups($user, $em),
-                $playlist,
-            );
-            $public = $request->request->getBoolean('public');
-        } else {
-            if ($playlist->getOwnerType() !== 'user' || $playlist->getOwnerId() !== $user->getId()) {
-                throw $this->createAccessDeniedException();
-            }
-            $ownerType = 'user';
-            $ownerId = (int) $user->getId();
-            $public = false;
-        }
+        $public = ($this->isGranted('ROLE_EDITOR') || $this->isGranted('ROLE_ADMIN'))
+            && $request->request->getBoolean('public');
 
-        $playlist
-            ->setName($name)
+        $playlist->setName($name)
             ->setDescription((string) $request->request->get('description'))
-            ->setOwnerType($ownerType)
-            ->setOwnerId($ownerId)
             ->setPublic($public);
 
         $em->flush();
@@ -184,59 +156,6 @@ final class PlaylistController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', $translator->trans('playlists.deleted', [], 'management'));
-        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-    }
-
-    #[Route('/{id}/invite', name: 'app_playlist_invite', requirements: ['id' => '\\d+'], methods: ['POST'])]
-    public function invite(
-        Playlist $playlist,
-        Request $request,
-        EntityManagerInterface $em,
-        TranslatorInterface $translator,
-    ): Response {
-        $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_INVITE, $playlist);
-        $user = $this->requireUser();
-
-        if (!$this->isCsrfTokenValid('playlist_invite_'.$playlist->getId(), (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $invited = $em->getRepository(User::class)->find((int) $request->request->get('invited_user_id'));
-        if (!$invited instanceof User || !$invited->isActive()) {
-            $this->addFlash('error', $translator->trans('playlists.invitation.user_invalid', [], 'management'));
-            return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-        }
-
-        if ($invited->getId() === $user->getId()) {
-            $this->addFlash('error', $translator->trans('playlists.invitation.self', [], 'management'));
-            return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-        }
-
-        $repo = $em->getRepository(PlaylistInvitation::class);
-        $invitation = $repo->findOneBy(['playlist' => $playlist, 'invitedUser' => $invited]);
-
-        if ($invitation instanceof PlaylistInvitation) {
-            if ($invitation->getStatus() === PlaylistInvitationStatus::Pending) {
-                $this->addFlash('error', $translator->trans('playlists.invitation.already_pending', [], 'management'));
-                return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-            }
-            if ($invitation->getStatus() === PlaylistInvitationStatus::Accepted) {
-                $this->addFlash('error', $translator->trans('playlists.invitation.already_shared', [], 'management'));
-                return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-            }
-            $invitation->reopen($user);
-        } else {
-            $invitation = new PlaylistInvitation($playlist, $invited, $user);
-            $em->persist($invitation);
-        }
-
-        $em->flush();
-        $this->addFlash('success', $translator->trans(
-            'playlists.invitation.sent',
-            ['%name%' => $invited->getDisplayName()],
-            'management',
-        ));
-
         return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
     }
 
@@ -281,108 +200,145 @@ final class PlaylistController extends AbstractController
         return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
     }
 
-    #[Route('/{playlistId}/invitations/{invitationId}/cancel', name: 'app_playlist_invitation_cancel', requirements: ['playlistId' => '\\d+', 'invitationId' => '\\d+'], methods: ['POST'])]
-    public function cancelInvitation(
-        int $playlistId,
-        int $invitationId,
-        Request $request,
-        EntityManagerInterface $em,
-        TranslatorInterface $translator,
-    ): Response {
-        $playlist = $em->getRepository(Playlist::class)->find($playlistId);
-        $invitation = $em->getRepository(PlaylistInvitation::class)->find($invitationId);
+    #[Route('/{id}/invitations/bulk-add', name: 'app_playlist_invitations_bulk_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkAddInvitations(Playlist $playlist, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_INVITE, $playlist);
+        $this->validateAjaxCsrf('playlist_invitations_bulk_'.$playlist->getId(), $request);
 
-        if (!$playlist instanceof Playlist
-            || !$invitation instanceof PlaylistInvitation
-            || $invitation->getPlaylist()->getId() !== $playlist->getId()) {
-            throw $this->createNotFoundException();
-        }
+        $owner = $this->requireUser();
+        $changed = 0;
 
-        $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_REVOKE_SHARE, $playlist);
+        foreach ($this->ids($request) as $id) {
+            $invited = $em->getRepository(User::class)->find($id);
+            if (!$invited instanceof User || !$invited->isActive() || $invited->getId() === $owner->getId()) {
+                continue;
+            }
 
-        if (!$this->isCsrfTokenValid('playlist_invitation_cancel_'.$invitation->getId(), (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
-        }
+            $repo = $em->getRepository(PlaylistInvitation::class);
+            $invitation = $repo->findOneBy(['playlist' => $playlist, 'invitedUser' => $invited]);
 
-        try {
-            $invitation->cancel();
-        } catch (\DomainException) {
-            throw $this->createAccessDeniedException();
+            if ($invitation instanceof PlaylistInvitation) {
+                if (in_array($invitation->getStatus(), [
+                    PlaylistInvitationStatus::Pending,
+                    PlaylistInvitationStatus::Accepted,
+                ], true)) {
+                    continue;
+                }
+                $invitation->reopen($owner);
+            } else {
+                $em->persist(new PlaylistInvitation($playlist, $invited, $owner));
+            }
+            ++$changed;
         }
 
         $em->flush();
-        $this->addFlash('success', $translator->trans('playlists.invitation.cancelled', [], 'management'));
-
-        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
+        return $this->json(['ok' => true, 'changed' => $changed]);
     }
 
-    #[Route('/{id}/songs', name: 'app_playlist_song_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
-    public function addSong(
+    #[Route('/{id}/invitations/bulk-remove', name: 'app_playlist_invitations_bulk_remove', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkRemoveInvitations(Playlist $playlist, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_REVOKE_SHARE, $playlist);
+        $this->validateAjaxCsrf('playlist_invitations_bulk_'.$playlist->getId(), $request);
+
+        $changed = 0;
+        foreach ($this->ids($request) as $id) {
+            $user = $em->getRepository(User::class)->find($id);
+            if (!$user instanceof User) continue;
+
+            $invitation = $em->getRepository(PlaylistInvitation::class)->findOneBy([
+                'playlist' => $playlist,
+                'invitedUser' => $user,
+            ]);
+
+            if (!$invitation instanceof PlaylistInvitation
+                || !in_array($invitation->getStatus(), [
+                    PlaylistInvitationStatus::Pending,
+                    PlaylistInvitationStatus::Accepted,
+                ], true)) {
+                continue;
+            }
+
+            $invitation->cancel();
+            ++$changed;
+        }
+
+        $em->flush();
+        return $this->json(['ok' => true, 'changed' => $changed]);
+    }
+
+    #[Route('/{id}/songs/bulk-add', name: 'app_playlist_songs_bulk_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkAddSongs(
         Playlist $playlist,
         Request $request,
         EntityManagerInterface $em,
         SongRepository $songs,
-        TranslatorInterface $translator,
-    ): Response {
+    ): JsonResponse {
         $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_ADD_SONG, $playlist);
+        $this->validateAjaxCsrf('playlist_songs_bulk_'.$playlist->getId(), $request);
+
         $user = $this->requireUser();
-
-        if (!$this->isCsrfTokenValid('playlist_song_add_'.$playlist->getId(), (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $song = $songs->find((int) $request->request->get('song_id'));
-        if (!$song instanceof Song || !$this->isGranted(AclPrivilege::SONG_VIEW, $song)) {
-            throw $this->createAccessDeniedException();
-        }
-
         $itemRepo = $em->getRepository(PlaylistItem::class);
-        if ($itemRepo->findOneBy(['playlist' => $playlist, 'song' => $song]) instanceof PlaylistItem) {
-            $this->addFlash('error', $translator->trans('playlists.song.already_present', [], 'management'));
-            return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-        }
-
         $last = $itemRepo->findOneBy(['playlist' => $playlist], ['position' => 'DESC', 'id' => 'DESC']);
         $position = $last instanceof PlaylistItem ? $last->getPosition() + 1 : 0;
+        $changed = 0;
 
-        $em->persist(new PlaylistItem($playlist, $song, $user, $position));
-        $em->flush();
+        foreach ($this->ids($request) as $id) {
+            $song = $songs->find($id);
+            if (!$song instanceof Song || !$this->isGranted(AclPrivilege::SONG_VIEW, $song)) {
+                continue;
+            }
 
-        $this->addFlash('success', $translator->trans('playlists.song.added', [], 'management'));
-        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
-    }
+            if ($itemRepo->findOneBy(['playlist' => $playlist, 'song' => $song]) instanceof PlaylistItem) {
+                continue;
+            }
 
-    #[Route('/{playlistId}/songs/{itemId}/delete', name: 'app_playlist_song_delete', requirements: ['playlistId' => '\\d+', 'itemId' => '\\d+'], methods: ['POST'])]
-    public function removeSong(
-        int $playlistId,
-        int $itemId,
-        Request $request,
-        EntityManagerInterface $em,
-        TranslatorInterface $translator,
-    ): Response {
-        [$playlist, $item] = $this->requireItem($playlistId, $itemId, $em);
-        $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_REMOVE_SONG, $playlist);
-
-        if (!$this->isCsrfTokenValid('playlist_song_delete_'.$item->getId(), (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException();
+            $em->persist(new PlaylistItem($playlist, $song, $user, $position++));
+            ++$changed;
         }
 
-        $em->remove($item);
+        $em->flush();
+        return $this->json(['ok' => true, 'changed' => $changed]);
+    }
+
+    #[Route('/{id}/songs/bulk-remove', name: 'app_playlist_songs_bulk_remove', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkRemoveSongs(Playlist $playlist, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_REMOVE_SONG, $playlist);
+        $this->validateAjaxCsrf('playlist_songs_bulk_'.$playlist->getId(), $request);
+
+        $changed = 0;
+        foreach ($this->ids($request) as $id) {
+            $song = $em->getRepository(Song::class)->find($id);
+            if (!$song instanceof Song) continue;
+
+            $item = $em->getRepository(PlaylistItem::class)->findOneBy([
+                'playlist' => $playlist,
+                'song' => $song,
+            ]);
+            if (!$item instanceof PlaylistItem) continue;
+
+            $em->remove($item);
+            ++$changed;
+        }
+
         $em->flush();
         $this->normalisePositions($playlist, $em);
 
-        $this->addFlash('success', $translator->trans('playlists.song.removed', [], 'management'));
-        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
+        return $this->json(['ok' => true, 'changed' => $changed]);
     }
 
     #[Route('/{playlistId}/songs/{itemId}/move', name: 'app_playlist_song_move', requirements: ['playlistId' => '\\d+', 'itemId' => '\\d+'], methods: ['POST'])]
-    public function moveSong(
-        int $playlistId,
-        int $itemId,
-        Request $request,
-        EntityManagerInterface $em,
-    ): Response {
-        [$playlist, $item] = $this->requireItem($playlistId, $itemId, $em);
+    public function moveSong(int $playlistId, int $itemId, Request $request, EntityManagerInterface $em): Response
+    {
+        $playlist = $em->getRepository(Playlist::class)->find($playlistId);
+        $item = $em->getRepository(PlaylistItem::class)->find($itemId);
+
+        if (!$playlist instanceof Playlist || !$item instanceof PlaylistItem || $item->getPlaylist()->getId() !== $playlist->getId()) {
+            throw $this->createNotFoundException();
+        }
+
         $this->denyAccessUnlessGranted(AclPrivilege::PLAYLIST_REORDER, $playlist);
 
         if (!$this->isCsrfTokenValid('playlist_song_move_'.$item->getId(), (string) $request->request->get('_token'))) {
@@ -411,9 +367,9 @@ final class PlaylistController extends AbstractController
             $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
             if (isset($items[$targetIndex])) {
                 $target = $items[$targetIndex];
-                $currentPosition = $item->getPosition();
+                $current = $item->getPosition();
                 $item->setPosition($target->getPosition());
-                $target->setPosition($currentPosition);
+                $target->setPosition($current);
                 $em->flush();
             }
         }
@@ -421,85 +377,20 @@ final class PlaylistController extends AbstractController
         return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
     }
 
-    /** @return list<UserGroup> */
-    private function editableGroups(User $user, EntityManagerInterface $em): array
+    /** @return list<int> */
+    private function ids(Request $request): array
     {
-        if ($this->isGranted('ROLE_ADMIN')) {
-            return $em->getRepository(UserGroup::class)->findBy([], ['name' => 'ASC']);
-        }
-
-        if (!$this->isGranted('ROLE_EDITOR')) {
-            return [];
-        }
-
-        $groups = [];
-        foreach ($em->getRepository(GroupMember::class)->findBy(['user' => $user]) as $membership) {
-            if ($this->isGranted(AclPrivilege::GROUP_EDIT, $membership->getGroup())) {
-                $groups[] = $membership->getGroup();
-            }
-        }
-
-        usort($groups, static fn(UserGroup $a, UserGroup $b): int => strcasecmp($a->getName(), $b->getName()));
-
-        return $groups;
+        return array_values(array_unique(array_filter(
+            array_map('intval', $request->request->all('ids')),
+            static fn(int $id): bool => $id > 0,
+        )));
     }
 
-    /** @return list<Song> */
-    private function accessibleSongs(SongRepository $songs, User $user): array
+    private function validateAjaxCsrf(string $tokenId, Request $request): void
     {
-        $candidates = $this->isGranted('ROLE_ADMIN')
-            ? $songs->findCatalog()
-            : ($this->isGranted('ROLE_EDITOR') ? $songs->findForEditor($user) : $songs->findPublished());
-
-        return array_values(array_filter(
-            $candidates,
-            fn(Song $song): bool => $this->isGranted(AclPrivilege::SONG_VIEW, $song),
-        ));
-    }
-
-    /**
-     * @param list<UserGroup> $editableGroups
-     * @return array{0:string,1:int}
-     */
-    private function resolveOwner(Request $request, User $user, array $editableGroups, ?Playlist $existing): array
-    {
-        if ((string) $request->request->get('owner_type', 'user') !== 'group') {
-            if ($existing instanceof Playlist
-                && $this->isGranted('ROLE_ADMIN')
-                && $existing->getOwnerType() === 'user') {
-                return ['user', $existing->getOwnerId()];
-            }
-
-            return ['user', (int) $user->getId()];
-        }
-
-        if (!$this->isGranted(AclPrivilege::GROUP_CREATE)) {
+        if (!$this->isCsrfTokenValid($tokenId, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
-
-        $candidate = (int) $request->request->get('group_id');
-        foreach ($editableGroups as $group) {
-            if ($group->getId() === $candidate) {
-                return ['group', $candidate];
-            }
-        }
-
-        throw $this->createAccessDeniedException();
-    }
-
-    /** @return array{0:Playlist,1:PlaylistItem} */
-    private function requireItem(int $playlistId, int $itemId, EntityManagerInterface $em): array
-    {
-        $playlist = $em->getRepository(Playlist::class)->find($playlistId);
-        $item = $em->getRepository(PlaylistItem::class)->find($itemId);
-
-        if (!$playlist instanceof Playlist
-            || !$item instanceof PlaylistItem
-            || $item->getPlaylist()->getId() !== $playlist->getId()) {
-            throw $this->createNotFoundException();
-        }
-
-        return [$playlist, $item];
     }
 
     private function normalisePositions(Playlist $playlist, EntityManagerInterface $em): void
@@ -512,17 +403,13 @@ final class PlaylistController extends AbstractController
         foreach ($items as $position => $item) {
             $item->setPosition($position);
         }
-
         $em->flush();
     }
 
     private function requireUser(): User
     {
         $user = $this->getUser();
-        if (!$user instanceof User) {
-            throw $this->createAccessDeniedException();
-        }
-
+        if (!$user instanceof User) throw $this->createAccessDeniedException();
         return $user;
     }
 }

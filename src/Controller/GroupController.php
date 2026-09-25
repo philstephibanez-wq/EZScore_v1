@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Controller;
@@ -7,11 +6,13 @@ namespace App\Controller;
 use App\Domain\Group\GroupMember;
 use App\Domain\Group\UserGroup;
 use App\Domain\Playlist\Playlist;
+use App\Domain\Playlist\PlaylistGroup;
 use App\Domain\User\User;
 use App\Domain\User\UserRepository;
 use App\Security\Acl\AclPrivilege;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -63,15 +64,26 @@ final class GroupController extends AbstractController
             }
         }
 
-        $members = $groups === [] ? [] : $em->getRepository(GroupMember::class)->findBy(['group' => $groups]);
-        $byGroup = [];
-        foreach ($members as $member) {
-            $byGroup[$member->getGroup()->getId()][] = $member;
+        $membersByGroup = [];
+        $playlistsByGroup = [];
+
+        foreach ($groups as $group) {
+            $membersByGroup[(int) $group->getId()] = $em->getRepository(GroupMember::class)->findBy(
+                ['group' => $group],
+                ['role' => 'ASC', 'id' => 'ASC'],
+            );
+
+            $links = $em->getRepository(PlaylistGroup::class)->findBy(['group' => $group], ['id' => 'ASC']);
+            $playlistsByGroup[(int) $group->getId()] = array_map(
+                static fn(PlaylistGroup $link): Playlist => $link->getPlaylist(),
+                $links,
+            );
         }
 
         return $this->render('groups/index.html.twig', [
             'groups' => $groups,
-            'members_by_group' => $byGroup,
+            'members_by_group' => $membersByGroup,
+            'playlists_by_group' => $playlistsByGroup,
             'can_create_group' => $canCreateGroup,
         ]);
     }
@@ -91,13 +103,10 @@ final class GroupController extends AbstractController
             return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
         }
 
-        $group
-            ->setName($name)
-            ->setDescription((string) $request->request->get('description'));
-
+        $group->setName($name)->setDescription((string) $request->request->get('description'));
         $em->flush();
-        $this->addFlash('success', $translator->trans('groups.updated', [], 'management'));
 
+        $this->addFlash('success', $translator->trans('groups.updated', [], 'management'));
         return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
     }
 
@@ -110,21 +119,10 @@ final class GroupController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        foreach ($em->getRepository(Playlist::class)->findBy([
-            'ownerType' => 'group',
-            'ownerId' => (int) $group->getId(),
-        ]) as $playlist) {
-            $em->remove($playlist);
-        }
-
-        foreach ($em->getRepository(GroupMember::class)->findBy(['group' => $group]) as $membership) {
-            $em->remove($membership);
-        }
-
         $em->remove($group);
         $em->flush();
 
-        $this->addFlash('success', $translator->trans('groups.deleted', [], 'management'));
+        $this->addFlash('success', $translator->trans('groups.deleted_unlinked', [], 'management'));
         return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
     }
 
@@ -144,41 +142,159 @@ final class GroupController extends AbstractController
 
         $email = mb_strtolower(trim((string) $request->request->get('email')));
         $user = $users->findOneBy(['email' => $email]);
-
         if (!$user instanceof User) {
             $this->addFlash('error', 'groups.member.not_found');
             return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
         }
 
         $requestedRole = (string) $request->request->get('role', 'member');
-        if (!in_array($requestedRole, ['owner', 'manager', 'member'], true)) {
-            $this->addFlash('error', $translator->trans('groups.member.invalid_role', [], 'management'));
-            return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
+        $this->saveMembership($group, $user, $requestedRole, $em, $translator);
+
+        return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
+    }
+
+    #[Route('/{id}/members/bulk-add', name: 'app_group_members_bulk_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkAddMembers(UserGroup $group, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::GROUP_MANAGE_MEMBERS, $group);
+        $this->validateAjaxCsrf('group_members_bulk_'.$group->getId(), $request);
+
+        $added = 0;
+        foreach ($this->ids($request) as $id) {
+            $user = $em->getRepository(User::class)->find($id);
+            if (!$user instanceof User || !$user->isActive()) continue;
+
+            if ($em->getRepository(GroupMember::class)->findOneBy(['group' => $group, 'user' => $user]) instanceof GroupMember) {
+                continue;
+            }
+
+            $em->persist((new GroupMember())->setGroup($group)->setUser($user)->setRole('member'));
+            ++$added;
         }
 
-        $repo = $em->getRepository(GroupMember::class);
-        $member = $repo->findOneBy(['group' => $group, 'user' => $user])
-            ?? (new GroupMember())->setGroup($group)->setUser($user);
+        $em->flush();
+        return $this->json(['ok' => true, 'changed' => $added]);
+    }
 
-        $memberIsOwner = $member->getId() !== null && $member->getRole() === 'owner';
+    #[Route('/{id}/members/bulk-remove', name: 'app_group_members_bulk_remove', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkRemoveMembers(UserGroup $group, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::GROUP_MANAGE_MEMBERS, $group);
+        $this->validateAjaxCsrf('group_members_bulk_'.$group->getId(), $request);
 
-        if ($requestedRole === 'owner' || $memberIsOwner) {
+        $memberships = [];
+        $ownersSelected = 0;
+
+        foreach ($this->ids($request) as $id) {
+            $user = $em->getRepository(User::class)->find($id);
+            if (!$user instanceof User) continue;
+
+            $membership = $em->getRepository(GroupMember::class)->findOneBy(['group' => $group, 'user' => $user]);
+            if (!$membership instanceof GroupMember) continue;
+
+            if ($membership->getRole() === 'owner') ++$ownersSelected;
+            $memberships[] = $membership;
+        }
+
+        if ($ownersSelected > 0) {
+            $this->denyAccessUnlessGranted(AclPrivilege::GROUP_DELEGATE, $group);
+            if ($this->countGroupOwners($group, $em) - $ownersSelected < 1) {
+                return $this->json(['ok' => false, 'message' => 'last_owner'], 422);
+            }
+        }
+
+        foreach ($memberships as $membership) $em->remove($membership);
+        $em->flush();
+
+        return $this->json(['ok' => true, 'changed' => count($memberships)]);
+    }
+
+    #[Route('/{groupId}/members/{memberId}/role', name: 'app_group_member_role', requirements: ['groupId' => '\\d+', 'memberId' => '\\d+'], methods: ['POST'])]
+    public function updateMemberRole(
+        int $groupId,
+        int $memberId,
+        Request $request,
+        EntityManagerInterface $em,
+        TranslatorInterface $translator,
+    ): Response {
+        $group = $em->getRepository(UserGroup::class)->find($groupId);
+        $membership = $em->getRepository(GroupMember::class)->find($memberId);
+
+        if (!$group instanceof UserGroup || !$membership instanceof GroupMember || $membership->getGroup()->getId() !== $group->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        $this->denyAccessUnlessGranted(AclPrivilege::GROUP_MANAGE_MEMBERS, $group);
+
+        if (!$this->isCsrfTokenValid('group_member_role_'.$membership->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $requestedRole = (string) $request->request->get('role', 'member');
+        if (!in_array($requestedRole, ['owner', 'manager', 'member'], true)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($requestedRole === 'owner' || $membership->getRole() === 'owner') {
             $this->denyAccessUnlessGranted(AclPrivilege::GROUP_DELEGATE, $group);
         }
 
-        if ($memberIsOwner
-            && $requestedRole !== 'owner'
-            && $this->countGroupOwners($group, $em) <= 1) {
+        if ($membership->getRole() === 'owner' && $requestedRole !== 'owner' && $this->countGroupOwners($group, $em) <= 1) {
             $this->addFlash('error', $translator->trans('groups.member.last_owner', [], 'management'));
             return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
         }
 
-        $member->setRole($requestedRole);
-        $em->persist($member);
+        $membership->setRole($requestedRole);
         $em->flush();
 
-        $this->addFlash('success', 'groups.member.saved');
         return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
+    }
+
+    #[Route('/{id}/playlists/bulk-add', name: 'app_group_playlists_bulk_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkAddPlaylists(UserGroup $group, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::GROUP_MANAGE_PLAYLISTS, $group);
+        $this->validateAjaxCsrf('group_playlists_bulk_'.$group->getId(), $request);
+
+        $user = $this->requireUser();
+        $added = 0;
+
+        foreach ($this->ids($request) as $id) {
+            $playlist = $em->getRepository(Playlist::class)->find($id);
+            if (!$playlist instanceof Playlist || !$this->isGranted(AclPrivilege::PLAYLIST_EDIT, $playlist)) continue;
+
+            if ($em->getRepository(PlaylistGroup::class)->findOneBy(['group' => $group, 'playlist' => $playlist]) instanceof PlaylistGroup) {
+                continue;
+            }
+
+            $em->persist(new PlaylistGroup($playlist, $group, $user));
+            ++$added;
+        }
+
+        $em->flush();
+        return $this->json(['ok' => true, 'changed' => $added]);
+    }
+
+    #[Route('/{id}/playlists/bulk-remove', name: 'app_group_playlists_bulk_remove', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function bulkRemovePlaylists(UserGroup $group, Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(AclPrivilege::GROUP_MANAGE_PLAYLISTS, $group);
+        $this->validateAjaxCsrf('group_playlists_bulk_'.$group->getId(), $request);
+
+        $removed = 0;
+        foreach ($this->ids($request) as $id) {
+            $playlist = $em->getRepository(Playlist::class)->find($id);
+            if (!$playlist instanceof Playlist) continue;
+
+            $link = $em->getRepository(PlaylistGroup::class)->findOneBy(['group' => $group, 'playlist' => $playlist]);
+            if (!$link instanceof PlaylistGroup) continue;
+
+            $em->remove($link);
+            ++$removed;
+        }
+
+        $em->flush();
+        return $this->json(['ok' => true, 'changed' => $removed]);
     }
 
     #[Route('/{groupId}/members/{memberId}/delete', name: 'app_group_member_delete', requirements: ['groupId' => '\\d+', 'memberId' => '\\d+'], methods: ['POST'])]
@@ -192,9 +308,7 @@ final class GroupController extends AbstractController
         $group = $em->getRepository(UserGroup::class)->find($groupId);
         $member = $em->getRepository(GroupMember::class)->find($memberId);
 
-        if (!$group instanceof UserGroup
-            || !$member instanceof GroupMember
-            || $member->getGroup()->getId() !== $group->getId()) {
+        if (!$group instanceof UserGroup || !$member instanceof GroupMember || $member->getGroup()->getId() !== $group->getId()) {
             throw $this->createNotFoundException();
         }
 
@@ -206,7 +320,6 @@ final class GroupController extends AbstractController
 
         if ($member->getRole() === 'owner') {
             $this->denyAccessUnlessGranted(AclPrivilege::GROUP_DELEGATE, $group);
-
             if ($this->countGroupOwners($group, $em) <= 1) {
                 $this->addFlash('error', $translator->trans('groups.member.last_owner', [], 'management'));
                 return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
@@ -220,21 +333,57 @@ final class GroupController extends AbstractController
         return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
     }
 
+    private function saveMembership(UserGroup $group, User $user, string $requestedRole, EntityManagerInterface $em, TranslatorInterface $translator): void
+    {
+        if (!in_array($requestedRole, ['owner', 'manager', 'member'], true)) {
+            $this->addFlash('error', $translator->trans('groups.member.invalid_role', [], 'management'));
+            return;
+        }
+
+        $repo = $em->getRepository(GroupMember::class);
+        $member = $repo->findOneBy(['group' => $group, 'user' => $user]) ?? (new GroupMember())->setGroup($group)->setUser($user);
+        $memberIsOwner = $member->getId() !== null && $member->getRole() === 'owner';
+
+        if ($requestedRole === 'owner' || $memberIsOwner) {
+            $this->denyAccessUnlessGranted(AclPrivilege::GROUP_DELEGATE, $group);
+        }
+
+        if ($memberIsOwner && $requestedRole !== 'owner' && $this->countGroupOwners($group, $em) <= 1) {
+            $this->addFlash('error', $translator->trans('groups.member.last_owner', [], 'management'));
+            return;
+        }
+
+        $member->setRole($requestedRole);
+        $em->persist($member);
+        $em->flush();
+        $this->addFlash('success', 'groups.member.saved');
+    }
+
     private function countGroupOwners(UserGroup $group, EntityManagerInterface $em): int
     {
-        return $em->getRepository(GroupMember::class)->count([
-            'group' => $group,
-            'role' => 'owner',
-        ]);
+        return $em->getRepository(GroupMember::class)->count(['group' => $group, 'role' => 'owner']);
+    }
+
+    /** @return list<int> */
+    private function ids(Request $request): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map('intval', $request->request->all('ids')),
+            static fn(int $id): bool => $id > 0,
+        )));
+    }
+
+    private function validateAjaxCsrf(string $tokenId, Request $request): void
+    {
+        if (!$this->isCsrfTokenValid($tokenId, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
     }
 
     private function requireUser(): User
     {
         $user = $this->getUser();
-        if (!$user instanceof User) {
-            throw $this->createAccessDeniedException();
-        }
-
+        if (!$user instanceof User) throw $this->createAccessDeniedException();
         return $user;
     }
 }
