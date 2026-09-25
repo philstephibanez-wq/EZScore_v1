@@ -1,5 +1,5 @@
 param(
-    [int]$Port = 8000
+    [int]$Port = 8501
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,31 +15,31 @@ if ($Connection) {
     exit 0
 }
 
+$Php = (Get-Command php -ErrorAction Stop).Source
 $OutLog = Join-Path $LogDir "ezscore-web.out.log"
 $ErrLog = Join-Path $LogDir "ezscore-web.err.log"
 
-$Symfony = Get-Command symfony -ErrorAction SilentlyContinue
-if ($Symfony) {
-    Start-Process `
-        -FilePath $Symfony.Source `
-        -ArgumentList @("server:start", "--no-tls", "--port=$Port") `
-        -WorkingDirectory $Project `
-        -WindowStyle Hidden `
-        -RedirectStandardOutput $OutLog `
-        -RedirectStandardError $ErrLog
+$Arguments = @(
+    "-S",
+    "127.0.0.1:$Port",
+    "-t",
+    (Join-Path $Project "public")
+)
 
-    Write-Host "[OK] Symfony web server launched on http://127.0.0.1:$Port"
-    exit 0
-}
-
-$Php = (Get-Command php -ErrorAction Stop).Source
-
-Start-Process `
+$Process = Start-Process `
     -FilePath $Php `
-    -ArgumentList @("-S", "127.0.0.1:$Port", "-t", "public") `
+    -ArgumentList $Arguments `
     -WorkingDirectory $Project `
     -WindowStyle Hidden `
+    -PassThru `
     -RedirectStandardOutput $OutLog `
     -RedirectStandardError $ErrLog
 
-Write-Host "[OK] PHP web server launched on http://127.0.0.1:$Port"
+Start-Sleep -Milliseconds 700
+
+if ($Process.HasExited) {
+    $Err = if (Test-Path $ErrLog) { Get-Content $ErrLog -Raw -ErrorAction SilentlyContinue } else { "" }
+    throw "EZScore PHP server exited immediately. $Err"
+}
+
+Write-Host "[OK] EZScore web server PID $($Process.Id): php -S 127.0.0.1:$Port -t $Project\public"

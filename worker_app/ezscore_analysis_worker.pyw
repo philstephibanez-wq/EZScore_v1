@@ -20,9 +20,11 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 
-APP_VERSION = "R24"
+APP_VERSION = "R24.6"
 HEARTBEAT_SECONDS = 2.0
 CLAIM_SECONDS = 1.5
+
+WINDOWS_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 
 def now_text() -> str:
@@ -120,6 +122,7 @@ class WorkerEngine:
         for candidate in [
             os.environ.get("EZSCORE_STEM_PYTHON"),
             env.get("EZSCORE_STEM_PYTHON"),
+            r"H:\EZScore\.venv-py313\Scripts\python.exe",
             str(self.root / ".venv-py313" / "Scripts" / "python.exe"),
             sys.executable,
             "python",
@@ -149,6 +152,7 @@ class WorkerEngine:
                     errors="replace",
                     timeout=20,
                     check=False,
+                    creationflags=WINDOWS_NO_WINDOW if os.name == "nt" else 0,
                 )
                 if proc.returncode != 0:
                     failures.append(f"{candidate}: {proc.stderr.strip()[-250:]}")
@@ -167,7 +171,7 @@ class WorkerEngine:
         base_url = (
             os.environ.get("EZSCORE_WORKER_URL")
             or env.get("EZSCORE_WORKER_URL")
-            or "http://127.0.0.1:8000"
+            or "http://127.0.0.1:8501"
         )
         token = os.environ.get("ANALYSIS_WORKER_TOKEN") or env.get("ANALYSIS_WORKER_TOKEN") or ""
         if not token:
@@ -355,6 +359,7 @@ class WorkerEngine:
             encoding="utf-8",
             errors="replace",
             bufsize=1,
+            creationflags=WINDOWS_NO_WINDOW if os.name == "nt" else 0,
         )
         self.current_process = proc
 
@@ -573,7 +578,7 @@ class WorkerWindow:
     def _open_ezscore(self):
         url = self.url_var.get()
         if not url or url == "—":
-            url = "http://127.0.0.1:8000"
+            url = "http://127.0.0.1:8501"
         webbrowser.open(url.rstrip("/") + "/fr/catalog")
 
     def _open_logs(self):

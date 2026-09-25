@@ -1,61 +1,66 @@
-# EZScore_v1 — R24.5 CUDA Torch fix
+# EZScore_v1 — R24.6 Launcher 8501 + fenêtres console masquées
 
-R24.4 échouait parce qu'il demandait simultanément :
+Correction suite au test réel.
 
-```text
-torch
-torchvision
-torchaudio
+## Serveur EZScore_v1
+
+La commande de référence est maintenant exactement :
+
+```powershell
+php -S 127.0.0.1:8501 -t H:\EZScore_v1\public
 ```
 
-sur l'index CUDA 13.2, alors que `torchaudio` n'y possède pas de wheel compatible avec le Python 3.13 utilisé ici.
-
-Le pipeline STEMS EZScore_v1 n'a pas besoin de `torchaudio` pour cette étape.
-
-R24.5 remplace donc uniquement le paquet `torch` CPU par le paquet `torch` CUDA :
+Le launcher démarre ce serveur via `Start-Process` en fenêtre cachée, avec logs :
 
 ```text
-H:\EZScore_v1\.venv-py313\Scripts\python.exe
+var\log\ezscore-web.out.log
+var\log\ezscore-web.err.log
 ```
 
-avec :
+Le Worker desktop utilise désormais par défaut :
 
 ```text
-https://download.pytorch.org/whl/cu132
+http://127.0.0.1:8501
 ```
 
-Le script reteste ensuite CUDA, le GPU, `bs_roformer` et `mel_band_roformer`.
+au lieu de `8000`.
+
+## Fenêtres PowerShell / consoles noires
+
+Deux changements :
+
+1. `EZScore-Launcher.cmd` délègue immédiatement à `EZScore-Launcher.vbs`, qui lance PowerShell en mode caché.
+2. Les subprocess Python/RoFormer lancés par l'application desktop utilisent `CREATE_NO_WINDOW` sous Windows.
+
+La vraie fenêtre **EZScore Analysis Worker** reste visible. Les consoles auxiliaires ne doivent plus apparaître.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_5_CUDA_TORCH_ONLY_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_6_LAUNCHER_8501_NO_CONSOLE.zip" -C H:\EZScore_v1
 
-php tests\runtime_cuda_r24_5_contract.php
+python -m py_compile .\worker_app\ezscore_analysis_worker.pyw
 
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_analysis_runtime.ps1
+php tests\launcher_r24_6_contract.php
 ```
 
-Attendu :
+Puis lancer simplement :
 
 ```text
-TORCH= 2.14.0+cu132
-TORCH CUDA= 13.2
-CUDA= True
-GPU= NVIDIA GeForce RTX 2060
-STEM_RUNTIME_OK
-[OK] EZScore_v1 STEM runtime ready.
+H:\EZScore_v1\EZScore-Launcher.cmd
 ```
 
-Puis :
+Le résultat attendu :
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\test_analysis_worker_desktop.ps1
+```text
+serveur PHP 127.0.0.1:8501 (caché)
++
+fenêtre EZScore Analysis Worker
++
+navigateur sur http://127.0.0.1:8501/fr/login
 ```
-
-La fenêtre Windows autonome `EZScore Analysis Worker` doit apparaître.
 
 Aucune migration Doctrine.
 Aucun changement du moteur STEMS.

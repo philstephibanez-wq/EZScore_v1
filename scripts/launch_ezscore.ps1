@@ -1,5 +1,5 @@
 param(
-    [int]$Port = 8000
+    [int]$Port = 8501
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,15 +21,18 @@ if ($LegacyTask) {
 }
 
 & (Join-Path $PSScriptRoot "ensure_analysis_worker_token.ps1")
-& (Join-Path $PSScriptRoot "prepare_analysis_runtime.ps1")
+
+$PrepareRuntime = Join-Path $PSScriptRoot "prepare_analysis_runtime.ps1"
+if (Test-Path $PrepareRuntime) {
+    & $PrepareRuntime
+}
 & (Join-Path $PSScriptRoot "start_ezscore_web.ps1") -Port $Port
 
 $env:EZSCORE_WORKER_URL = "http://127.0.0.1:$Port"
 
-Write-Host "[INFO] Launching EZScore Analysis Worker desktop window..."
 & (Join-Path $PSScriptRoot "start_analysis_worker_desktop.ps1")
 
-$Url = "http://127.0.0.1:$Port/fr/catalog"
+$Url = "http://127.0.0.1:$Port/fr/login"
 
 for ($i = 0; $i -lt 20; $i++) {
     try {
