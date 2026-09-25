@@ -1,44 +1,82 @@
-# EZScore_v1 — R9.4 affichage « Se souvenir de moi »
+# EZScore_v1 — R10.1 correction boucle Doctrine
 
-Correction ciblée : le mécanisme `remember_me` de R9.3 était configuré, mais la case n'était pas visible dans l'UI constatée.
+## Cause exacte
+
+La sortie :
+
+```text
+php bin\console doctrine:schema:update --dump-sql
+```
+
+montre que Doctrine veut reconstruire uniquement la table `songs`.
+
+La différence vient de `status`.
+
+La migration R10 avait créé :
+
+```sql
+status VARCHAR(16) NOT NULL DEFAULT 'editing'
+```
+
+alors que le mapping Doctrine de `Song::$status` décrit :
+
+```text
+VARCHAR(16) NOT NULL
+```
+
+sans valeur par défaut SQL.
+
+Doctrine considère donc le schéma différent à chaque validation.
 
 ## Correction
 
-- présence forcée du champ `_remember_me` dans `templates/auth/login.html.twig`;
-- style explicite de checkbox dans `authentication.css`;
-- cache-busting CSS `?v=20260925r94`.
+R10.1 reconstruit `songs` exactement selon le mapping Doctrine et retire uniquement le `DEFAULT 'editing'`.
 
-La case est affichée entre le mot de passe et le bouton « Se connecter ».
+Les données sont conservées.
+
+Les relations existantes vers `songs`, notamment `analysis_jobs` et `song_ratings`, sont protégées pendant la reconstruction par la désactivation temporaire des foreign keys SQLite.
+
+La migration est volontairement non transactionnelle afin que :
+
+```sql
+PRAGMA foreign_keys = OFF
+```
+
+soit réellement appliqué par SQLite.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_REMEMBER_ME_VISIBLE_R9_4.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_DOCTRINE_STATUS_DEFAULT_FIX_R10_1.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
-php bin\console lint:twig templates
+php bin\console doctrine:migrations:migrate
 ```
 
-Puis faire un rechargement forcé du navigateur :
-
-```text
-Ctrl+F5
-```
-
-## Vérification locale du template
+Puis contrôle obligatoire :
 
 ```powershell
-Select-String -Path .\templates\auth\login.html.twig -Pattern "_remember_me"
+php bin\console doctrine:schema:validate
+php bin\console doctrine:schema:update --dump-sql
 ```
 
-Résultat attendu : une ligne contenant :
+Résultat attendu :
 
 ```text
-name="_remember_me"
+[OK] The mapping files are correct.
+[OK] The database schema is in sync with the mapping files.
 ```
 
-Aucune migration.
-Aucun changement Doctrine.
-Aucun changement fonctionnel hors affichage de la case.
+et `--dump-sql` ne doit afficher aucune requête.
+
+## Important
+
+Ne pas exécuter :
+
+```text
+doctrine:schema:update --force
+```
+
+Cette livraison ne modifie aucun contrôleur, template, CSS, traduction ou donnée métier.

@@ -67,10 +67,7 @@
     </div>
 
     {% if can_import %}
-        <div class="catalog-rights-note" title="{{ 'catalog.import.pending_help'|trans }}">
-            <span>{{ 'catalog.import.label'|trans }}</span>
-            <small>{{ 'catalog.import.pending'|trans }}</small>
-        </div>
+        <a class="catalog-import-button" href="{{ path('app_song_import', {'_locale': app.request.locale}) }}"><strong>{{ 'catalog.import.label'|trans }}</strong><small>{{ 'catalog.import.button_help'|trans }}</small></a>
     {% endif %}
 </header>
 
@@ -92,14 +89,12 @@
 <div class="catalog-song-grid">
     {% for song in songs %}
         <a class="catalog-song-card" href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">
-            <div class="catalog-cover" aria-hidden="true">♫</div>
+            <div class="catalog-cover">{% if song.coverPath %}<img src="{{ song.coverPath }}" alt="">{% else %}<span aria-hidden="true">♫</span>{% endif %}</div>
             <div class="catalog-song-copy">
                 <div class="catalog-song-title-row">
                     <strong>{{ song.title }}</strong>
                     {% if app.user and (is_granted('ROLE_ADMIN') or is_granted('ROLE_EDITOR')) %}
-                        <span class="publication-badge {{ song.published ? 'published' : 'draft' }}">
-                            {{ song.published ? ('song.publication.published_badge'|trans) : ('song.publication.draft_badge'|trans) }}
-                        </span>
+                        <span class="song-status-badge status-{{ song.status.value }}">{{ ('song.status.' ~ song.status.value)|trans }}</span>
                     {% elseif not app.user %}
                         <span class="preview-badge">{{ 'catalog.public.preview_badge'|trans }}</span>
                     {% endif %}

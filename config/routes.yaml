@@ -19,6 +19,13 @@ localized_catalog:
         fr: /fr
         en: /en
 
+localized_song_import:
+    resource: ../src/Controller/SongImportController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
 localized_groups:
     resource: ../src/Controller/GroupController.php
     type: attribute

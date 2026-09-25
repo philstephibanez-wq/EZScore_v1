@@ -210,3 +210,24 @@
     .song-rating-form{align-items:flex-start;flex-direction:column}
     .song-rating-actions{margin-left:0}
 }
+
+/* R10 — reusable song card + import */
+.catalog-import-button{display:grid;gap:2px;justify-items:end;padding:10px 14px;border:1px solid #38736e;border-radius:10px;background:#123c3a;color:#efffff}
+.catalog-import-button strong{font-size:13px}.catalog-import-button small{color:#91c5c0;font-size:10px}.catalog-import-button:hover{background:#174b48;border-color:#54aaa3}
+.catalog-cover{overflow:hidden}.catalog-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.song-import-form{display:grid;gap:14px}.import-source-panel{margin-bottom:0}.audio-import-field{display:grid;gap:6px;max-width:720px}.audio-import-field>span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#8f9ca7}.audio-import-field small{color:#7f8d98}
+.song-import-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px}.song-import-actions .ez-back-link{margin:0}
+.song-card-layout{display:grid;grid-template-columns:190px minmax(0,1fr) 280px;gap:18px;padding:18px;border:1px solid #33414d;border-radius:16px;background:#141b22;margin-bottom:14px}.song-card-layout.mode-import{align-items:start}
+.song-card-cover>img,.song-cover-placeholder,.song-cover-preview{width:100%;aspect-ratio:1/1;border-radius:13px;border:1px solid #364651;object-fit:cover;background:linear-gradient(145deg,#243945,#14222a)}
+.song-cover-placeholder,.song-cover-preview{display:grid;place-items:center;color:#82d2c9;font-size:52px}.song-cover-preview img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.song-cover-upload{display:grid;gap:8px}.song-cover-upload input{width:100%}.song-cover-upload small{font-size:10px;color:#74838e}
+.song-card-label{display:block;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#7e8d98}
+.song-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.song-field-grid label{display:grid;gap:5px}.song-field-grid label>span{font-size:10px;text-transform:uppercase;letter-spacing:.055em;color:#81909b}.song-field-grid label small{font-size:10px;color:#70808c}.song-field-grid .full{grid-column:1/-1}
+.song-field-grid textarea{min-height:92px;resize:vertical;border:1px solid #36424e;border-radius:8px;background:#0f151b;color:#edf2f7;padding:9px;font:inherit}
+.song-card-titleline{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.song-card-titleline h1{margin:0;font-size:clamp(24px,3vw,36px);line-height:1.05}.song-card-titleline p{margin:7px 0 0;color:#b4c0c9}
+.song-status-badge{display:inline-flex;align-items:center;white-space:nowrap;padding:5px 9px;border-radius:999px;border:1px solid #44515b;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.song-status-badge.status-imported{background:#202c35;color:#b5c7d4;border-color:#3c5363}.song-status-badge.status-analyzed{background:#162f45;color:#93cfff;border-color:#295c82}.song-status-badge.status-editing{background:#3a2b18;color:#f2cb83;border-color:#70552c}.song-status-badge.status-published{background:#173a2b;color:#98e7bc;border-color:#286044}
+.song-metadata-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:18px 0 0}.song-metadata-list .full{grid-column:1/-1}.song-metadata-list dt{margin-bottom:3px;font-size:9px;text-transform:uppercase;letter-spacing:.065em;color:#71808c}.song-metadata-list dd{margin:0;color:#e6edf2;font-size:13px;overflow-wrap:anywhere}.song-metadata-list .internal-comment{padding:10px;border:1px solid #4b4130;border-radius:9px;background:#211d15}
+.song-card-rating{align-self:stretch;padding-left:18px;border-left:1px solid #2d3842;display:flex;flex-direction:column;gap:10px}.rating-empty-state{display:grid;gap:7px;color:#7d8993}.rating-empty-state .rating-stars-static{font-size:21px}.compact-rating-form{display:grid!important;gap:8px!important;padding-top:10px!important}.compact-rating-form button{width:100%}
+@media(max-width:1000px){.song-card-layout{grid-template-columns:150px minmax(0,1fr)}.song-card-rating{grid-column:1/-1;padding-left:0;padding-top:14px;border-left:0;border-top:1px solid #2d3842}}
+@media(max-width:680px){.song-card-layout{grid-template-columns:1fr}.song-card-cover{max-width:180px}.song-field-grid,.song-metadata-list{grid-template-columns:1fr}.song-field-grid .full,.song-metadata-list .full{grid-column:auto}.song-card-titleline{flex-direction:column}.song-import-actions{align-items:stretch;flex-direction:column-reverse}.song-import-actions>*{width:100%;justify-content:center}}

@@ -1,0 +1,17 @@
+{% set mode = mode|default('display') %}
+<div class="song-card-cover">
+    {% if mode == 'import' %}
+        <label class="song-cover-upload">
+            <span class="song-card-label">{{ 'song.cover'|trans }}</span>
+            <span class="song-cover-preview" data-cover-preview><span aria-hidden="true">♫</span></span>
+            <input type="file" name="cover" accept="image/jpeg,image/png,image/webp">
+            <small>{{ 'catalog.import.cover_help'|trans }}</small>
+        </label>
+    {% else %}
+        {% if song.coverPath %}
+            <img src="{{ song.coverPath }}" alt="{{ 'song.cover_alt'|trans({'%title%': song.title}) }}">
+        {% else %}
+            <div class="song-cover-placeholder" aria-hidden="true">♫</div>
+        {% endif %}
+    {% endif %}
+</div>

@@ -16,41 +16,32 @@ final class SongRepository extends ServiceEntityRepository
         parent::__construct($registry, Song::class);
     }
 
-    /**
-     * @return list<Song>
-     */
+    /** @return list<Song> */
     public function findCatalog(?string $query = null): array
     {
         $qb = $this->baseCatalogQuery();
         $this->applySearch($qb, $query);
-
         return $qb->getQuery()->getResult();
     }
 
-    /**
-     * @return list<Song>
-     */
+    /** @return list<Song> */
     public function findPublished(?string $query = null): array
     {
         $qb = $this->baseCatalogQuery()
-            ->andWhere('s.publishedAt IS NOT NULL');
+            ->andWhere('s.status = :status')
+            ->setParameter('status', SongStatus::Published->value);
         $this->applySearch($qb, $query);
-
         return $qb->getQuery()->getResult();
     }
 
-    /**
-     * An editor sees every published song plus every song assigned to them.
-     *
-     * @return list<Song>
-     */
+    /** @return list<Song> */
     public function findForEditor(User $editor, ?string $query = null): array
     {
         $qb = $this->baseCatalogQuery()
-            ->andWhere('(s.publishedAt IS NOT NULL OR s.editor = :editor)')
+            ->andWhere('(s.status = :published OR s.editor = :editor)')
+            ->setParameter('published', SongStatus::Published->value)
             ->setParameter('editor', $editor);
         $this->applySearch($qb, $query);
-
         return $qb->getQuery()->getResult();
     }
 
@@ -70,14 +61,14 @@ final class SongRepository extends ServiceEntityRepository
             return;
         }
 
-        $qb
-            ->andWhere(
-                $qb->expr()->orX(
-                    'LOWER(s.title) LIKE :query',
-                    'LOWER(s.artist) LIKE :query',
-                    'LOWER(COALESCE(e.displayName, \'\')) LIKE :query',
-                ),
+        $qb->andWhere(
+            $qb->expr()->orX(
+                'LOWER(s.title) LIKE :query',
+                'LOWER(s.artist) LIKE :query',
+                'LOWER(COALESCE(s.author, \'\')) LIKE :query',
+                'LOWER(COALESCE(s.composer, \'\')) LIKE :query',
+                'LOWER(COALESCE(e.displayName, \'\')) LIKE :query',
             )
-            ->setParameter('query', '%' . mb_strtolower($query) . '%');
+        )->setParameter('query', '%' . mb_strtolower($query) . '%');
     }
 }

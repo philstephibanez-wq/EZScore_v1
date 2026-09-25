@@ -16,6 +16,7 @@ common:
   create: Créer
   save: Enregistrer
   none: Aucun
+  cancel: Annuler
 
 layout:
   sidebar:
@@ -57,7 +58,6 @@ auth:
     or: ou
     google: Continuer avec Google
     google_disabled: Google SSO non configuré
-    remember_me: Se souvenir de moi
     back_catalog: Retour au Répertoire
   google:
     not_configured: Google SSO n’est pas configuré.
@@ -154,7 +154,7 @@ catalog:
     heading: Vos chansons prennent vie.
     lead: Explorez les morceaux publiés et découvrez EZScore. Créez gratuitement votre compte pour profiter du karaoké complet, écouter les morceaux et organiser votre musique avec vos playlists et vos groupes.
     register: Créer un compte gratuitement
-    free_note: Inscription gratuite actuellement · aucune carte bancaire requise.
+    free_note: L’inscription à EZScore est gratuite.
     benefits_heading: Avantages de l’inscription
     benefit:
       karaoke:
@@ -172,9 +172,25 @@ catalog:
     preview_badge: Démo 20 s
     empty_hint: Les chansons apparaîtront ici dès leur publication.
   import:
-    label: Import
-    pending: Raccordement analyse à venir
-    pending_help: L’import est réservé aux éditeurs et administrateurs et sera activé avec la chaîne d’analyse.
+    label: Importer
+    button_help: MP3 + fiche chanson
+    eyebrow: Bibliothèque
+    heading: Importer une chanson
+    lead: Importez le MP3 et renseignez sa fiche. Aucune analyse Python n’est lancée à cette étape.
+    source_heading: Source audio
+    audio_label: Fichier MP3
+    audio_help: MP3 uniquement. Le fichier est conservé dans le stockage privé EZScore.
+    cover_help: JPEG, PNG ou WEBP.
+    status_help: Le statut « Analysée » est attribué par la chaîne d’analyse, pas manuellement à l’import.
+    submit: Importer le morceau
+    created: Chanson importée.
+    validation:
+      audio_required: Le fichier MP3 est obligatoire.
+      required: Le titre et l’interprète sont obligatoires.
+      editor: L’éditeur sélectionné n’est pas valide.
+      status: Le statut initial sélectionné n’est pas valide.
+      invalid: Le fichier ou les informations d’import sont invalides.
+      failed: L’import n’a pas pu être terminé.
   search:
     results_for: 'Résultats pour « %query% »'
     clear: Effacer
@@ -182,12 +198,41 @@ catalog:
 
 song:
   title: Titre
-  artist: Auteur / Interprète
+  artist: Interprète
+  author: Auteur / Parolier
+  composer: Compositeur
   editor: Éditeur
   comment: Commentaire
+  internal_comment: Commentaire interne éditeur
+  internal_comment_help: Visible uniquement par les personnes autorisées à éditer la chanson.
+  cover: Pochette
+  cover_alt: 'Pochette de %title%'
   time_signature: Signature
   capo: Capo
   strumming: Strumming
+  strumming_primary: Strumming principal
+  strumming_alternate: Strumming alternatif
+  status:
+    label: Statut
+    imported: Importée
+    analyzed: Analysée
+    editing: En édition
+    published: Publiée
+  rating:
+    eyebrow: Communauté
+    heading: Note des utilisateurs
+    yours: Votre note
+    save: Enregistrer ma note
+    remove: Retirer ma note
+    none: Pas encore de note
+    count: '{%count%} note(s)'
+    star_title: '%star% étoile(s)'
+    summary_aria: 'Note moyenne %average% sur 5, %count% note(s)'
+    login_note: Connectez-vous pour noter cette chanson.
+    saved: Votre note a été enregistrée.
+    removed: Votre note a été retirée.
+    invalid: La note doit être comprise entre 1 et 5 étoiles.
+    available_after_import: La notation sera disponible après l’import.
   publication:
     published_badge: Publié
     draft_badge: Brouillon
@@ -263,7 +308,7 @@ profile:
   subscription:
     eyebrow: Abonnement
     heading: Votre offre EZScore
-    body: EZScore est gratuit actuellement. Les futures offres concerneront notamment les quotas d’opérations coûteuses d’import et d’analyse, sans limiter l’usage courant du karaoké.
+    body: L’inscription à EZScore est gratuite. Les offres d’abonnement et les quotas d’usage seront gérés séparément dans votre profil.
     current_label: Offre actuelle
     current_value: Gratuit
     karaoke_label: Karaoké

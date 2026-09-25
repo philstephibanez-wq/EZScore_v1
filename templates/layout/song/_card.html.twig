@@ -1,0 +1,6 @@
+{% set mode = mode|default('display') %}
+<section class="song-card-layout mode-{{ mode }}">
+    {% include 'layout/song/_cover.html.twig' with {song: song|default(null), mode: mode} only %}
+    {% include 'layout/song/_metadata.html.twig' with {song: song|default(null), mode: mode, editors: editors|default([]), current_editor: current_editor|default(null), status_choices: status_choices|default([]), show_internal_comment: show_internal_comment|default(false)} %}
+    {% include 'layout/song/_rating.html.twig' with {song: song|default(null), mode: mode, rating_summary: rating_summary|default({'average':0,'count':0}), user_rating: user_rating|default(null)} %}
+</section>

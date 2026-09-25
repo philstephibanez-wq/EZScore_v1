@@ -12,14 +12,7 @@
         <button class="workflow-tab" data-step="2">2 · {{ 'workspace.lyrics'|trans }}</button>
     </nav>
 
-    <section class="song-cartouche">
-        <div><span>{{ 'song.title'|trans }}</span><strong>{{ song.title }}</strong></div>
-        <div><span>{{ 'song.artist'|trans }}</span><strong>{{ song.artist }}</strong></div>
-        <div><span>{{ 'song.editor'|trans }}</span><strong>{{ song.editor ? song.editor.displayName : ('common.none'|trans) }}</strong></div>
-        <div><span>{{ 'song.time_signature'|trans }}</span><strong>{{ song.timeSignature }}</strong></div>
-        <div><span>{{ 'song.capo'|trans }}</span><strong>{{ song.capo }}</strong></div>
-        <div><span>{{ 'song.strumming'|trans }}</span><strong>{{ song.strummingPrimary ?: ('common.none'|trans) }}</strong></div>
-    </section>
+    {% include 'layout/song/_card.html.twig' with {mode:'display', song:song, rating_summary:rating_summary, user_rating:user_rating, show_internal_comment:can_edit} %}
 
     <section class="song-access-bar">
         <div>
@@ -63,57 +56,6 @@
             </div>
         </section>
     {% endif %}
-
-    <section class="panel song-rating-panel">
-        <div class="song-rating-heading">
-            <div>
-                <div class="eyebrow">{{ 'song.rating.eyebrow'|trans }}</div>
-                <h2>{{ 'song.rating.heading'|trans }}</h2>
-            </div>
-
-            <div class="song-rating-average">
-                <span class="rating-stars-static large" aria-hidden="true">
-                    {% for star in 1..5 %}<span class="{{ rating_summary.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}
-                </span>
-                {% if rating_summary.count > 0 %}
-                    <strong>{{ rating_summary.average|number_format(1, ',', ' ') }}/5</strong>
-                    <small>{{ 'song.rating.count'|trans({'%count%': rating_summary.count}) }}</small>
-                {% else %}
-                    <strong>—</strong>
-                    <small>{{ 'song.rating.none'|trans }}</small>
-                {% endif %}
-            </div>
-        </div>
-
-        {% if app.user %}
-            <form class="song-rating-form" method="post" action="{{ path('app_song_rating', {'_locale': app.request.locale, id: song.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('song_rating_' ~ song.id) }}">
-                <span class="song-rating-label">{{ 'song.rating.yours'|trans }}</span>
-
-                <div class="rating-choice" role="radiogroup" aria-label="{{ 'song.rating.yours'|trans }}">
-                    {% for star in 1..5 %}
-                        <label title="{{ 'song.rating.star_title'|trans({'%star%': star}) }}">
-                            <input type="radio" name="rating" value="{{ star }}" {{ user_rating == star ? 'checked' : '' }}>
-                            <span aria-hidden="true">★</span>
-                            <span class="sr-only">{{ 'song.rating.star_title'|trans({'%star%': star}) }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-
-                <div class="song-rating-actions">
-                    <button class="primary" type="submit">{{ 'song.rating.save'|trans }}</button>
-                    {% if user_rating %}
-                        <button type="submit" name="rating" value="0">{{ 'song.rating.remove'|trans }}</button>
-                    {% endif %}
-                </div>
-            </form>
-        {% else %}
-            <p class="song-rating-public-note">
-                {{ 'song.rating.login_note'|trans }}
-                <a href="{{ path('app_login', {'_locale': app.request.locale}) }}">{{ 'auth.login.submit'|trans }}</a>
-            </p>
-        {% endif %}
-    </section>
 
     <section class="panel source-truth-panel">
         <h2>{{ 'workspace.no_analysis.heading'|trans }}</h2>

@@ -23,9 +23,18 @@ class Song
     #[ORM\Column(length: 180)]
     private string $artist = '';
 
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $author = null;
+
+    #[ORM\Column(length: 180, nullable: true)]
+    private ?string $composer = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'editor_id', nullable: true, onDelete: 'SET NULL')]
     private ?User $editor = null;
+
+    #[ORM\Column(length: 16, enumType: SongStatus::class)]
+    private SongStatus $status = SongStatus::Imported;
 
     #[ORM\Column(length: 8)]
     private string $timeSignature = '4/4';
@@ -41,6 +50,27 @@ class Song
 
     #[ORM\Column(length: 1000, nullable: true)]
     private ?string $comment = null;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $coverPath = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $audioOriginalName = null;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $audioStoragePath = null;
+
+    #[ORM\Column(length: 120, nullable: true)]
+    private ?string $audioMimeType = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $audioSize = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $audioSha256 = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $importedAt = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $publishedAt = null;
@@ -63,8 +93,35 @@ class Song
     public function setTitle(string $title): self { $this->title = trim($title); return $this->touch(); }
     public function getArtist(): string { return $this->artist; }
     public function setArtist(string $artist): self { $this->artist = trim($artist); return $this->touch(); }
+    public function getAuthor(): ?string { return $this->author; }
+    public function setAuthor(?string $author): self { $this->author = $this->normaliseNullable($author); return $this->touch(); }
+    public function getComposer(): ?string { return $this->composer; }
+    public function setComposer(?string $composer): self { $this->composer = $this->normaliseNullable($composer); return $this->touch(); }
     public function getEditor(): ?User { return $this->editor; }
     public function setEditor(?User $editor): self { $this->editor = $editor; return $this->touch(); }
+    public function getStatus(): SongStatus { return $this->status; }
+
+    public function markImported(): self
+    {
+        $this->status = SongStatus::Imported;
+        $this->publishedAt = null;
+        return $this->touch();
+    }
+
+    public function markAnalyzed(): self
+    {
+        $this->status = SongStatus::Analyzed;
+        $this->publishedAt = null;
+        return $this->touch();
+    }
+
+    public function markEditing(): self
+    {
+        $this->status = SongStatus::Editing;
+        $this->publishedAt = null;
+        return $this->touch();
+    }
+
     public function getTimeSignature(): string { return $this->timeSignature; }
 
     public function setTimeSignature(string $timeSignature): self
@@ -94,21 +151,52 @@ class Song
     public function setStrummingAlternate(?string $value): self { $this->strummingAlternate = $this->normaliseNullable($value); return $this->touch(); }
     public function getComment(): ?string { return $this->comment; }
     public function setComment(?string $comment): self { $this->comment = $this->normaliseNullable($comment); return $this->touch(); }
+    public function getCoverPath(): ?string { return $this->coverPath; }
+    public function setCoverPath(?string $coverPath): self { $this->coverPath = $this->normaliseNullable($coverPath); return $this->touch(); }
+
+    public function getAudioOriginalName(): ?string { return $this->audioOriginalName; }
+    public function getAudioStoragePath(): ?string { return $this->audioStoragePath; }
+    public function getAudioMimeType(): ?string { return $this->audioMimeType; }
+    public function getAudioSize(): ?int { return $this->audioSize; }
+    public function getAudioSha256(): ?string { return $this->audioSha256; }
+    public function getImportedAt(): ?\DateTimeImmutable { return $this->importedAt; }
+
+    public function setImportedAudio(
+        string $originalName,
+        string $storagePath,
+        string $mimeType,
+        int $size,
+        string $sha256,
+        ?\DateTimeImmutable $importedAt = null,
+    ): self {
+        if (!preg_match('/^[a-f0-9]{64}$/', $sha256)) {
+            throw new \InvalidArgumentException('Audio SHA-256 must be a hexadecimal SHA-256 value.');
+        }
+        if ($size < 1) {
+            throw new \InvalidArgumentException('Audio size must be greater than zero.');
+        }
+
+        $this->audioOriginalName = trim($originalName);
+        $this->audioStoragePath = trim($storagePath);
+        $this->audioMimeType = trim($mimeType);
+        $this->audioSize = $size;
+        $this->audioSha256 = $sha256;
+        $this->importedAt = $importedAt ?? new \DateTimeImmutable();
+
+        return $this->touch();
+    }
+
     public function getPublishedAt(): ?\DateTimeImmutable { return $this->publishedAt; }
-    public function isPublished(): bool { return $this->publishedAt !== null; }
+    public function isPublished(): bool { return $this->status === SongStatus::Published; }
 
     public function publish(?\DateTimeImmutable $publishedAt = null): self
     {
+        $this->status = SongStatus::Published;
         $this->publishedAt = $publishedAt ?? new \DateTimeImmutable();
         return $this->touch();
     }
 
-    public function unpublish(): self
-    {
-        $this->publishedAt = null;
-        return $this->touch();
-    }
-
+    public function unpublish(): self { return $this->markEditing(); }
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
     public function getUpdatedAt(): \DateTimeImmutable { return $this->updatedAt; }
 
@@ -123,7 +211,6 @@ class Song
         if ($value === null) {
             return null;
         }
-
         $value = trim($value);
         return $value === '' ? null : $value;
     }
