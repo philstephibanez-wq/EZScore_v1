@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ 'song.edit.heading'|trans }} — {{ song.title }} — EZScore_v1{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r12">
+<link rel="stylesheet" href="/assets/css/song-edit.css?v=20260925r12">
+{% endblock %}
+
+{% block body %}
+<header class="page-head song-edit-head">
+    <div>
+        <div class="eyebrow">{{ 'song.edit.eyebrow'|trans }}</div>
+        <h1>{{ 'song.edit.heading'|trans }}</h1>
+        <p class="page-note">{{ 'song.edit.lead'|trans }}</p>
+    </div>
+    <a class="song-edit-view-link" href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">{{ 'song.edit.back_workspace'|trans }}</a>
+</header>
+
+<form method="post" enctype="multipart/form-data" class="song-edit-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('song_edit_' ~ song.id) }}">
+
+    {% include 'layout/song/_card.html.twig' with {
+        mode: 'edit',
+        song: song,
+        editors: editors,
+        current_editor: current_editor,
+        status_choices: status_choices,
+        rating_summary: rating_summary,
+        user_rating: user_rating
+    } %}
+
+    <div class="song-edit-actions">
+        <a class="ez-back-link" href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">{{ 'common.cancel'|trans }}</a>
+        <button class="primary" type="submit">{{ 'song.edit.save'|trans }}</button>
+    </div>
+</form>
+
+<section class="panel song-audio-replace-panel">
+    <div>
+        <div class="eyebrow">{{ 'song.edit.audio.eyebrow'|trans }}</div>
+        <h2>{{ 'song.edit.audio.heading'|trans }}</h2>
+        <p>{{ 'song.edit.audio.body'|trans }}</p>
+
+        {% if song.audioOriginalName %}
+            <div class="song-current-audio">
+                <strong>{{ 'song.edit.audio.current'|trans }}</strong>
+                <span>{{ song.audioOriginalName }}</span>
+                {% if song.audioSha256 %}<code>{{ song.audioSha256|slice(0, 16) }}…</code>{% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <form method="post"
+          enctype="multipart/form-data"
+          action="{{ path('app_song_audio_replace', {'_locale': app.request.locale, id: song.id}) }}"
+          class="song-audio-replace-form">
+        <input type="hidden" name="_token" value="{{ csrf_token('song_audio_' ~ song.id) }}">
+        <input type="file" name="audio" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*" required>
+        <button class="danger-soft" type="submit" onclick="return confirm('{{ 'song.edit.audio.confirm'|trans|e('js') }}')">{{ 'song.edit.audio.replace'|trans }}</button>
+    </form>
+</section>
+{% endblock %}
+
+{% block javascripts %}
+<script src="/assets/js/song-import.js?v=20260925r12"></script>
+{% endblock %}

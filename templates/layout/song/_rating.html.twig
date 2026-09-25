@@ -6,17 +6,31 @@
     {% else %}
         <div class="catalog-rating-summary">
             <span class="rating-stars-static large" aria-hidden="true">{% for star in 1..5 %}<span class="{{ rating_summary.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}</span>
-            {% if rating_summary.count > 0 %}<strong>{{ rating_summary.average|number_format(1, ',', ' ') }}/5</strong><small>{{ 'song.rating.count'|trans({'%count%': rating_summary.count}) }}</small>{% else %}<strong>—</strong><small>{{ 'song.rating.none'|trans }}</small>{% endif %}
+            {% if rating_summary.count > 0 %}
+                <strong>{{ rating_summary.average|number_format(1, ',', ' ') }}/5</strong>
+                <small>{{ 'song.rating.count'|trans({'%count%': rating_summary.count}) }}</small>
+            {% else %}
+                <strong>—</strong><small>{{ 'song.rating.none'|trans }}</small>
+            {% endif %}
         </div>
-        {% if app.user %}
+
+        {% if mode == 'display' and app.user %}
             <form class="song-rating-form compact-rating-form" method="post" action="{{ path('app_song_rating', {'_locale': app.request.locale, id: song.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('song_rating_' ~ song.id) }}">
                 <div class="rating-choice" role="radiogroup" aria-label="{{ 'song.rating.yours'|trans }}">
-                    {% for star in 1..5 %}<label title="{{ 'song.rating.star_title'|trans({'%star%': star}) }}"><input type="radio" name="rating" value="{{ star }}" {{ user_rating == star ? 'checked' : '' }}><span aria-hidden="true">★</span><span class="sr-only">{{ 'song.rating.star_title'|trans({'%star%': star}) }}</span></label>{% endfor %}
+                    {% for star in 1..5 %}
+                        <label title="{{ 'song.rating.star_title'|trans({'%star%': star}) }}">
+                            <input type="radio" name="rating" value="{{ star }}" {{ user_rating == star ? 'checked' : '' }}>
+                            <span aria-hidden="true">★</span>
+                            <span class="sr-only">{{ 'song.rating.star_title'|trans({'%star%': star}) }}</span>
+                        </label>
+                    {% endfor %}
                 </div>
                 <button class="primary" type="submit">{{ 'song.rating.save'|trans }}</button>
                 {% if user_rating %}<button type="submit" name="rating" value="0">{{ 'song.rating.remove'|trans }}</button>{% endif %}
             </form>
+        {% elseif mode == 'edit' %}
+            <small class="song-rating-edit-note">{{ 'song.edit.rating_readonly'|trans }}</small>
         {% endif %}
     {% endif %}
 </div>

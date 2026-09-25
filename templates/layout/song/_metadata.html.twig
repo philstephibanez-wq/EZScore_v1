@@ -1,54 +1,87 @@
 {% set mode = mode|default('display') %}
 <div class="song-card-metadata">
-{% if mode == 'import' %}
+{% if mode in ['import', 'edit'] %}
+    {% set editing = mode == 'edit' %}
     <div class="song-field-grid">
-        <label><span>{{ 'song.title'|trans }}</span><input name="title" value="{{ app.request.request.get('title') }}" required maxlength="180"></label>
-        <label><span>{{ 'song.artist'|trans }}</span><input name="artist" value="{{ app.request.request.get('artist') }}" required maxlength="180"></label>
-        <label><span>{{ 'song.author'|trans }}</span><input name="author" value="{{ app.request.request.get('author') }}" maxlength="180"></label>
-        <label><span>{{ 'song.composer'|trans }}</span><input name="composer" value="{{ app.request.request.get('composer') }}" maxlength="180"></label>
+        <label>
+            <span>{{ 'song.title'|trans }}</span>
+            <input name="title" value="{{ app.request.request.get('title', editing ? song.title : '') }}" required maxlength="180">
+        </label>
+
+        <label>
+            <span>{{ 'song.artist'|trans }}</span>
+            <input name="artist" value="{{ app.request.request.get('artist', editing ? song.artist : '') }}" required maxlength="180">
+        </label>
+
+        <label>
+            <span>{{ 'song.author'|trans }}</span>
+            <input name="author" value="{{ app.request.request.get('author', editing ? (song.author ?? '') : '') }}" maxlength="180">
+        </label>
+
+        <label>
+            <span>{{ 'song.composer'|trans }}</span>
+            <input name="composer" value="{{ app.request.request.get('composer', editing ? (song.composer ?? '') : '') }}" maxlength="180">
+        </label>
+
         <label>
             <span>{{ 'song.editor'|trans }}</span>
             {% if is_granted('ROLE_ADMIN') %}
                 <select name="editor_id">
                     {% for editor in editors %}
-                        <option value="{{ editor.id }}" {{ app.request.request.get('editor_id') == editor.id ? 'selected' : '' }}>{{ editor.displayName }}</option>
+                        {% set selectedEditor = app.request.request.get('editor_id', editing and song.editor ? song.editor.id : current_editor.id) %}
+                        <option value="{{ editor.id }}" {{ selectedEditor == editor.id ? 'selected' : '' }}>{{ editor.displayName }}</option>
                     {% endfor %}
                 </select>
             {% else %}
                 <input value="{{ current_editor.displayName }}" disabled>
             {% endif %}
         </label>
+
         <label>
             <span>{{ 'song.status.label'|trans }}</span>
             <select name="status">
                 {% for status in status_choices %}
-                    <option value="{{ status.value }}" {{ app.request.request.get('status','imported') == status.value ? 'selected' : '' }}>{{ ('song.status.' ~ status.value)|trans }}</option>
+                    {% set selectedStatus = app.request.request.get('status', editing ? song.status.value : 'imported') %}
+                    <option value="{{ status.value }}" {{ selectedStatus == status.value ? 'selected' : '' }}>{{ ('song.status.' ~ status.value)|trans }}</option>
                 {% endfor %}
             </select>
-            <small>{{ 'catalog.import.status_help'|trans }}</small>
+            <small>{{ editing ? ('song.edit.status_help'|trans) : ('catalog.import.status_help'|trans) }}</small>
         </label>
+
         <label>
             <span>{{ 'song.time_signature'|trans }}</span>
             <select name="time_signature">
-                <option value="auto" {{ app.request.request.get('time_signature','auto') == 'auto' ? 'selected' : '' }}>{{ 'song.time_signature_auto'|trans }}</option>
+                {% set currentSignature = app.request.request.get('time_signature', editing ? song.timeSignature : 'auto') %}
+                <option value="auto" {{ currentSignature == 'auto' ? 'selected' : '' }}>{{ 'song.time_signature_auto'|trans }}</option>
                 {% for signature in ['2/4','3/4','4/4','5/4','6/8','9/8','12/8'] %}
-                    <option value="{{ signature }}" {{ app.request.request.get('time_signature','auto') == signature ? 'selected' : '' }}>{{ signature }}</option>
+                    <option value="{{ signature }}" {{ currentSignature == signature ? 'selected' : '' }}>{{ signature }}</option>
                 {% endfor %}
             </select>
         </label>
+
         <label>
             <span>{{ 'song.capo'|trans }}</span>
             <select name="capo">
+                {% set currentCapo = app.request.request.get('capo', editing ? song.capo : 0) %}
                 {% for capo in 0..11 %}
-                    <option value="{{ capo }}" {{ app.request.request.get('capo','0') == capo ? 'selected' : '' }}>{{ capo }}</option>
+                    <option value="{{ capo }}" {{ currentCapo == capo ? 'selected' : '' }}>{{ capo }}</option>
                 {% endfor %}
             </select>
         </label>
-        <label><span>{{ 'song.strumming_primary'|trans }}</span><input name="strumming_primary" value="{{ app.request.request.get('strumming_primary') }}" maxlength="120"></label>
-        <label><span>{{ 'song.strumming_alternate'|trans }}</span><input name="strumming_alternate" value="{{ app.request.request.get('strumming_alternate') }}" maxlength="120"></label>
+
+        <label>
+            <span>{{ 'song.strumming_primary'|trans }}</span>
+            <input name="strumming_primary" value="{{ app.request.request.get('strumming_primary', editing ? (song.strummingPrimary ?? '') : '') }}" maxlength="120">
+        </label>
+
+        <label>
+            <span>{{ 'song.strumming_alternate'|trans }}</span>
+            <input name="strumming_alternate" value="{{ app.request.request.get('strumming_alternate', editing ? (song.strummingAlternate ?? '') : '') }}" maxlength="120">
+        </label>
+
         <label class="full">
             <span>{{ 'song.internal_comment'|trans }}</span>
-            <textarea name="comment" rows="4" maxlength="1000">{{ app.request.request.get('comment') }}</textarea>
+            <textarea name="comment" rows="4" maxlength="1000">{{ app.request.request.get('comment', editing ? (song.comment ?? '') : '') }}</textarea>
             <small>{{ 'song.internal_comment_help'|trans }}</small>
         </label>
     </div>

@@ -2,7 +2,7 @@
 {% block title %}{{ song.title }} — EZScore_v1{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r8">
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r12">
 {% endblock %}
 
 {% block body %}
@@ -16,9 +16,7 @@
 
     <section class="song-access-bar">
         <div>
-            <span class="publication-badge {{ song.published ? 'published' : 'draft' }}">
-                {{ song.published ? ('song.publication.published_badge'|trans) : ('song.publication.draft_badge'|trans) }}
-            </span>
+            <span class="song-status-badge status-{{ song.status.value }}">{{ ('song.status.' ~ song.status.value)|trans }}</span>
 
             {% if karaoke_preview_seconds > 0 %}
                 <span class="access-chip preview">{{ 'workspace.access.preview'|trans({'%seconds%': karaoke_preview_seconds}) }}</span>
@@ -31,16 +29,22 @@
             {% endif %}
         </div>
 
-        {% if can_publish %}
-            <form method="post" action="{{ path('app_song_publication', {'_locale': app.request.locale, id: song.id}) }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('song_publication_' ~ song.id) }}">
-                {% if song.published %}
-                    <button type="submit" name="action" value="unpublish">{{ 'song.publication.unpublish'|trans }}</button>
-                {% else %}
-                    <button class="primary" type="submit" name="action" value="publish">{{ 'song.publication.publish'|trans }}</button>
-                {% endif %}
-            </form>
-        {% endif %}
+        <div class="song-workspace-actions">
+            {% if can_edit %}
+                <a class="song-edit-button" href="{{ path('app_song_edit', {'_locale': app.request.locale, id: song.id}) }}">{{ 'song.edit.button'|trans }}</a>
+            {% endif %}
+
+            {% if can_publish %}
+                <form method="post" action="{{ path('app_song_publication', {'_locale': app.request.locale, id: song.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('song_publication_' ~ song.id) }}">
+                    {% if song.published %}
+                        <button type="submit" name="action" value="unpublish">{{ 'song.publication.unpublish'|trans }}</button>
+                    {% else %}
+                        <button class="primary" type="submit" name="action" value="publish">{{ 'song.publication.publish'|trans }}</button>
+                    {% endif %}
+                </form>
+            {% endif %}
+        </div>
     </section>
 
     {% if not app.user %}
@@ -61,12 +65,5 @@
         <h2>{{ 'workspace.no_analysis.heading'|trans }}</h2>
         <p>{{ 'workspace.no_analysis.body'|trans }}</p>
     </section>
-
-    {% if can_edit %}
-        <section class="panel">
-            <h2>{{ 'workspace.edit.heading'|trans }}</h2>
-            <p>{{ 'workspace.edit.body'|trans }}</p>
-        </section>
-    {% endif %}
 </div>
 {% endblock %}

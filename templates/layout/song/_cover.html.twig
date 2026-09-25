@@ -1,11 +1,17 @@
 {% set mode = mode|default('display') %}
 <div class="song-card-cover">
-    {% if mode == 'import' %}
+    {% if mode in ['import', 'edit'] %}
         <label class="song-cover-upload">
             <span class="song-card-label">{{ 'song.cover'|trans }}</span>
-            <span class="song-cover-preview" data-cover-preview><span aria-hidden="true">♫</span></span>
+            <span class="song-cover-preview" data-cover-preview>
+                {% if mode == 'edit' and song.coverPath %}
+                    <img src="{{ song.coverPath }}" alt="{{ 'song.cover_alt'|trans({'%title%': song.title}) }}">
+                {% else %}
+                    <span aria-hidden="true">♫</span>
+                {% endif %}
+            </span>
             <input type="file" name="cover" accept="image/jpeg,image/png,image/webp">
-            <small>{{ 'catalog.import.cover_help'|trans }}</small>
+            <small>{{ mode == 'edit' ? ('song.edit.cover_help'|trans) : ('catalog.import.cover_help'|trans) }}</small>
         </label>
     {% else %}
         {% if song.coverPath %}

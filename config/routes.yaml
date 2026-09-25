@@ -26,6 +26,13 @@ localized_song_import:
         fr: /fr
         en: /en
 
+localized_song_edit:
+    resource: ../src/Controller/SongEditController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
 localized_groups:
     resource: ../src/Controller/GroupController.php
     type: attribute

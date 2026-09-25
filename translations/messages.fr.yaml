@@ -2,6 +2,9 @@ locale:
   label: Langue
   fr: FR
   en: EN
+  fr_name: Français
+  en_name: English
+  change: Changer
 
 nav:
   dashboard: Tableau de bord
@@ -230,6 +233,33 @@ song:
     analyzed: Analysée
     editing: En édition
     published: Publiée
+  edit:
+    button: Modifier
+    eyebrow: Édition
+    heading: Modifier la chanson
+    lead: Modifiez les métadonnées, la pochette et les paramètres musicaux sans réimporter le fichier audio.
+    back_workspace: Retour au morceau
+    save: Enregistrer les modifications
+    saved: Modifications enregistrées.
+    cover_help: Laissez vide pour conserver la pochette actuelle.
+    status_help: Le statut « Analysée » reste réservé à la chaîne d’analyse.
+    rating_readonly: La note des utilisateurs est indépendante de l’édition de la chanson.
+    validation:
+      required: Le titre et l’interprète sont obligatoires.
+      editor: L’éditeur sélectionné n’est pas valide.
+      status: Le statut sélectionné n’est pas valide.
+      analyzed: Le statut « Analysée » ne peut être attribué que par la chaîne d’analyse.
+      invalid: Les paramètres de la chanson sont invalides.
+    audio:
+      eyebrow: Source audio
+      heading: Remplacer le fichier audio
+      body: Le remplacement conserve la même chanson, mais repasse son statut à « Importée » car les analyses précédentes ne correspondent plus forcément à la nouvelle source.
+      current: Fichier actuel
+      replace: Remplacer l’audio
+      confirm: Remplacer la source audio ? La chanson repassera au statut Importée.
+      required: Sélectionnez un nouveau fichier audio.
+      replaced: Source audio remplacée. La chanson est repassée au statut Importée.
+      failed: Le remplacement du fichier audio a échoué.
   rating:
     eyebrow: Communauté
     heading: Note des utilisateurs

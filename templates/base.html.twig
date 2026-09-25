@@ -5,12 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{% block title %}EZSCORE v1{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/base.css?v=20260924">
-    <link rel="stylesheet" href="/assets/css/layout.css?v=20260924">
+    <link rel="stylesheet" href="/assets/css/layout.css?v=20260925r12">
     {% block stylesheets %}{% endblock %}
     <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
 </head>
 <body>
 {% set public_catalog = not app.user and app.request.attributes.get('_route') == 'app_catalog' %}
+
+{% macro language_select() %}
+    <form class="ez-language-form" method="post" action="{{ path('app_locale', {locale: app.request.locale}) }}" data-language-form>
+        <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
+        <label class="sr-only" for="ez-language-select-{{ app.user ? 'member' : 'public' }}">{{ 'locale.label'|trans }}</label>
+        <select id="ez-language-select-{{ app.user ? 'member' : 'public' }}"
+                class="ez-language-select"
+                aria-label="{{ 'locale.label'|trans }}"
+                data-language-select>
+            <option value="fr" {{ app.request.locale == 'fr' ? 'selected' : '' }}>🇫🇷 {{ 'locale.fr_name'|trans }}</option>
+            <option value="en" {{ app.request.locale == 'en' ? 'selected' : '' }}>🇬🇧 {{ 'locale.en_name'|trans }}</option>
+        </select>
+        <noscript><button type="submit">{{ 'locale.change'|trans }}</button></noscript>
+    </form>
+{% endmacro %}
+
+{% import _self as ui %}
 
 {% if app.user %}
 <div class="ez-shell" data-ez-shell>
@@ -29,14 +46,7 @@
         </div>
 
         <div class="ez-topbar-right">
-            <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
-                {% for locale in ['fr', 'en'] %}
-                    <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-                        <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">{{ ('locale.' ~ locale)|trans }}</button>
-                    </form>
-                {% endfor %}
-            </div>
+            {{ ui.language_select() }}
 
             <a class="ez-user-badge" href="{{ path('app_profile', {'_locale': app.request.locale}) }}" title="{{ app.user.email }}">
                 {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">
@@ -84,14 +94,7 @@
                 <a class="public-register-link" href="{{ path('app_register', {'_locale': app.request.locale}) }}">{{ 'registration.register_link'|trans }}</a>
             {% endif %}
 
-            <div class="ez-languages" aria-label="{{ 'locale.label'|trans }}">
-                {% for locale in ['fr', 'en'] %}
-                    <form method="post" action="{{ path('app_locale', {locale: locale}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-                        <button type="submit" class="{{ app.request.locale == locale ? 'active' : '' }}">{{ ('locale.' ~ locale)|trans }}</button>
-                    </form>
-                {% endfor %}
-            </div>
+            {{ ui.language_select() }}
         </div>
     </div>
 {% endif %}
@@ -110,6 +113,18 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="/assets/js/app.js?v=20260924f"></script>
 <script src="/assets/js/dirty-tracker.js?v=20260924"></script>
+<script>
+(() => {
+    document.querySelectorAll('[data-language-select]').forEach((select) => {
+        select.addEventListener('change', () => {
+            const form = select.closest('[data-language-form]');
+            if (!form) return;
+            form.action = '/locale/' + encodeURIComponent(select.value);
+            form.submit();
+        });
+    });
+})();
+</script>
 {% block javascripts %}{% endblock %}
 </body>
 </html>

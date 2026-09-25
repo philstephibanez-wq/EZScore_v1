@@ -2,6 +2,9 @@ locale:
   label: Language
   fr: FR
   en: EN
+  fr_name: Français
+  en_name: English
+  change: Change
 
 nav:
   dashboard: Dashboard
@@ -230,6 +233,33 @@ song:
     analyzed: Analyzed
     editing: Editing
     published: Published
+  edit:
+    button: Edit
+    eyebrow: Editing
+    heading: Edit song
+    lead: Edit metadata, cover and musical settings without re-importing the audio file.
+    back_workspace: Back to song
+    save: Save changes
+    saved: Changes saved.
+    cover_help: Leave empty to keep the current cover.
+    status_help: “Analyzed” remains reserved for the analysis pipeline.
+    rating_readonly: User ratings are independent from song editing.
+    validation:
+      required: Title and performer are required.
+      editor: The selected editor is invalid.
+      status: The selected status is invalid.
+      analyzed: “Analyzed” can only be assigned by the analysis pipeline.
+      invalid: Song settings are invalid.
+    audio:
+      eyebrow: Audio source
+      heading: Replace audio file
+      body: Replacing the source keeps the same song, but resets its status to “Imported” because previous analyses may no longer match the new source.
+      current: Current file
+      replace: Replace audio
+      confirm: Replace the audio source? The song will return to Imported status.
+      required: Select a new audio file.
+      replaced: Audio source replaced. The song returned to Imported status.
+      failed: Audio replacement failed.
   rating:
     eyebrow: Community
     heading: User rating

@@ -1,0 +1,36 @@
+.song-edit-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.song-edit-view-link,.song-edit-button{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-height:38px;padding:8px 13px;border:1px solid #3f6b70;border-radius:9px;
+    background:#163039;color:#bfe8e4;font-weight:800;text-decoration:none
+}
+.song-edit-view-link:hover,.song-edit-button:hover{background:#1a3d45;border-color:#5e999e}
+.song-edit-form{display:grid;gap:12px}
+.song-edit-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:20px}
+.song-edit-actions .ez-back-link{margin:0}
+.song-audio-replace-panel{
+    display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.7fr);
+    gap:24px;align-items:center
+}
+.song-audio-replace-panel h2{margin:.25rem 0 .5rem}
+.song-audio-replace-panel p{margin:0;color:#91a0ac;line-height:1.5}
+.song-current-audio{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;font-size:12px}
+.song-current-audio strong{color:#dbe5eb}
+.song-current-audio span{color:#a7b5bf}
+.song-current-audio code{padding:3px 6px;border-radius:5px;background:#0b1116;color:#7fcfc8}
+.song-audio-replace-form{display:grid;gap:10px;padding:14px;border:1px solid #41383a;border-radius:12px;background:#1c1517}
+.danger-soft{background:#4a2529;border-color:#7b383e;color:#ffd6d9;font-weight:850}
+.danger-soft:hover{background:#5a2b30;border-color:#a64b53}
+.song-workspace-actions{display:flex!important;align-items:center!important;gap:8px!important}
+.song-workspace-actions form{margin:0}
+.song-card-layout.mode-edit{align-items:start}
+.song-rating-edit-note{color:#7e8b96;font-size:11px;line-height:1.4}
+@media(max-width:850px){
+    .song-edit-head{align-items:flex-start;flex-direction:column}
+    .song-audio-replace-panel{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+    .song-edit-actions{align-items:stretch;flex-direction:column-reverse}
+    .song-edit-actions>*{width:100%;justify-content:center}
+    .song-workspace-actions{align-items:stretch!important;flex-direction:column}
+}

@@ -131,6 +131,29 @@ final class SongImportStorage
         return '/uploads/covers/' . $storedName;
     }
 
+    /**
+     * Append previous source metadata to a per-song JSONL history file.
+     *
+     * @param array<string,mixed> $version
+     */
+    public function archiveAudioVersion(int $songId, array $version): void
+    {
+        $directory = $this->projectDir
+            . DIRECTORY_SEPARATOR . 'var'
+            . DIRECTORY_SEPARATOR . 'storage'
+            . DIRECTORY_SEPARATOR . 'audio'
+            . DIRECTORY_SEPARATOR . 'history';
+
+        $this->ensureDirectory($directory);
+
+        $path = $directory . DIRECTORY_SEPARATOR . 'song-' . $songId . '.jsonl';
+        $json = json_encode($version, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+        if (file_put_contents($path, $json . PHP_EOL, FILE_APPEND | LOCK_EX) === false) {
+            throw new \RuntimeException(sprintf('Unable to write audio history for song %d.', $songId));
+        }
+    }
+
     private function detectMimeType(UploadedFile $file): string
     {
         if (class_exists(\finfo::class)) {
