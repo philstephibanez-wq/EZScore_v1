@@ -1,186 +1,61 @@
-# EZScore_v1 — R23.4 Console Python + worker STEM permanent
+# EZScore_v1 — R24.5 CUDA Torch fix
 
-R23.4 complète R23.3 sur deux points seulement :
-
-1. **console de diagnostic en direct dans la page STEMS** ;
-2. **worker STEM permanent démarré automatiquement par Windows**.
-
-Le périmètre musical reste strictement **STEMS only**.
-
-## Console en direct
-
-La page STEMS affiche maintenant :
+R24.4 échouait parce qu'il demandait simultanément :
 
 ```text
-Console STEMS
+torch
+torchvision
+torchaudio
 ```
 
-avec la sortie réelle de :
+sur l'index CUDA 13.2, alors que `torchaudio` n'y possède pas de wheel compatible avec le Python 3.13 utilisé ici.
+
+Le pipeline STEMS EZScore_v1 n'a pas besoin de `torchaudio` pour cette étape.
+
+R24.5 remplace donc uniquement le paquet `torch` CPU par le paquet `torch` CUDA :
 
 ```text
-FFmpeg
-BS-RoFormer
-MelBand-RoFormer
-worker Python
+H:\EZScore_v1\.venv-py313\Scripts\python.exe
 ```
 
-La console :
-
-- lit le log toutes les 2 secondes ;
-- affiche les dernières lignes sans recharger la page ;
-- suit automatiquement le bas du log tant que l'utilisateur n'a pas remonté manuellement ;
-- expose également l'état et la progression courante ;
-- permet un téléchargement du fichier `.log`.
-
-Le fichier persistant reste :
+avec :
 
 ```text
-var/storage/stems/song-{id}/{audio_sha256}/worker.log
+https://download.pytorch.org/whl/cu132
 ```
 
-Le endpoint ne renvoie que la fin du fichier afin d'éviter de charger un gros log complet à chaque rafraîchissement.
+Le script reteste ensuite CUDA, le GPU, `bs_roformer` et `mel_band_roformer`.
 
-## Progression
-
-Le rafraîchissement HTML complet toutes les 3 secondes est supprimé.
-
-Le JavaScript met à jour en direct :
-
-```text
-état du job
-pourcentage global
-pourcentage moteur
-étape
-temps écoulé
-heure de dernière activité
-console Python
-```
-
-À la fin ou en cas d'échec, la page est rechargée une fois afin d'afficher l'état final et les lecteurs STEMS.
-
-## Worker permanent
-
-Le worker peut désormais fonctionner sans terminal PowerShell ouvert.
-
-R23.4 installe une tâche Windows :
-
-```text
-EZScore STEM Worker
-```
-
-qui démarre à l'ouverture de session Windows et lance en arrière-plan :
-
-```text
-php bin/console app:stems:worker --sleep=2
-```
-
-Un superviseur PowerShell relance également le worker si le processus PHP s'arrête.
-
-Log du superviseur :
-
-```text
-var/log/stem-worker-permanent.log
-```
-
-La séparation Python conserve son propre log par chanson.
-
-## Installation R23.4
+## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_STEMS_CONSOLE_PERMANENT_WORKER_R23_4.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_5_CUDA_TORCH_ONLY_FIX.zip" -C H:\EZScore_v1
 
-python -m py_compile .\analysis\stems_only.py
+php tests\runtime_cuda_r24_5_contract.php
 
-Get-ChildItem src,tests -Recurse -Filter *.php | ForEach-Object {
-    php -l $_.FullName
-}
-
-php bin\console lint:twig templates
-php bin\console cache:clear
-
-php tests\stems_console_worker_r23_4_contract.php
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare_analysis_runtime.ps1
 ```
+
+Attendu :
+
+```text
+TORCH= 2.14.0+cu132
+TORCH CUDA= 13.2
+CUDA= True
+GPU= NVIDIA GeForce RTX 2060
+STEM_RUNTIME_OK
+[OK] EZScore_v1 STEM runtime ready.
+```
+
+Puis :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test_analysis_worker_desktop.ps1
+```
+
+La fenêtre Windows autonome `EZScore Analysis Worker` doit apparaître.
 
 Aucune migration Doctrine.
-
-## Installer le worker automatique
-
-Toujours depuis :
-
-```powershell
-cd H:\EZScore_v1
-```
-
-exécuter :
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install_stem_worker_task.ps1
-```
-
-Le script :
-
-- crée ou remplace la tâche `EZScore STEM Worker` ;
-- la configure pour le compte Windows courant ;
-- démarre immédiatement le worker ;
-- redémarre le worker après incident ;
-- ne crée pas une deuxième instance si une instance tourne déjà.
-
-## Vérifier le worker permanent
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\status_stem_worker_task.ps1
-```
-
-Attendu notamment :
-
-```text
-Task:       EZScore STEM Worker
-State:      Running
-```
-
-et les dernières lignes de :
-
-```text
-var/log/stem-worker-permanent.log
-```
-
-## Arrêter / retirer le worker permanent
-
-Uniquement si nécessaire :
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_stem_worker_task.ps1
-```
-
-## Premier test
-
-1. Installer la tâche permanente.
-2. Vérifier qu'elle est `Running`.
-3. Ouvrir une chanson.
-4. Ouvrir `2 · STEMS`.
-5. Cliquer sur la séparation.
-6. Ne lancer aucun PowerShell supplémentaire.
-7. Le job doit passer automatiquement de `EN ATTENTE` à `EN COURS`.
-8. La console doit commencer à afficher les commandes et sorties Python.
-9. La progression doit évoluer en direct.
-10. En cas d'échec, télécharger le log depuis la page.
-
-## Toujours absent
-
-R23.4 ne lance toujours aucun :
-
-```text
-Whisper
-paroles
-phonèmes
-accords
-tempo
-beats
-mesures
-structure
-MIDI
-conducteur
-karaoké
-```
+Aucun changement du moteur STEMS.
