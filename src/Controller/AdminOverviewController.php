@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controller;
@@ -11,8 +12,10 @@ use App\Domain\Playlist\PlaylistInvitation;
 use App\Domain\Playlist\PlaylistInvitationStatus;
 use App\Domain\Playlist\PlaylistItem;
 use App\Domain\User\User;
+use App\Service\ListPagination;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -20,37 +23,61 @@ use Symfony\Component\Routing\Attribute\Route;
 final class AdminOverviewController extends AbstractController
 {
     #[Route('', name: 'admin_overview', methods: ['GET'])]
-    public function index(EntityManagerInterface $em): Response
-    {
-        $users = $em->getRepository(User::class)->findBy([], ['displayName' => 'ASC']);
-        $groups = $em->getRepository(UserGroup::class)->findBy([], ['name' => 'ASC']);
-        $playlists = $em->getRepository(Playlist::class)->findBy([], ['name' => 'ASC']);
+    public function index(
+        Request $request,
+        EntityManagerInterface $em,
+        ListPagination $pagination,
+    ): Response {
+        $userRepo = $em->getRepository(User::class);
+        $groupRepo = $em->getRepository(UserGroup::class);
+        $playlistRepo = $em->getRepository(Playlist::class);
 
-        $membersByGroup = [];
-        foreach ($em->getRepository(GroupMember::class)->findAll() as $membership) {
-            $membersByGroup[(int) $membership->getGroup()->getId()][] = $membership;
+        $stats = [
+            'users' => $userRepo->count([]),
+            'active_users' => $userRepo->count(['active' => true]),
+            'readers' => $this->countRole($em, 'ROLE_READER'),
+            'editors' => $this->countRole($em, 'ROLE_EDITOR'),
+            'admins' => $this->countRole($em, 'ROLE_ADMIN'),
+            'groups' => $groupRepo->count([]),
+            'playlists' => $playlistRepo->count([]),
+        ];
+
+        $gq = $pagination->query($request, 'gq');
+        $gletter = $pagination->letter($request, 'gletter');
+        $grole = (string) $request->query->get('grole', '');
+
+        $groupQb = $groupRepo->createQueryBuilder('g')
+            ->leftJoin(GroupMember::class, 'gm', 'WITH', 'gm.group = g')
+            ->leftJoin('gm.user', 'gu')
+            ->distinct()
+            ->orderBy('LOWER(g.name)', 'ASC');
+
+        if ($gq !== '') {
+            $groupQb->andWhere(
+                "(LOWER(g.name) LIKE :gq
+                  OR LOWER(COALESCE(g.description, '')) LIKE :gq
+                  OR LOWER(COALESCE(gu.displayName, '')) LIKE :gq
+                  OR LOWER(COALESCE(gu.email, '')) LIKE :gq)"
+            )->setParameter('gq', '%'.mb_strtolower($gq).'%');
         }
 
-        $linksByGroup = [];
-        $linksByPlaylist = [];
-        foreach ($em->getRepository(PlaylistGroup::class)->findAll() as $link) {
-            $linksByGroup[(int) $link->getGroup()->getId()][] = $link;
-            $linksByPlaylist[(int) $link->getPlaylist()->getId()][] = $link;
+        if ($gletter !== null) {
+            $groupQb->andWhere('UPPER(SUBSTRING(g.name, 1, 1)) = :gletter')
+                ->setParameter('gletter', $gletter);
         }
 
-        $itemsByPlaylist = [];
-        foreach ($em->getRepository(PlaylistItem::class)->findAll() as $item) {
-            $itemsByPlaylist[(int) $item->getPlaylist()->getId()][] = $item;
+        if (in_array($grole, ['owner', 'manager', 'member'], true)) {
+            $groupQb->andWhere('gm.role = :grole')->setParameter('grole', $grole);
         }
 
-        $invitationsByPlaylist = [];
-        foreach ($em->getRepository(PlaylistInvitation::class)->findAll() as $invitation) {
-            $invitationsByPlaylist[(int) $invitation->getPlaylist()->getId()][] = $invitation;
-        }
-
+        $groupPager = $pagination->paginate($groupQb, $request, 'g', 'gpage', 25);
         $groupRows = [];
-        foreach ($groups as $group) {
-            $memberships = $membersByGroup[(int) $group->getId()] ?? [];
+
+        foreach ($groupPager['rows'] as $group) {
+            $memberships = $em->getRepository(GroupMember::class)->findBy(
+                ['group' => $group],
+                ['role' => 'ASC', 'id' => 'ASC'],
+            );
             $owners = [];
             $managers = [];
             $members = [];
@@ -74,12 +101,42 @@ final class AdminOverviewController extends AbstractController
                 'managers' => $managers,
                 'members' => $members,
                 'member_count' => count($memberships),
-                'playlist_count' => count($linksByGroup[(int) $group->getId()] ?? []),
+                'playlist_count' => $em->getRepository(PlaylistGroup::class)->count(['group' => $group]),
             ];
         }
 
+        $pq = $pagination->query($request, 'pq');
+        $pletter = $pagination->letter($request, 'pletter');
+        $pvisibility = (string) $request->query->get('pvisibility', '');
+
+        $playlistQb = $playlistRepo->createQueryBuilder('p')
+            ->leftJoin('p.ownerUser', 'po')
+            ->leftJoin(PlaylistGroup::class, 'pg', 'WITH', 'pg.playlist = p')
+            ->leftJoin('pg.group', 'pgroup')
+            ->addSelect('po')
+            ->orderBy('LOWER(p.name)', 'ASC');
+
+        if ($pq !== '') {
+            $playlistQb->andWhere(
+                "(LOWER(p.name) LIKE :pq
+                  OR LOWER(COALESCE(p.description, '')) LIKE :pq
+                  OR LOWER(COALESCE(po.displayName, '')) LIKE :pq
+                  OR LOWER(COALESCE(pgroup.name, '')) LIKE :pq)"
+            )->setParameter('pq', '%'.mb_strtolower($pq).'%');
+        }
+
+        if ($pletter !== null) {
+            $playlistQb->andWhere('UPPER(SUBSTRING(p.name, 1, 1)) = :pletter')
+                ->setParameter('pletter', $pletter);
+        }
+
+        if ($pvisibility === 'public') $playlistQb->andWhere('p.public = true');
+        elseif ($pvisibility === 'private') $playlistQb->andWhere('p.public = false');
+
+        $playlistPager = $pagination->paginate($playlistQb, $request, 'p', 'ppage', 25);
         $playlistRows = [];
-        foreach ($playlists as $playlist) {
+
+        foreach ($playlistPager['rows'] as $playlist) {
             $invitationStats = [
                 PlaylistInvitationStatus::Pending->value => 0,
                 PlaylistInvitationStatus::Accepted->value => 0,
@@ -87,13 +144,13 @@ final class AdminOverviewController extends AbstractController
                 PlaylistInvitationStatus::Cancelled->value => 0,
             ];
 
-            foreach ($invitationsByPlaylist[(int) $playlist->getId()] ?? [] as $invitation) {
+            foreach ($em->getRepository(PlaylistInvitation::class)->findBy(['playlist' => $playlist]) as $invitation) {
                 ++$invitationStats[$invitation->getStatus()->value];
             }
 
             $groupNames = array_map(
                 static fn(PlaylistGroup $link): string => $link->getGroup()->getName(),
-                $linksByPlaylist[(int) $playlist->getId()] ?? [],
+                $em->getRepository(PlaylistGroup::class)->findBy(['playlist' => $playlist]),
             );
 
             $playlistRows[] = [
@@ -101,33 +158,30 @@ final class AdminOverviewController extends AbstractController
                 'owner_label' => $playlist->getOwnerUser()->getDisplayName(),
                 'creator' => $playlist->getCreatedBy(),
                 'group_names' => $groupNames,
-                'song_count' => count($itemsByPlaylist[(int) $playlist->getId()] ?? []),
+                'song_count' => $em->getRepository(PlaylistItem::class)->count(['playlist' => $playlist]),
                 'invitation_stats' => $invitationStats,
             ];
         }
 
-        $roleCounts = ['ROLE_READER' => 0, 'ROLE_EDITOR' => 0, 'ROLE_ADMIN' => 0];
-        $activeUsers = 0;
-
-        foreach ($users as $user) {
-            if ($user->isActive()) ++$activeUsers;
-            if (isset($roleCounts[$user->getPrimaryRole()])) {
-                ++$roleCounts[$user->getPrimaryRole()];
-            }
-        }
-
         return $this->render('admin/overview.html.twig', [
-            'stats' => [
-                'users' => count($users),
-                'active_users' => $activeUsers,
-                'readers' => $roleCounts['ROLE_READER'],
-                'editors' => $roleCounts['ROLE_EDITOR'],
-                'admins' => $roleCounts['ROLE_ADMIN'],
-                'groups' => count($groups),
-                'playlists' => count($playlists),
-            ],
+            'stats' => $stats,
             'group_rows' => $groupRows,
+            'group_pager' => $groupPager,
             'playlist_rows' => $playlistRows,
+            'playlist_pager' => $playlistPager,
+            'alphabet' => $pagination->alphabet(),
+            'group_filters' => ['q' => $gq, 'letter' => $gletter, 'role' => $grole],
+            'playlist_filters' => ['q' => $pq, 'letter' => $pletter, 'visibility' => $pvisibility],
         ]);
+    }
+
+    private function countRole(EntityManagerInterface $em, string $role): int
+    {
+        return (int) $em->getRepository(User::class)->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.roles LIKE :role')
+            ->setParameter('role', '%'.$role.'%')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

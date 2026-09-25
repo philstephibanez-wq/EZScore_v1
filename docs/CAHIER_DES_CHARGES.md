@@ -236,21 +236,30 @@ Après migration, `doctrine:schema:validate` doit être vert et
 `doctrine:schema:update --dump-sql` ne doit proposer aucun SQL.
 
 
-## 11. Événements
+## 11. Événements et type Session
 
-Un événement organise un rendez-vous musical autour d'une date, d'un groupe, d'une playlist et de participants.
+`Event` reste le concept technique générique. L'interface expose actuellement un seul type métier : `Session`.
+
+```text
+Event
+└─ type = session
+```
+
+D'autres types pourront être ajoutés ultérieurement sans remettre en cause le modèle.
+
+Une Session organise un rendez-vous musical autour d'une date, d'un groupe, d'une playlist et de participants.
 
 Cas d'usage :
 
 ```text
-Événement : Répétition du 30/10/2026
+Session : Répétition du 30/10/2026
 Groupe : Formation A
 Playlist : Répétition 30/10/2026
 Mode : présentiel / à distance / hybride
 Participants : membres du groupe
 ```
 
-Un événement possède :
+Un `Event` de type `session` possède :
 
 - un titre ;
 - une description ;
@@ -267,7 +276,7 @@ Un événement possède :
 
 ### 11.1 RSVP
 
-La participation à un événement est indépendante de l'accès à la playlist.
+La participation à une Session est indépendante de l'accès à la playlist.
 
 États :
 
@@ -280,20 +289,20 @@ maybe
 
 L'appartenance à un groupe donne l'accès automatique aux playlists du groupe, mais une invitation à un événement peut demander une confirmation de présence.
 
-### 11.2 Événement associé à un groupe
+### 11.2 Session associée à un groupe
 
-Lorsqu'un groupe est associé à l'événement :
+Lorsqu'un groupe est associé à la Session :
 
 - les membres actifs du groupe deviennent participants de l'événement ;
 - aucune invitation de playlist n'est créée ;
-- ils reçoivent l'invitation d'événement ;
+- ils reçoivent l'invitation de Session ;
 - la réponse RSVP reste individuelle.
 
 Si une playlist est associée à l'événement et n'est pas encore affectée au groupe, EZScore peut créer l'association `PlaylistGroup` lorsque l'organisateur possède les droits nécessaires.
 
 ### 11.3 Session hors groupe
 
-Un événement peut être organisé sans groupe.
+Une Session peut être organisée sans groupe.
 
 Lorsqu'une playlist est associée, les participants proposés doivent déjà avoir accès à cette playlist :
 
@@ -302,7 +311,7 @@ Lorsqu'une playlist est associée, les participants proposés doivent déjà avo
 - accès hérité via un groupe ;
 - ou playlist publique.
 
-L'événement ne doit pas servir à contourner l'ACL playlist.
+La Session ne doit pas servir à contourner l'ACL playlist.
 
 ## 12. Notifications d'événement
 
@@ -368,3 +377,119 @@ La même ergonomie de sélecteur modal utilisée pour les collections R18 est r�
 - ajout/retrait groupés.
 
 Le sélecteur générique doit donc supporter les modes `single` et `multiple`.
+
+
+## 14. Scalabilité globale des listes et écrans de gestion
+
+EZScore doit rester exploitable avec des centaines ou milliers d'entités.
+
+Aucune page de gestion ne doit reposer sur un scroll continu de toutes les lignes ou cartes disponibles.
+
+### 14.1 Principe général
+
+Les écrans suivants utilisent systématiquement :
+
+- recherche texte serveur ;
+- index alphabétique A-Z ;
+- filtres métier contextuels ;
+- pagination serveur ;
+- compteur de résultats ;
+- conservation des filtres pendant la navigation ;
+- aperçu limité pour les collections imbriquées volumineuses ;
+- sélecteur modal paginé pour les ajouts/retraits massifs.
+
+Le catalogue Chansons sert de référence ergonomique pour la recherche et l'index alphabétique.
+
+### 14.2 Administration des utilisateurs
+
+Le back-office Utilisateurs doit filtrer par :
+
+- nom affiché ;
+- e-mail ;
+- lettre initiale ;
+- rôle global ;
+- compte actif / inactif ;
+- compte Google lié / local ;
+- langue.
+
+La liste est paginée côté serveur.
+
+Une modification ou suppression d'un utilisateur conserve le contexte de filtre et la page courante.
+
+### 14.3 Administration des groupes
+
+Le back-office global des groupes doit permettre :
+
+- recherche par nom ou description ;
+- recherche par membre ;
+- recherche par e-mail de membre ;
+- filtre par rôle contextuel `owner / manager / member` ;
+- index alphabétique ;
+- pagination serveur.
+
+La page Groupes accessible aux utilisateurs autorisés doit aussi être paginée.
+
+Pour éviter une page gigantesque, chaque carte groupe n'affiche qu'un aperçu des membres et playlists lorsque aucun filtre précis n'est actif.
+
+Les collections complètes continuent à être administrées via le sélecteur modal paginé.
+
+### 14.4 Administration des playlists
+
+Les playlists sont filtrables par :
+
+- nom ;
+- description ;
+- propriétaire ;
+- groupe lié ;
+- lettre initiale ;
+- portée : mes playlists / via mes groupes / partagées / publiques ;
+- chanson contenue par titre ou interprète.
+
+La liste principale est paginée côté serveur.
+
+Les chansons d'une playlist sont présentées sous forme d'aperçu limité lorsqu'aucune recherche chanson n'est active.
+
+Les partages personnels sont présentés par compteurs, pas par une liste illimitée de noms. Leur gestion complète se fait via le sélecteur modal.
+
+### 14.5 Sessions
+
+La liste des Sessions est filtrable par :
+
+- titre ;
+- groupe ;
+- playlist ;
+- créateur ;
+- lettre initiale ;
+- statut ;
+- mode présentiel / distant / hybride ;
+- période à venir / passée / toutes.
+
+La liste est paginée côté serveur.
+
+La liste des participants d'une Session possède sa propre recherche, son index alphabétique, son filtre RSVP et sa pagination serveur.
+
+### 14.6 Collections imbriquées
+
+Une collection imbriquée ne doit jamais provoquer un scroll de plusieurs centaines de lignes dans une carte.
+
+Règle :
+
+```text
+Liste principale -> pagination serveur
+Collection imbriquée -> aperçu borné
+Gestion complète -> recherche + picker/pagination
+```
+
+L'interface doit toujours afficher le nombre total d'éléments afin que l'utilisateur sache qu'il voit un aperçu.
+
+### 14.7 Performance
+
+Les contrôleurs ne doivent pas charger toutes les entités en mémoire pour ensuite les filtrer en PHP lorsqu'une requête Doctrine peut appliquer les ACL et filtres côté serveur.
+
+Les requêtes de liste doivent :
+
+- filtrer en SQL/DQL ;
+- utiliser `COUNT(DISTINCT ...)` pour les jointures ;
+- limiter les résultats avant hydratation ;
+- éviter les listes HTML de centaines d'options ;
+- ne charger les collections associées que pour la page courante.

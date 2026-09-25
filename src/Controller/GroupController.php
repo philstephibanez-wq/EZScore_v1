@@ -10,6 +10,7 @@ use App\Domain\Playlist\PlaylistGroup;
 use App\Domain\User\User;
 use App\Domain\User\UserRepository;
 use App\Security\Acl\AclPrivilege;
+use App\Service\ListPagination;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,7 +23,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class GroupController extends AbstractController
 {
     #[Route('', name: 'app_groups', methods: ['GET', 'POST'])]
-    public function index(Request $request, EntityManagerInterface $em): Response
+    public function index(
+        Request $request,
+        EntityManagerInterface $em,
+        ListPagination $pagination,
+    ): Response
     {
         $currentUser = $this->requireUser();
         $canCreateGroup = $this->isGranted(AclPrivilege::GROUP_CREATE);
@@ -57,24 +62,96 @@ final class GroupController extends AbstractController
             return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
         }
 
-        $groups = [];
-        foreach ($em->getRepository(UserGroup::class)->findBy([], ['name' => 'ASC']) as $group) {
-            if ($this->isGranted(AclPrivilege::GROUP_VIEW, $group)) {
-                $groups[] = $group;
-            }
+        $query = $pagination->query($request);
+        $letter = $pagination->letter($request);
+        $memberQuery = trim((string) $request->query->get('member', ''));
+        $playlistQuery = trim((string) $request->query->get('playlist', ''));
+
+        $qb = $em->getRepository(UserGroup::class)->createQueryBuilder('g')
+            ->leftJoin(GroupMember::class, 'gmSearch', 'WITH', 'gmSearch.group = g')
+            ->leftJoin('gmSearch.user', 'guSearch')
+            ->leftJoin(PlaylistGroup::class, 'pgSearch', 'WITH', 'pgSearch.group = g')
+            ->leftJoin('pgSearch.playlist', 'pSearch')
+            ->distinct()
+            ->orderBy('LOWER(g.name)', 'ASC');
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $qb->innerJoin(GroupMember::class, 'gmAccess', 'WITH', 'gmAccess.group = g AND gmAccess.user = :currentUser')
+                ->setParameter('currentUser', $currentUser);
         }
+
+        if ($query !== '') {
+            $qb->andWhere(
+                "(LOWER(g.name) LIKE :q
+                  OR LOWER(COALESCE(g.description, '')) LIKE :q)"
+            )->setParameter('q', '%'.mb_strtolower($query).'%');
+        }
+
+        if ($memberQuery !== '') {
+            $qb->andWhere(
+                "(LOWER(COALESCE(guSearch.displayName, '')) LIKE :memberQ
+                  OR LOWER(COALESCE(guSearch.email, '')) LIKE :memberQ)"
+            )->setParameter('memberQ', '%'.mb_strtolower($memberQuery).'%');
+        }
+
+        if ($playlistQuery !== '') {
+            $qb->andWhere(
+                "(LOWER(COALESCE(pSearch.name, '')) LIKE :playlistQ
+                  OR LOWER(COALESCE(pSearch.description, '')) LIKE :playlistQ)"
+            )->setParameter('playlistQ', '%'.mb_strtolower($playlistQuery).'%');
+        }
+
+        if ($letter !== null) {
+            $qb->andWhere('UPPER(SUBSTRING(g.name, 1, 1)) = :letter')
+                ->setParameter('letter', $letter);
+        }
+
+        $pager = $pagination->paginate($qb, $request, 'g', 'page', 12);
+        $groups = $pager['rows'];
 
         $membersByGroup = [];
         $playlistsByGroup = [];
 
-        foreach ($groups as $group) {
-            $membersByGroup[(int) $group->getId()] = $em->getRepository(GroupMember::class)->findBy(
-                ['group' => $group],
-                ['role' => 'ASC', 'id' => 'ASC'],
-            );
+        $memberCountsByGroup = [];
+        $playlistCountsByGroup = [];
 
-            $links = $em->getRepository(PlaylistGroup::class)->findBy(['group' => $group], ['id' => 'ASC']);
-            $playlistsByGroup[(int) $group->getId()] = array_map(
+        foreach ($groups as $group) {
+            $groupId = (int) $group->getId();
+            $memberCountsByGroup[$groupId] = $em->getRepository(GroupMember::class)->count(['group' => $group]);
+            $playlistCountsByGroup[$groupId] = $em->getRepository(PlaylistGroup::class)->count(['group' => $group]);
+
+            $memberQb = $em->getRepository(GroupMember::class)->createQueryBuilder('gm')
+                ->join('gm.user', 'u')
+                ->addSelect('u')
+                ->andWhere('gm.group = :group')
+                ->setParameter('group', $group)
+                ->orderBy('LOWER(u.displayName)', 'ASC');
+
+            if ($memberQuery !== '') {
+                $memberQb->andWhere('(LOWER(u.displayName) LIKE :mq OR LOWER(u.email) LIKE :mq)')
+                    ->setParameter('mq', '%'.mb_strtolower($memberQuery).'%');
+            } else {
+                $memberQb->setMaxResults(8);
+            }
+
+            $membersByGroup[$groupId] = $memberQb->getQuery()->getResult();
+
+            $playlistQb = $em->getRepository(PlaylistGroup::class)->createQueryBuilder('pg')
+                ->join('pg.playlist', 'p')
+                ->addSelect('p')
+                ->andWhere('pg.group = :group')
+                ->setParameter('group', $group)
+                ->orderBy('LOWER(p.name)', 'ASC');
+
+            if ($playlistQuery !== '') {
+                $playlistQb->andWhere('(LOWER(p.name) LIKE :pq OR LOWER(COALESCE(p.description, \'\')) LIKE :pq)')
+                    ->setParameter('pq', '%'.mb_strtolower($playlistQuery).'%');
+            } else {
+                $playlistQb->setMaxResults(8);
+            }
+
+            $links = $playlistQb->getQuery()->getResult();
+            $playlistsByGroup[$groupId] = array_map(
                 static fn(PlaylistGroup $link): Playlist => $link->getPlaylist(),
                 $links,
             );
@@ -84,7 +161,17 @@ final class GroupController extends AbstractController
             'groups' => $groups,
             'members_by_group' => $membersByGroup,
             'playlists_by_group' => $playlistsByGroup,
+            'member_counts_by_group' => $memberCountsByGroup,
+            'playlist_counts_by_group' => $playlistCountsByGroup,
             'can_create_group' => $canCreateGroup,
+            'pager' => $pager,
+            'alphabet' => $pagination->alphabet(),
+            'filters' => [
+                'q' => $query,
+                'letter' => $letter,
+                'member' => $memberQuery,
+                'playlist' => $playlistQuery,
+            ],
         ]);
     }
 

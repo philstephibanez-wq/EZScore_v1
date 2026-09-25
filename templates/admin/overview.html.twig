@@ -1,53 +1,159 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'title'|trans({}, 'admin') }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/admin-overview.css?v=20260925r18">{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/admin-overview.css?v=20260925r20">
+<link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
+{% endblock %}
 {% block body %}
 <header class="page-head admin-overview-head">
-  <div><div class="eyebrow">{{ 'eyebrow'|trans({}, 'admin') }}</div><h1>{{ 'title'|trans({}, 'admin') }}</h1><p class="page-note">{{ 'note'|trans({}, 'admin') }}</p></div>
-  <a class="admin-overview-users-link" href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'manage_users'|trans({}, 'admin') }}</a>
+    <div>
+        <div class="eyebrow">{{ 'eyebrow'|trans({}, 'admin') }}</div>
+        <h1>{{ 'title'|trans({}, 'admin') }}</h1>
+        <p class="page-note">{{ 'note'|trans({}, 'admin') }}</p>
+    </div>
+    <a class="admin-overview-users-link" href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'manage_users'|trans({}, 'admin') }}</a>
 </header>
 
 <section class="admin-kpi-grid">
-  <article class="panel admin-kpi"><strong>{{ stats.users }}</strong><span>{{ 'stats.users'|trans({}, 'admin') }}</span><small>{{ 'stats.active'|trans({'%count%': stats.active_users}, 'admin') }}</small></article>
-  <article class="panel admin-kpi"><strong>{{ stats.groups }}</strong><span>{{ 'stats.groups'|trans({}, 'admin') }}</span></article>
-  <article class="panel admin-kpi"><strong>{{ stats.playlists }}</strong><span>{{ 'stats.playlists'|trans({}, 'admin') }}</span></article>
-  <article class="panel admin-kpi"><span>{{ 'stats.roles'|trans({}, 'admin') }}</span><small>{{ 'role_reader'|trans({}, 'admin') }} {{ stats.readers }} · {{ 'role_editor'|trans({}, 'admin') }} {{ stats.editors }} · {{ 'role_admin'|trans({}, 'admin') }} {{ stats.admins }}</small></article>
+    <article class="panel admin-kpi"><strong>{{ stats.users }}</strong><span>{{ 'stats.users'|trans({}, 'admin') }}</span><small>{{ 'stats.active'|trans({'%count%': stats.active_users}, 'admin') }}</small></article>
+    <article class="panel admin-kpi"><strong>{{ stats.groups }}</strong><span>{{ 'stats.groups'|trans({}, 'admin') }}</span></article>
+    <article class="panel admin-kpi"><strong>{{ stats.playlists }}</strong><span>{{ 'stats.playlists'|trans({}, 'admin') }}</span></article>
+    <article class="panel admin-kpi"><span>{{ 'stats.roles'|trans({}, 'admin') }}</span><small>{{ 'role_reader'|trans({}, 'admin') }} {{ stats.readers }} · {{ 'role_editor'|trans({}, 'admin') }} {{ stats.editors }} · {{ 'role_admin'|trans({}, 'admin') }} {{ stats.admins }}</small></article>
 </section>
 
 <section class="panel admin-data-section">
-  <div class="admin-section-head"><div><div class="eyebrow">{{ 'groups.eyebrow'|trans({}, 'admin') }}</div><h2>{{ 'groups.heading'|trans({}, 'admin') }}</h2></div><span class="admin-count">{{ group_rows|length }}</span></div>
-  <div class="admin-table-wrap"><table class="admin-overview-table">
-    <thead><tr><th>{{ 'groups.name'|trans({}, 'admin') }}</th><th>{{ 'groups.owners'|trans({}, 'admin') }}</th><th>{{ 'groups.managers'|trans({}, 'admin') }}</th><th>{{ 'groups.members'|trans({}, 'admin') }}</th><th>{{ 'groups.playlists'|trans({}, 'admin') }}</th><th>{{ 'groups.created'|trans({}, 'admin') }}</th><th>{{ 'groups.description'|trans({}, 'admin') }}</th></tr></thead>
-    <tbody>{% for row in group_rows %}
-      <tr>
-        <td><strong>{{ row.group.name }}</strong><small>#{{ row.group.id }}</small></td>
-        <td>{% for owner in row.owners %}<span class="admin-person-chip" title="{{ owner.email }}">{{ owner.name }}</span>{% else %}<span class="admin-warning">{{ 'groups.no_owner'|trans({}, 'admin') }}</span>{% endfor %}</td>
-        <td>{% for manager in row.managers %}<span class="admin-person-chip" title="{{ manager.email }}">{{ manager.name }}</span>{% else %}—{% endfor %}</td>
-        <td><strong>{{ row.member_count }}</strong></td>
-        <td>{{ row.playlist_count }}</td>
-        <td>{{ row.group.createdAt|date('d/m/Y H:i') }}</td>
-        <td>{{ row.group.description ?: '—' }}</td>
-      </tr>
-    {% else %}<tr><td colspan="7">{{ 'groups.empty'|trans({}, 'admin') }}</td></tr>{% endfor %}</tbody>
-  </table></div>
+    <div class="admin-section-head"><div><div class="eyebrow">{{ 'groups.eyebrow'|trans({}, 'admin') }}</div><h2>{{ 'groups.heading'|trans({}, 'admin') }}</h2></div><span class="admin-count">{{ group_pager.total }}</span></div>
+
+    <form method="get" action="{{ path('admin_overview', {'_locale': app.request.locale}) }}" class="list-filter-panel">
+      <input type="hidden" name="pq" value="{{ playlist_filters.q }}">
+      {% if playlist_filters.letter %}<input type="hidden" name="pletter" value="{{ playlist_filters.letter }}">{% endif %}
+      <input type="hidden" name="pvisibility" value="{{ playlist_filters.visibility }}">
+      <input type="hidden" name="ppage" value="{{ playlist_pager.page }}">
+      <div class="list-filter-row compact">
+        <label class="list-filter-field"><span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span><input type="search" name="gq" value="{{ group_filters.q }}" placeholder="{{ 'list_filters.group_search'|trans({}, 'list_filters') }}"></label>
+        <label class="list-filter-field"><span>{{ 'list_filters.context_role'|trans({}, 'list_filters') }}</span>
+          <select name="grole">
+            <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+            {% for role in ['owner','manager','member'] %}<option value="{{ role }}" {{ group_filters.role == role ? 'selected' : '' }}>{{ ('group_role.' ~ role)|trans }}</option>{% endfor %}
+          </select>
+        </label>
+        <div class="list-filter-actions">
+          <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+          <a class="list-filter-clear" href="{{ path('admin_overview', {'_locale': app.request.locale, pq: playlist_filters.q ?: null, pletter: playlist_filters.letter, pvisibility: playlist_filters.visibility ?: null, ppage: playlist_pager.page}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+        </div>
+      </div>
+    </form>
+
+    <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+      {% set group_common = {'_locale': app.request.locale, gq: group_filters.q ?: null, grole: group_filters.role ?: null, pq: playlist_filters.q ?: null, pletter: playlist_filters.letter, pvisibility: playlist_filters.visibility ?: null, ppage: playlist_pager.page} %}
+      <a class="{{ group_filters.letter is null ? 'active' : '' }}" href="{{ path('admin_overview', group_common) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+      {% for alpha in alphabet %}<a class="{{ group_filters.letter == alpha ? 'active' : '' }}" href="{{ path('admin_overview', group_common|merge({gletter: alpha})) }}">{{ alpha }}</a>{% endfor %}
+    </nav>
+
+    <div class="list-results-head">
+      <strong>{{ 'list_filters.results'|trans({'%count%': group_pager.total}, 'list_filters') }}</strong>
+      <span>{{ 'list_filters.page_of'|trans({'%page%': group_pager.page, '%pages%': group_pager.pages}, 'list_filters') }}</span>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-overview-table">
+            <thead><tr><th>{{ 'groups.name'|trans({}, 'admin') }}</th><th>{{ 'groups.owners'|trans({}, 'admin') }}</th><th>{{ 'groups.managers'|trans({}, 'admin') }}</th><th>{{ 'groups.members'|trans({}, 'admin') }}</th><th>{{ 'groups.playlists'|trans({}, 'admin') }}</th><th>{{ 'groups.created'|trans({}, 'admin') }}</th><th>{{ 'groups.description'|trans({}, 'admin') }}</th></tr></thead>
+            <tbody>
+            {% for row in group_rows %}
+                <tr>
+                    <td><strong>{{ row.group.name }}</strong><small>#{{ row.group.id }}</small></td>
+                    <td>{% for owner in row.owners %}<span class="admin-person-chip" title="{{ owner.email }}">{{ owner.name }}</span>{% else %}<span class="admin-warning">{{ 'groups.no_owner'|trans({}, 'admin') }}</span>{% endfor %}</td>
+                    <td>{% for manager in row.managers %}<span class="admin-person-chip" title="{{ manager.email }}">{{ manager.name }}</span>{% else %}—{% endfor %}</td>
+                    <td><strong>{{ row.member_count }}</strong></td>
+                    <td>{{ row.playlist_count }}</td>
+                    <td>{{ row.group.createdAt|date('d/m/Y H:i') }}</td>
+                    <td>{{ row.group.description ?: '—' }}</td>
+                </tr>
+            {% else %}<tr><td colspan="7">{{ 'groups.empty'|trans({}, 'admin') }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if group_pager.pages > 1 %}
+    <nav class="list-pagination">
+      {% set gc = group_common|merge({gletter: group_filters.letter}) %}
+      {% if group_pager.page > 1 %}<a href="{{ path('admin_overview', gc|merge({gpage: group_pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+      {% for p in 1..group_pager.pages %}
+        {% if p == 1 or p == group_pager.pages or (p >= group_pager.page - 2 and p <= group_pager.page + 2) %}
+          <a class="{{ p == group_pager.page ? 'current' : '' }}" href="{{ path('admin_overview', gc|merge({gpage: p})) }}">{{ p }}</a>
+        {% elseif p == 2 or p == group_pager.pages - 1 %}<span>…</span>{% endif %}
+      {% endfor %}
+      {% if group_pager.page < group_pager.pages %}<a href="{{ path('admin_overview', gc|merge({gpage: group_pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+    </nav>
+    {% endif %}
 </section>
 
 <section class="panel admin-data-section">
-  <div class="admin-section-head"><div><div class="eyebrow">{{ 'playlists.eyebrow'|trans({}, 'admin') }}</div><h2>{{ 'playlists.heading'|trans({}, 'admin') }}</h2></div><span class="admin-count">{{ playlist_rows|length }}</span></div>
-  <div class="admin-table-wrap"><table class="admin-overview-table">
-    <thead><tr><th>{{ 'playlists.name'|trans({}, 'admin') }}</th><th>{{ 'playlists.owner'|trans({}, 'admin') }}</th><th>{{ 'playlists.groups'|trans({}, 'admin') }}</th><th>{{ 'playlists.creator'|trans({}, 'admin') }}</th><th>{{ 'playlists.visibility'|trans({}, 'admin') }}</th><th>{{ 'playlists.songs'|trans({}, 'admin') }}</th><th>{{ 'playlists.shares'|trans({}, 'admin') }}</th><th>{{ 'playlists.created'|trans({}, 'admin') }}</th></tr></thead>
-    <tbody>{% for row in playlist_rows %}
-      <tr>
-        <td><strong>{{ row.playlist.name }}</strong><small>#{{ row.playlist.id }}</small>{% if row.playlist.description %}<small>{{ row.playlist.description }}</small>{% endif %}</td>
-        <td><strong>{{ row.owner_label }}</strong></td>
-        <td>{% for name in row.group_names %}<span class="admin-person-chip">{{ name }}</span>{% else %}—{% endfor %}</td>
-        <td><span title="{{ row.creator.email }}">{{ row.creator.displayName }}</span></td>
-        <td>{{ row.playlist.public ? ('visibility_public'|trans({}, 'admin')) : ('visibility_private'|trans({}, 'admin')) }}</td>
-        <td>{{ row.song_count }}</td>
-        <td><div class="admin-share-stats"><span>⏳ {{ row.invitation_stats.pending }}</span><span>✓ {{ row.invitation_stats.accepted }}</span><span>× {{ row.invitation_stats.declined }}</span><span>– {{ row.invitation_stats.cancelled }}</span></div></td>
-        <td>{{ row.playlist.createdAt|date('d/m/Y H:i') }}</td>
-      </tr>
-    {% else %}<tr><td colspan="8">{{ 'playlists.empty'|trans({}, 'admin') }}</td></tr>{% endfor %}</tbody>
-  </table></div>
+    <div class="admin-section-head"><div><div class="eyebrow">{{ 'playlists.eyebrow'|trans({}, 'admin') }}</div><h2>{{ 'playlists.heading'|trans({}, 'admin') }}</h2></div><span class="admin-count">{{ playlist_pager.total }}</span></div>
+
+    <form method="get" action="{{ path('admin_overview', {'_locale': app.request.locale}) }}" class="list-filter-panel">
+      <input type="hidden" name="gq" value="{{ group_filters.q }}">
+      {% if group_filters.letter %}<input type="hidden" name="gletter" value="{{ group_filters.letter }}">{% endif %}
+      <input type="hidden" name="grole" value="{{ group_filters.role }}">
+      <input type="hidden" name="gpage" value="{{ group_pager.page }}">
+      <div class="list-filter-row compact">
+        <label class="list-filter-field"><span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span><input type="search" name="pq" value="{{ playlist_filters.q }}" placeholder="{{ 'list_filters.playlist_search'|trans({}, 'list_filters') }}"></label>
+        <label class="list-filter-field"><span>{{ 'list_filters.visibility'|trans({}, 'list_filters') }}</span>
+          <select name="pvisibility">
+            <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+            <option value="private" {{ playlist_filters.visibility == 'private' ? 'selected' : '' }}>{{ 'list_filters.private'|trans({}, 'list_filters') }}</option>
+            <option value="public" {{ playlist_filters.visibility == 'public' ? 'selected' : '' }}>{{ 'list_filters.public'|trans({}, 'list_filters') }}</option>
+          </select>
+        </label>
+        <div class="list-filter-actions">
+          <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+          <a class="list-filter-clear" href="{{ path('admin_overview', {'_locale': app.request.locale, gq: group_filters.q ?: null, gletter: group_filters.letter, grole: group_filters.role ?: null, gpage: group_pager.page}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+        </div>
+      </div>
+    </form>
+
+    {% set playlist_common = {'_locale': app.request.locale, pq: playlist_filters.q ?: null, pvisibility: playlist_filters.visibility ?: null, gq: group_filters.q ?: null, gletter: group_filters.letter, grole: group_filters.role ?: null, gpage: group_pager.page} %}
+    <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+      <a class="{{ playlist_filters.letter is null ? 'active' : '' }}" href="{{ path('admin_overview', playlist_common) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+      {% for alpha in alphabet %}<a class="{{ playlist_filters.letter == alpha ? 'active' : '' }}" href="{{ path('admin_overview', playlist_common|merge({pletter: alpha})) }}">{{ alpha }}</a>{% endfor %}
+    </nav>
+
+    <div class="list-results-head">
+      <strong>{{ 'list_filters.results'|trans({'%count%': playlist_pager.total}, 'list_filters') }}</strong>
+      <span>{{ 'list_filters.page_of'|trans({'%page%': playlist_pager.page, '%pages%': playlist_pager.pages}, 'list_filters') }}</span>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table class="admin-overview-table">
+            <thead><tr><th>{{ 'playlists.name'|trans({}, 'admin') }}</th><th>{{ 'playlists.owner'|trans({}, 'admin') }}</th><th>{{ 'playlists.groups'|trans({}, 'admin') }}</th><th>{{ 'playlists.creator'|trans({}, 'admin') }}</th><th>{{ 'playlists.visibility'|trans({}, 'admin') }}</th><th>{{ 'playlists.songs'|trans({}, 'admin') }}</th><th>{{ 'playlists.shares'|trans({}, 'admin') }}</th><th>{{ 'playlists.created'|trans({}, 'admin') }}</th></tr></thead>
+            <tbody>
+            {% for row in playlist_rows %}
+                <tr>
+                    <td><strong>{{ row.playlist.name }}</strong><small>#{{ row.playlist.id }}</small>{% if row.playlist.description %}<small>{{ row.playlist.description }}</small>{% endif %}</td>
+                    <td><strong>{{ row.owner_label }}</strong></td>
+                    <td>{% for name in row.group_names %}<span class="admin-person-chip">{{ name }}</span>{% else %}—{% endfor %}</td>
+                    <td><span title="{{ row.creator.email }}">{{ row.creator.displayName }}</span></td>
+                    <td>{{ row.playlist.public ? ('visibility_public'|trans({}, 'admin')) : ('visibility_private'|trans({}, 'admin')) }}</td>
+                    <td>{{ row.song_count }}</td>
+                    <td><div class="admin-share-stats"><span>⏳ {{ row.invitation_stats.pending }}</span><span>✓ {{ row.invitation_stats.accepted }}</span><span>× {{ row.invitation_stats.declined }}</span><span>– {{ row.invitation_stats.cancelled }}</span></div></td>
+                    <td>{{ row.playlist.createdAt|date('d/m/Y H:i') }}</td>
+                </tr>
+            {% else %}<tr><td colspan="8">{{ 'playlists.empty'|trans({}, 'admin') }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if playlist_pager.pages > 1 %}
+    <nav class="list-pagination">
+      {% set pc = playlist_common|merge({pletter: playlist_filters.letter}) %}
+      {% if playlist_pager.page > 1 %}<a href="{{ path('admin_overview', pc|merge({ppage: playlist_pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+      {% for p in 1..playlist_pager.pages %}
+        {% if p == 1 or p == playlist_pager.pages or (p >= playlist_pager.page - 2 and p <= playlist_pager.page + 2) %}
+          <a class="{{ p == playlist_pager.page ? 'current' : '' }}" href="{{ path('admin_overview', pc|merge({ppage: p})) }}">{{ p }}</a>
+        {% elseif p == 2 or p == playlist_pager.pages - 1 %}<span>…</span>{% endif %}
+      {% endfor %}
+      {% if playlist_pager.page < playlist_pager.pages %}<a href="{{ path('admin_overview', pc|merge({ppage: playlist_pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+    </nav>
+    {% endif %}
 </section>
 {% endblock %}

@@ -1,79 +1,81 @@
-# EZScore_v1 — R19.1 Session comme type d'Event
+# EZScore_v1 — R20.1 Correctif Doctrine `events.type`
 
-Correctif / évolution ciblée au-dessus de R19.
+## Diagnostic
 
-## Principe
-
-Le code reste générique :
+Les migrations sont bien à jour :
 
 ```text
-Event
-EventParticipant
+Current = Version20260925220000
+Latest  = Version20260925220000
+New     = 0
 ```
 
-L'UI expose pour l'instant uniquement :
+Le SQL proposé par Doctrine reconstruit uniquement la table `events`.
 
-```text
-Session
+La cause est précise :
+
+R19.1 a créé la colonne avec :
+
+```sql
+type VARCHAR(32) NOT NULL DEFAULT 'session'
 ```
 
-R19.1 ajoute donc un discriminateur :
+alors que le mapping Doctrine de `Event::$type` déclare une colonne `NOT NULL` sans option `DEFAULT`.
 
-```text
-events.type = session
+Doctrine voit donc un écart permanent entre le schéma SQLite et le mapping, même si les valeurs sont correctes.
+
+## Correction
+
+R20.1 reconstruit uniquement la table `events` pour obtenir :
+
+```sql
+type VARCHAR(32) NOT NULL
 ```
 
-et l'enum :
+Les valeurs `session` existantes sont intégralement conservées.
 
-```php
-EventType::Session
-```
+Les clés étrangères et les quatre index `events` sont recréés à l'identique.
 
-Cela évite de renommer les entités maintenant puis de devoir les re-généraliser quand d'autres types d'événements apparaîtront.
-
-## Migration
-
-La migration `Version20260925220000.php` ajoute `events.type`.
-
-Tous les événements R19 existants sont automatiquement considérés comme des sessions grâce à la valeur par défaut `session`.
-
-## UI
-
-Tous les libellés utilisateur deviennent :
-
-- Sessions
-- Nouvelle session
-- Modifier la session
-- Supprimer la session
-
-Le terme `Event` reste interne au code et à la base.
+Aucun changement PHP métier ou UI.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_SESSION_EVENT_TYPE_R19_1.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R20_1_EVENT_TYPE_SCHEMA_FIX.zip" -C H:\EZScore_v1
 
-php bin\console lint:yaml translations
-Get-ChildItem src,migrations,tests -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
+php -l .\migrations\Version20260925223000.php
+php tests\event_type_schema_contract.php
 
+php bin\console doctrine:migrations:status
 php bin\console doctrine:migrations:migrate --no-interaction
+
 php bin\console cache:clear
 
 php bin\console doctrine:schema:validate
 php bin\console doctrine:schema:update --dump-sql
-
-php tests\session_type_contract.php
 ```
 
-Attendu :
+Attendu après migration :
 
 ```text
 [OK] The mapping files are correct.
 [OK] The database schema is in sync with the mapping files.
 ```
 
-et aucun SQL proposé par `doctrine:schema:update --dump-sql`.
+et :
 
-Ne pas utiliser `doctrine:schema:update --force`.
+```powershell
+php bin\console doctrine:schema:update --dump-sql
+```
+
+ne doit plus produire de SQL.
+
+## Important
+
+Ne pas utiliser :
+
+```text
+php bin\console doctrine:schema:update --force
+```

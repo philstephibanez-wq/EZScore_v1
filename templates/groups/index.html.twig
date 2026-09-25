@@ -1,7 +1,8 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'groups.title'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}
-    <link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r18">
+    <link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r20">
+    <link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
 {% endblock %}
 {% block body %}
 <header class="page-head">
@@ -23,6 +24,41 @@
     </form>
 </section>
 {% endif %}
+
+
+<section class="panel list-filter-panel">
+    <form method="get" action="{{ path('app_groups', {'_locale': app.request.locale}) }}" class="list-filter-row compact">
+        <label class="list-filter-field">
+            <span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span>
+            <input type="search" name="q" value="{{ filters.q }}" placeholder="{{ 'list_filters.group_name_search'|trans({}, 'list_filters') }}">
+        </label>
+        <label class="list-filter-field">
+            <span>{{ 'list_filters.member_search_label'|trans({}, 'list_filters') }}</span>
+            <input type="search" name="member" value="{{ filters.member }}" placeholder="{{ 'list_filters.member_search'|trans({}, 'list_filters') }}">
+        </label>
+        <label class="list-filter-field">
+            <span>{{ 'list_filters.playlist_search_label'|trans({}, 'list_filters') }}</span>
+            <input type="search" name="playlist" value="{{ filters.playlist }}" placeholder="{{ 'list_filters.playlist_search'|trans({}, 'list_filters') }}">
+        </label>
+        <div class="list-filter-actions">
+            <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+            <a class="list-filter-clear" href="{{ path('app_groups', {'_locale': app.request.locale}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+        </div>
+    </form>
+
+    {% set group_common = {'_locale': app.request.locale, q: filters.q ?: null, member: filters.member ?: null, playlist: filters.playlist ?: null} %}
+    <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+        <a class="{{ filters.letter is null ? 'active' : '' }}" href="{{ path('app_groups', group_common) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+        {% for alpha in alphabet %}
+            <a class="{{ filters.letter == alpha ? 'active' : '' }}" href="{{ path('app_groups', group_common|merge({letter: alpha})) }}">{{ alpha }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="list-results-head">
+        <strong>{{ 'list_filters.results'|trans({'%count%': pager.total}, 'list_filters') }}</strong>
+        <span>{{ 'list_filters.page_of'|trans({'%page%': pager.page, '%pages%': pager.pages}, 'list_filters') }}</span>
+    </div>
+</section>
 
 <div class="card-grid">
 {% for group in groups %}
@@ -46,7 +82,7 @@
     {% endif %}
 
     <div>
-        <h3>{{ 'groups_r18.members'|trans({}, 'picker') }}</h3>
+        <h3>{{ 'groups_r18.members'|trans({}, 'picker') }} <small class="list-filter-chip">{{ member_counts_by_group[group.id]|default(0) }}</small></h3>
         <div class="collection-list">
             {% for member in members_by_group[group.id]|default([]) %}
                 <div class="collection-row">
@@ -73,6 +109,9 @@
                 <div class="empty">{{ 'groups.no_members'|trans }}</div>
             {% endfor %}
         </div>
+        {% if not filters.member and member_counts_by_group[group.id]|default(0) > (members_by_group[group.id]|default([])|length) %}
+            <small class="page-note">{{ 'list_filters.preview_only'|trans({'%shown%': members_by_group[group.id]|default([])|length, '%total%': member_counts_by_group[group.id]}, 'list_filters') }}</small>
+        {% endif %}
 
         {% if is_granted('GROUP_MANAGE_MEMBERS', group) %}
             <div class="collection-actions">
@@ -97,7 +136,7 @@
     </div>
 
     <div>
-        <h3>{{ 'groups_r18.playlists'|trans({}, 'picker') }}</h3>
+        <h3>{{ 'groups_r18.playlists'|trans({}, 'picker') }} <small class="list-filter-chip">{{ playlist_counts_by_group[group.id]|default(0) }}</small></h3>
         <div>
             {% for playlist in playlists_by_group[group.id]|default([]) %}
                 <span class="collection-chip">{{ playlist.name }} · {{ playlist.ownerUser.displayName }}</span>
@@ -105,6 +144,9 @@
                 <span class="page-note">{{ 'groups_r18.no_playlists'|trans({}, 'picker') }}</span>
             {% endfor %}
         </div>
+        {% if not filters.playlist and playlist_counts_by_group[group.id]|default(0) > (playlists_by_group[group.id]|default([])|length) %}
+            <small class="page-note">{{ 'list_filters.preview_only'|trans({'%shown%': playlists_by_group[group.id]|default([])|length, '%total%': playlist_counts_by_group[group.id]}, 'list_filters') }}</small>
+        {% endif %}
 
         {% if is_granted('GROUP_MANAGE_PLAYLISTS', group) %}
             <div class="collection-actions">
@@ -133,8 +175,22 @@
 {% endfor %}
 </div>
 
+
+{% if pager.pages > 1 %}
+<nav class="list-pagination" aria-label="{{ 'list_filters.pagination'|trans({}, 'list_filters') }}">
+    {% set pc = {'_locale': app.request.locale, q: filters.q ?: null, member: filters.member ?: null, playlist: filters.playlist ?: null, letter: filters.letter} %}
+    {% if pager.page > 1 %}<a href="{{ path('app_groups', pc|merge({page: pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+    {% for p in 1..pager.pages %}
+        {% if p == 1 or p == pager.pages or (p >= pager.page - 2 and p <= pager.page + 2) %}
+            <a class="{{ p == pager.page ? 'current' : '' }}" href="{{ path('app_groups', pc|merge({page: p})) }}">{{ p }}</a>
+        {% elseif p == 2 or p == pager.pages - 1 %}<span>…</span>{% endif %}
+    {% endfor %}
+    {% if pager.page < pager.pages %}<a href="{{ path('app_groups', pc|merge({page: pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+</nav>
+{% endif %}
+
 {% include 'components/_entity_picker_modal.html.twig' %}
 {% endblock %}
 {% block javascripts %}
-    <script src="/assets/js/entity-picker.js?v=20260925r18"></script>
+    <script src="/assets/js/entity-picker.js?v=20260925r20"></script>
 {% endblock %}

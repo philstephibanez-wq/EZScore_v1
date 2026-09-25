@@ -1,0 +1,20 @@
+.list-filter-panel{display:grid;gap:10px;margin-bottom:14px}
+.list-filter-row{display:grid;grid-template-columns:minmax(240px,1.5fr) repeat(4,minmax(120px,.5fr)) auto;gap:8px;align-items:end}
+.list-filter-row.compact{grid-template-columns:minmax(240px,1fr) repeat(2,minmax(130px,.4fr)) auto}
+.list-filter-field{display:grid;gap:4px}
+.list-filter-field>span{font-size:10px;text-transform:uppercase;letter-spacing:.055em;color:#8797a3}
+.list-filter-actions{display:flex;gap:7px;align-items:center}
+.list-filter-actions .primary{min-width:94px}
+.list-filter-clear{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:7px 11px;border:1px solid #344653;border-radius:8px}
+.list-alphabet{display:flex;gap:4px;flex-wrap:wrap}
+.list-alphabet a{display:inline-flex;min-width:28px;height:28px;align-items:center;justify-content:center;padding:0 6px;border:1px solid #30404c;border-radius:7px;font-size:11px}
+.list-alphabet a.active{background:#1d6964;border-color:#449b94;color:#fff;font-weight:800}
+.list-results-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 10px;color:#8fa0ad;font-size:12px}
+.list-pagination{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:14px;flex-wrap:wrap}
+.list-pagination a,.list-pagination span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:32px;padding:0 9px;border:1px solid #344653;border-radius:8px}
+.list-pagination .current{background:#1d6964;border-color:#449b94;color:#fff;font-weight:800}
+.list-pagination .disabled{opacity:.35}
+.list-filter-summary{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.list-filter-chip{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid #354652;border-radius:999px;font-size:10px;color:#9fb0bc}
+@media(max-width:1000px){.list-filter-row,.list-filter-row.compact{grid-template-columns:1fr 1fr}.list-filter-row>.list-filter-field:first-child{grid-column:1/-1}.list-filter-actions{justify-content:flex-end}}
+@media(max-width:650px){.list-filter-row,.list-filter-row.compact{grid-template-columns:1fr}.list-filter-row>.list-filter-field:first-child{grid-column:auto}.list-filter-actions{justify-content:stretch}.list-filter-actions>*{flex:1}.list-results-head{align-items:flex-start;flex-direction:column}}

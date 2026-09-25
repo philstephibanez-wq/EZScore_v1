@@ -17,6 +17,7 @@ use App\Domain\Playlist\PlaylistInvitationStatus;
 use App\Domain\User\User;
 use App\Security\Acl\AclPrivilege;
 use App\Service\EventMailer;
+use App\Service\ListPagination;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,6 +32,7 @@ final class EventController extends AbstractController
     public function index(
         Request $request,
         EntityManagerInterface $em,
+        ListPagination $pagination,
     ): Response {
         $user = $this->requireUser();
 
@@ -70,33 +72,146 @@ final class EventController extends AbstractController
             ]);
         }
 
-        $visible = [];
-        foreach ($em->getRepository(Event::class)->findBy([], ['startsAt' => 'ASC']) as $event) {
-            if ($this->isGranted(AclPrivilege::EVENT_VIEW, $event)) {
-                $visible[] = $event;
-            }
+        $query = $pagination->query($request);
+        $letter = $pagination->letter($request);
+        $status = (string) $request->query->get('status', '');
+        $mode = (string) $request->query->get('mode', '');
+        $period = (string) $request->query->get('period', 'upcoming');
+
+        $qb = $em->getRepository(Event::class)->createQueryBuilder('e')
+            ->leftJoin('e.createdBy', 'creator')
+            ->leftJoin('e.group', 'eg')
+            ->leftJoin('e.playlist', 'ep')
+            ->leftJoin(EventParticipant::class, 'myParticipation', 'WITH', 'myParticipation.event = e AND myParticipation.user = :currentUser')
+            ->leftJoin(GroupMember::class, 'myGroup', 'WITH', 'myGroup.group = eg AND myGroup.user = :currentUser')
+            ->setParameter('currentUser', $user)
+            ->distinct()
+            ->orderBy('e.startsAt', 'ASC');
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $qb->andWhere('(e.createdBy = :currentUser OR myParticipation.id IS NOT NULL OR myGroup.id IS NOT NULL)');
         }
 
-        $myInvitations = $em->getRepository(EventParticipant::class)->findBy(
-            ['user' => $user, 'status' => EventParticipantStatus::Invited],
-            ['createdAt' => 'DESC'],
-        );
+        if ($query !== '') {
+            $qb->andWhere(
+                "(LOWER(e.title) LIKE :q
+                  OR LOWER(COALESCE(e.description, '')) LIKE :q
+                  OR LOWER(COALESCE(creator.displayName, '')) LIKE :q
+                  OR LOWER(COALESCE(eg.name, '')) LIKE :q
+                  OR LOWER(COALESCE(ep.name, '')) LIKE :q)"
+            )->setParameter('q', '%'.mb_strtolower($query).'%');
+        }
+
+        if ($letter !== null) {
+            $qb->andWhere('UPPER(SUBSTRING(e.title, 1, 1)) = :letter')
+                ->setParameter('letter', $letter);
+        }
+
+        if (in_array($status, array_map(static fn(EventStatus $case): string => $case->value, EventStatus::cases()), true)) {
+            $qb->andWhere('e.status = :status')->setParameter('status', $status);
+        } else {
+            $status = '';
+        }
+
+        if (in_array($mode, array_map(static fn(EventMode $case): string => $case->value, EventMode::cases()), true)) {
+            $qb->andWhere('e.mode = :mode')->setParameter('mode', $mode);
+        } else {
+            $mode = '';
+        }
+
+        $now = new \DateTimeImmutable();
+        if ($period === 'past') {
+            $qb->andWhere('e.startsAt < :now')->setParameter('now', $now)->orderBy('e.startsAt', 'DESC');
+        } elseif ($period === 'all') {
+        } else {
+            $period = 'upcoming';
+            $qb->andWhere('e.startsAt >= :now')->setParameter('now', $now);
+        }
+
+        $pager = $pagination->paginate($qb, $request, 'e', 'page', 12);
+
+        $myInvitationCount = $em->getRepository(EventParticipant::class)->count([
+            'user' => $user,
+            'status' => EventParticipantStatus::Invited,
+        ]);
+
+        $myInvitations = $em->getRepository(EventParticipant::class)->createQueryBuilder('inv')
+            ->join('inv.event', 'invEvent')
+            ->addSelect('invEvent')
+            ->andWhere('inv.user = :user')
+            ->andWhere('inv.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', EventParticipantStatus::Invited)
+            ->orderBy('invEvent.startsAt', 'ASC')
+            ->setMaxResults(8)
+            ->getQuery()
+            ->getResult();
 
         return $this->render('events/index.html.twig', [
-            'events' => $visible,
+            'events' => $pager['rows'],
             'my_invitations' => $myInvitations,
+            'my_invitation_count' => $myInvitationCount,
+            'pager' => $pager,
+            'alphabet' => $pagination->alphabet(),
+            'filters' => [
+                'q' => $query,
+                'letter' => $letter,
+                'status' => $status,
+                'mode' => $mode,
+                'period' => $period,
+            ],
         ]);
     }
 
     #[Route('/{id}', name: 'app_event_show', requirements: ['id' => '\\d+'], methods: ['GET'])]
-    public function show(Event $event, Request $request, EntityManagerInterface $em): Response
-    {
+    public function show(
+        Event $event,
+        Request $request,
+        EntityManagerInterface $em,
+        ListPagination $pagination,
+    ): Response {
         $this->denyAccessUnlessGranted(AclPrivilege::EVENT_VIEW, $event);
         $user = $this->requireUser();
 
-        $participants = $em->getRepository(EventParticipant::class)->findBy(
-            ['event' => $event],
-            ['status' => 'ASC', 'id' => 'ASC'],
+        $participantQuery = $pagination->query($request, 'pq');
+        $participantLetter = $pagination->letter($request, 'pletter');
+        $participantStatus = (string) $request->query->get('pstatus', '');
+
+        $participantQb = $em->getRepository(EventParticipant::class)->createQueryBuilder('participant')
+            ->join('participant.user', 'participantUser')
+            ->addSelect('participantUser')
+            ->andWhere('participant.event = :event')
+            ->setParameter('event', $event)
+            ->orderBy('LOWER(participantUser.displayName)', 'ASC');
+
+        if ($participantQuery !== '') {
+            $participantQb->andWhere(
+                '(LOWER(participantUser.displayName) LIKE :pq OR LOWER(participantUser.email) LIKE :pq)'
+            )->setParameter('pq', '%'.mb_strtolower($participantQuery).'%');
+        }
+
+        if ($participantLetter !== null) {
+            $participantQb->andWhere('UPPER(SUBSTRING(participantUser.displayName, 1, 1)) = :pletter')
+                ->setParameter('pletter', $participantLetter);
+        }
+
+        if (in_array(
+            $participantStatus,
+            array_map(static fn(EventParticipantStatus $case): string => $case->value, EventParticipantStatus::cases()),
+            true,
+        )) {
+            $participantQb->andWhere('participant.status = :participantStatus')
+                ->setParameter('participantStatus', $participantStatus);
+        } else {
+            $participantStatus = '';
+        }
+
+        $participantPager = $pagination->paginate(
+            $participantQb,
+            $request,
+            'participant',
+            'ppage',
+            50,
         );
 
         $myParticipation = $em->getRepository(EventParticipant::class)->findOneBy([
@@ -106,7 +221,14 @@ final class EventController extends AbstractController
 
         return $this->render('events/show.html.twig', [
             'event' => $event,
-            'participants' => $participants,
+            'participants' => $participantPager['rows'],
+            'participant_pager' => $participantPager,
+            'participant_filters' => [
+                'q' => $participantQuery,
+                'letter' => $participantLetter,
+                'status' => $participantStatus,
+            ],
+            'alphabet' => $pagination->alphabet(),
             'my_participation' => $myParticipation,
             'event_url' => $this->generateUrl(
                 'app_event_show',

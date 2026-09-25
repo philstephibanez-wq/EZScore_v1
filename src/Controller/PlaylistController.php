@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Group\GroupMember;
 use App\Domain\Playlist\Playlist;
 use App\Domain\Playlist\PlaylistGroup;
 use App\Domain\Playlist\PlaylistInvitation;
@@ -12,6 +13,7 @@ use App\Domain\Song\Song;
 use App\Domain\Song\SongRepository;
 use App\Domain\User\User;
 use App\Security\Acl\AclPrivilege;
+use App\Service\ListPagination;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,7 +26,11 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class PlaylistController extends AbstractController
 {
     #[Route('', name: 'app_playlists', methods: ['GET', 'POST'])]
-    public function index(Request $request, EntityManagerInterface $em): Response
+    public function index(
+        Request $request,
+        EntityManagerInterface $em,
+        ListPagination $pagination,
+    ): Response
     {
         $user = $this->requireUser();
 
@@ -56,62 +62,159 @@ final class PlaylistController extends AbstractController
             return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
         }
 
-        $pendingInvitations = $em->getRepository(PlaylistInvitation::class)->findBy([
+        $query = $pagination->query($request);
+        $letter = $pagination->letter($request);
+        $scope = (string) $request->query->get('scope', 'all');
+        $songQuery = trim((string) $request->query->get('song', ''));
+
+        $qb = $em->getRepository(Playlist::class)->createQueryBuilder('p')
+            ->leftJoin('p.ownerUser', 'owner')
+            ->leftJoin(PlaylistInvitation::class, 'piAccess', 'WITH', 'piAccess.playlist = p AND piAccess.invitedUser = :currentUser AND piAccess.status = :accepted')
+            ->leftJoin(PlaylistGroup::class, 'pgAccess', 'WITH', 'pgAccess.playlist = p')
+            ->leftJoin(GroupMember::class, 'gmAccess', 'WITH', 'gmAccess.group = pgAccess.group AND gmAccess.user = :currentUser')
+            ->leftJoin('pgAccess.group', 'groupSearch')
+            ->leftJoin(PlaylistItem::class, 'itemSearch', 'WITH', 'itemSearch.playlist = p')
+            ->leftJoin('itemSearch.song', 'songSearch')
+            ->setParameter('currentUser', $user)
+            ->setParameter('accepted', PlaylistInvitationStatus::Accepted)
+            ->distinct()
+            ->orderBy('LOWER(p.name)', 'ASC');
+
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $qb->andWhere('(p.public = true OR p.ownerUser = :currentUser OR piAccess.id IS NOT NULL OR gmAccess.id IS NOT NULL)');
+        }
+
+        if ($query !== '') {
+            $qb->andWhere(
+                "(LOWER(p.name) LIKE :q
+                  OR LOWER(COALESCE(p.description, '')) LIKE :q
+                  OR LOWER(COALESCE(owner.displayName, '')) LIKE :q
+                  OR LOWER(COALESCE(groupSearch.name, '')) LIKE :q)"
+            )->setParameter('q', '%'.mb_strtolower($query).'%');
+        }
+
+        if ($songQuery !== '') {
+            $qb->andWhere(
+                "(LOWER(COALESCE(songSearch.title, '')) LIKE :songQ
+                  OR LOWER(COALESCE(songSearch.artist, '')) LIKE :songQ)"
+            )->setParameter('songQ', '%'.mb_strtolower($songQuery).'%');
+        }
+
+        if ($letter !== null) {
+            $qb->andWhere('UPPER(SUBSTRING(p.name, 1, 1)) = :letter')
+                ->setParameter('letter', $letter);
+        }
+
+        if ($scope === 'mine') {
+            $qb->andWhere('p.ownerUser = :currentUser');
+        } elseif ($scope === 'group') {
+            $qb->andWhere('gmAccess.id IS NOT NULL');
+        } elseif ($scope === 'shared') {
+            $qb->andWhere('piAccess.id IS NOT NULL');
+        } elseif ($scope === 'public') {
+            $qb->andWhere('p.public = true');
+        } else {
+            $scope = 'all';
+        }
+
+        $pager = $pagination->paginate($qb, $request, 'p', 'page', 12);
+        $visible = $pager['rows'];
+
+        $pendingInvitationCount = $em->getRepository(PlaylistInvitation::class)->count([
             'invitedUser' => $user,
             'status' => PlaylistInvitationStatus::Pending,
-        ], ['createdAt' => 'DESC']);
+        ]);
+
+        $pendingInvitations = $em->getRepository(PlaylistInvitation::class)->createQueryBuilder('pending')
+            ->andWhere('pending.invitedUser = :user')
+            ->andWhere('pending.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', PlaylistInvitationStatus::Pending)
+            ->orderBy('pending.createdAt', 'DESC')
+            ->setMaxResults(8)
+            ->getQuery()
+            ->getResult();
 
         $acceptedByPlaylist = [];
-        foreach ($em->getRepository(PlaylistInvitation::class)->findBy([
-            'invitedUser' => $user,
-            'status' => PlaylistInvitationStatus::Accepted,
-        ]) as $invitation) {
-            $acceptedByPlaylist[(int) $invitation->getPlaylist()->getId()] = $invitation;
-        }
-
-        $visible = [];
-        foreach ($em->getRepository(Playlist::class)->findBy([], ['name' => 'ASC']) as $playlist) {
-            if ($this->isGranted(AclPrivilege::PLAYLIST_VIEW, $playlist)) {
-                $visible[] = $playlist;
-            }
-        }
-
         $itemsByPlaylist = [];
-        $invitationsByPlaylist = [];
+        $songCountsByPlaylist = [];
+        $shareCountsByPlaylist = [];
         $groupsByPlaylist = [];
+        $groupCountsByPlaylist = [];
 
         foreach ($visible as $playlist) {
+            $accepted = $em->getRepository(PlaylistInvitation::class)->findOneBy([
+                'playlist' => $playlist,
+                'invitedUser' => $user,
+                'status' => PlaylistInvitationStatus::Accepted,
+            ]);
+            if ($accepted instanceof PlaylistInvitation) {
+                $acceptedByPlaylist[(int) $playlist->getId()] = $accepted;
+            }
             $playlistId = (int) $playlist->getId();
 
+            $songCountsByPlaylist[$playlistId] = $em->getRepository(PlaylistItem::class)->count(['playlist' => $playlist]);
+
+            $itemsQb = $em->getRepository(PlaylistItem::class)->createQueryBuilder('i')
+                ->join('i.song', 's')
+                ->addSelect('s')
+                ->andWhere('i.playlist = :playlist')
+                ->setParameter('playlist', $playlist)
+                ->orderBy('i.position', 'ASC')
+                ->addOrderBy('i.id', 'ASC');
+
+            if ($songQuery !== '') {
+                $itemsQb->andWhere('(LOWER(s.title) LIKE :sq OR LOWER(s.artist) LIKE :sq)')
+                    ->setParameter('sq', '%'.mb_strtolower($songQuery).'%')
+                    ->setMaxResults(25);
+            } else {
+                $itemsQb->setMaxResults(10);
+            }
+
             $itemsByPlaylist[$playlistId] = array_values(array_filter(
-                $em->getRepository(PlaylistItem::class)->findBy(
-                    ['playlist' => $playlist],
-                    ['position' => 'ASC', 'id' => 'ASC'],
-                ),
+                $itemsQb->getQuery()->getResult(),
                 fn(PlaylistItem $item): bool => $this->isGranted(AclPrivilege::SONG_VIEW, $item->getSong()),
             ));
 
+            $groupCountsByPlaylist[$playlistId] = $em->getRepository(PlaylistGroup::class)->count(['playlist' => $playlist]);
             $groupsByPlaylist[$playlistId] = array_map(
                 static fn(PlaylistGroup $link) => $link->getGroup(),
-                $em->getRepository(PlaylistGroup::class)->findBy(['playlist' => $playlist]),
+                $em->getRepository(PlaylistGroup::class)->findBy(['playlist' => $playlist], ['id' => 'ASC'], 8),
             );
 
             if ($this->isGranted(AclPrivilege::PLAYLIST_INVITE, $playlist)) {
-                $invitationsByPlaylist[$playlistId] = $em->getRepository(PlaylistInvitation::class)->findBy(
-                    ['playlist' => $playlist],
-                    ['createdAt' => 'DESC'],
-                );
+                $shareCountsByPlaylist[$playlistId] = [
+                    'pending' => $em->getRepository(PlaylistInvitation::class)->count([
+                        'playlist' => $playlist,
+                        'status' => PlaylistInvitationStatus::Pending,
+                    ]),
+                    'accepted' => $em->getRepository(PlaylistInvitation::class)->count([
+                        'playlist' => $playlist,
+                        'status' => PlaylistInvitationStatus::Accepted,
+                    ]),
+                ];
             }
         }
 
         return $this->render('playlists/index.html.twig', [
             'playlists' => $visible,
             'items_by_playlist' => $itemsByPlaylist,
+            'song_counts_by_playlist' => $songCountsByPlaylist,
+            'share_counts_by_playlist' => $shareCountsByPlaylist,
             'groups_by_playlist' => $groupsByPlaylist,
+            'group_counts_by_playlist' => $groupCountsByPlaylist,
             'pending_invitations' => $pendingInvitations,
+            'pending_invitation_count' => $pendingInvitationCount,
             'accepted_invitations_by_playlist' => $acceptedByPlaylist,
-            'invitations_by_playlist' => $invitationsByPlaylist,
             'can_publish_playlist' => $this->isGranted('ROLE_EDITOR') || $this->isGranted('ROLE_ADMIN'),
+            'pager' => $pager,
+            'alphabet' => $pagination->alphabet(),
+            'filters' => [
+                'q' => $query,
+                'letter' => $letter,
+                'scope' => $scope,
+                'song' => $songQuery,
+            ],
         ]);
     }
 

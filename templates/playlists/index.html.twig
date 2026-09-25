@@ -1,8 +1,9 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'playlists.title'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}
-    <link rel="stylesheet" href="/assets/css/playlists.css?v=20260925r18">
-    <link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r18">
+    <link rel="stylesheet" href="/assets/css/playlists.css?v=20260925r20">
+    <link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r20">
+    <link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
 {% endblock %}
 {% block body %}
 <header class="page-head">
@@ -15,7 +16,7 @@
 
 {% if pending_invitations %}
 <section class="panel playlist-invitations">
-    <h2>{{ 'playlists.invitation.received_heading'|trans({}, 'management') }}</h2>
+    <h2>{{ 'playlists.invitation.received_heading'|trans({}, 'management') }} <small class="list-filter-chip">{{ pending_invitation_count }}</small></h2>
     {% for invitation in pending_invitations %}
         <div class="playlist-invitation-row">
             <span>
@@ -36,6 +37,9 @@
             </span>
         </div>
     {% endfor %}
+    {% if pending_invitation_count > pending_invitations|length %}
+        <small class="page-note">{{ 'list_filters.preview_only'|trans({'%shown%': pending_invitations|length, '%total%': pending_invitation_count}, 'list_filters') }}</small>
+    {% endif %}
 </section>
 {% endif %}
 
@@ -53,6 +57,46 @@
         {% endif %}
         <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
     </form>
+</section>
+
+<section class="panel list-filter-panel">
+    <form method="get" action="{{ path('app_playlists', {'_locale': app.request.locale}) }}" class="list-filter-row">
+        <label class="list-filter-field">
+            <span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span>
+            <input type="search" name="q" value="{{ filters.q }}" placeholder="{{ 'list_filters.playlist_global_search'|trans({}, 'list_filters') }}">
+        </label>
+        <label class="list-filter-field">
+            <span>{{ 'list_filters.song_search_label'|trans({}, 'list_filters') }}</span>
+            <input type="search" name="song" value="{{ filters.song }}" placeholder="{{ 'list_filters.song_search'|trans({}, 'list_filters') }}">
+        </label>
+        <label class="list-filter-field">
+            <span>{{ 'list_filters.scope'|trans({}, 'list_filters') }}</span>
+            <select name="scope">
+                <option value="all" {{ filters.scope == 'all' ? 'selected' : '' }}>{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+                <option value="mine" {{ filters.scope == 'mine' ? 'selected' : '' }}>{{ 'list_filters.scope_mine'|trans({}, 'list_filters') }}</option>
+                <option value="group" {{ filters.scope == 'group' ? 'selected' : '' }}>{{ 'list_filters.scope_group'|trans({}, 'list_filters') }}</option>
+                <option value="shared" {{ filters.scope == 'shared' ? 'selected' : '' }}>{{ 'list_filters.scope_shared'|trans({}, 'list_filters') }}</option>
+                <option value="public" {{ filters.scope == 'public' ? 'selected' : '' }}>{{ 'list_filters.scope_public'|trans({}, 'list_filters') }}</option>
+            </select>
+        </label>
+        <div class="list-filter-actions">
+            <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+            <a class="list-filter-clear" href="{{ path('app_playlists', {'_locale': app.request.locale}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+        </div>
+    </form>
+
+    {% set playlist_common = {'_locale': app.request.locale, q: filters.q ?: null, song: filters.song ?: null, scope: filters.scope != 'all' ? filters.scope : null} %}
+    <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+        <a class="{{ filters.letter is null ? 'active' : '' }}" href="{{ path('app_playlists', playlist_common) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+        {% for alpha in alphabet %}
+            <a class="{{ filters.letter == alpha ? 'active' : '' }}" href="{{ path('app_playlists', playlist_common|merge({letter: alpha})) }}">{{ alpha }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="list-results-head">
+        <strong>{{ 'list_filters.results'|trans({'%count%': pager.total}, 'list_filters') }}</strong>
+        <span>{{ 'list_filters.page_of'|trans({'%page%': pager.page, '%pages%': pager.pages}, 'list_filters') }}</span>
+    </div>
 </section>
 
 <div class="card-grid">
@@ -88,11 +132,19 @@
         {% for group in groups_by_playlist[playlist.id]|default([]) %}
             <span class="collection-chip">{{ group.name }}</span>
         {% endfor %}
+        {% if group_counts_by_playlist[playlist.id]|default(0) > (groups_by_playlist[playlist.id]|default([])|length) %}
+            <span class="list-filter-chip">+{{ group_counts_by_playlist[playlist.id] - (groups_by_playlist[playlist.id]|default([])|length) }}</span>
+        {% endif %}
     </div>
 
     {% if is_granted('PLAYLIST_INVITE', playlist) %}
     <div class="playlist-share-block">
         <h3>{{ 'playlists.invitation.heading'|trans({}, 'management') }}</h3>
+        {% set shares = share_counts_by_playlist[playlist.id]|default({'pending':0,'accepted':0}) %}
+        <div class="list-filter-summary">
+            <span class="list-filter-chip">{{ 'list_filters.share_pending'|trans({'%count%': shares.pending}, 'list_filters') }}</span>
+            <span class="list-filter-chip">{{ 'list_filters.share_accepted'|trans({'%count%': shares.accepted}, 'list_filters') }}</span>
+        </div>
 
         <div class="collection-actions">
             <button type="button"
@@ -112,12 +164,6 @@
                 {{ 'playlists_r18.remove_shares'|trans({}, 'picker') }}
             </button>
         </div>
-
-        {% for invitation in invitations_by_playlist[playlist.id]|default([]) %}
-            <span class="collection-chip">
-                {{ invitation.invitedUser.displayName }} · {{ ('playlists.invitation.status.' ~ invitation.status.value)|trans({}, 'management') }}
-            </span>
-        {% endfor %}
     </div>
     {% elseif accepted_invitations_by_playlist[playlist.id]|default(null) %}
         {% set accepted_invitation = accepted_invitations_by_playlist[playlist.id] %}
@@ -129,7 +175,7 @@
     {% endif %}
 
     <div class="playlist-song-block">
-        <h3>{{ 'playlists.song.heading'|trans({}, 'management') }}</h3>
+        <h3>{{ 'playlists.song.heading'|trans({}, 'management') }} <small class="list-filter-chip">{{ song_counts_by_playlist[playlist.id]|default(0) }}</small></h3>
 
         {% set playlist_items = items_by_playlist[playlist.id]|default([]) %}
         {% if playlist_items %}
@@ -157,8 +203,11 @@
                 </li>
             {% endfor %}
             </ol>
+            {% if not filters.song and song_counts_by_playlist[playlist.id]|default(0) > playlist_items|length %}
+                <small class="page-note">{{ 'list_filters.preview_only'|trans({'%shown%': playlist_items|length, '%total%': song_counts_by_playlist[playlist.id]}, 'list_filters') }}</small>
+            {% endif %}
         {% else %}
-            <p class="playlist-song-empty">{{ 'playlists.song.empty'|trans({}, 'management') }}</p>
+            <p class="playlist-song-empty">{{ filters.song ? ('list_filters.no_song_match'|trans({}, 'list_filters')) : ('playlists.song.empty'|trans({}, 'management')) }}</p>
         {% endif %}
 
         {% if can_edit %}
@@ -188,8 +237,21 @@
 {% endfor %}
 </div>
 
+{% if pager.pages > 1 %}
+<nav class="list-pagination" aria-label="{{ 'list_filters.pagination'|trans({}, 'list_filters') }}">
+    {% set pc = playlist_common|merge({letter: filters.letter}) %}
+    {% if pager.page > 1 %}<a href="{{ path('app_playlists', pc|merge({page: pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+    {% for p in 1..pager.pages %}
+        {% if p == 1 or p == pager.pages or (p >= pager.page - 2 and p <= pager.page + 2) %}
+            <a class="{{ p == pager.page ? 'current' : '' }}" href="{{ path('app_playlists', pc|merge({page: p})) }}">{{ p }}</a>
+        {% elseif p == 2 or p == pager.pages - 1 %}<span>…</span>{% endif %}
+    {% endfor %}
+    {% if pager.page < pager.pages %}<a href="{{ path('app_playlists', pc|merge({page: pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+</nav>
+{% endif %}
+
 {% include 'components/_entity_picker_modal.html.twig' %}
 {% endblock %}
 {% block javascripts %}
-    <script src="/assets/js/entity-picker.js?v=20260925r18"></script>
+    <script src="/assets/js/entity-picker.js?v=20260925r20"></script>
 {% endblock %}

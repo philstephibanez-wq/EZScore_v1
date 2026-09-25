@@ -1,0 +1,42 @@
+list_filters:
+  search: Recherche
+  filter: Filtrer
+  clear: Réinitialiser
+  all: Tous
+  alphabet: Index alphabétique
+  pagination: Pagination
+  results: '%count% résultat(s)'
+  page_of: 'Page %page% / %pages%'
+  active: Actif
+  inactive: Inactif
+  linked: Lié
+  local_only: Local uniquement
+  context_role: Rôle dans le groupe
+  visibility: Visibilité
+  private: Privée
+  public: Publique
+  scope: Accès
+  scope_mine: Mes playlists
+  scope_group: Via mes groupes
+  scope_shared: Partagées avec moi
+  scope_public: Publiques
+  period: Période
+  upcoming: À venir
+  past: Passées
+  rsvp: RSVP
+  user_search: Nom ou e-mail
+  group_search: Nom, description, membre ou e-mail
+  group_name_search: Nom ou description du groupe
+  member_search_label: Membre
+  member_search: Nom ou e-mail d’un membre
+  playlist_search_label: Playlist liée
+  playlist_search: Nom ou description d’une playlist
+  playlist_global_search: Nom, description, propriétaire ou groupe
+  song_search_label: Chanson contenue
+  song_search: Titre ou interprète
+  session_search: Titre, groupe, playlist ou créateur
+  participant_search: Nom ou e-mail d’un participant
+  preview_only: 'Aperçu : %shown% sur %total%. Utilisez la recherche ou la gestion par sélection pour cibler les autres.'
+  share_pending: '%count% en attente'
+  share_accepted: '%count% accepté(s)'
+  no_song_match: Aucune chanson de cette playlist ne correspond au filtre.

@@ -1,8 +1,19 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'users.title'|trans }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/admin-users.css?v=20260924">{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/admin-users.css?v=20260925r20">
+<link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
+{% endblock %}
 {% block body %}
-<header class="page-head"><div><div class="eyebrow">{{ 'nav.administration'|trans }}</div><h1>{{ 'users.title'|trans }}</h1><p class="page-note">{{ 'users.note'|trans }}</p></div><a href="{{ path('admin_overview', {'_locale': app.request.locale}) }}">{{ 'backoffice_overview'|trans({}, 'admin') }}</a></header>
+<header class="page-head">
+  <div>
+    <div class="eyebrow">{{ 'nav.administration'|trans }}</div>
+    <h1>{{ 'users.title'|trans }}</h1>
+    <p class="page-note">{{ 'users.note'|trans }}</p>
+  </div>
+  <a href="{{ path('admin_overview', {'_locale': app.request.locale}) }}">{{ 'backoffice_overview'|trans({}, 'admin') }}</a>
+</header>
+
 <section class="panel">
 <h2>{{ 'users.create.heading'|trans }}</h2>
 <form method="post" class="user-create-grid" data-dirty-track>
@@ -15,13 +26,65 @@
 <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
 </form>
 </section>
-<section class="panel"><div class="table-wrap"><table class="users-table">
+
+<section class="panel list-filter-panel">
+  <form method="get" action="{{ path('admin_users', {'_locale': app.request.locale}) }}" class="list-filter-row">
+    <label class="list-filter-field"><span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span><input type="search" name="q" value="{{ filters.q }}" placeholder="{{ 'list_filters.user_search'|trans({}, 'list_filters') }}"></label>
+    <label class="list-filter-field"><span>{{ 'users.role'|trans }}</span>
+      <select name="role">
+        <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+        {% for role in ['ROLE_READER','ROLE_EDITOR','ROLE_ADMIN'] %}<option value="{{ role }}" {{ filters.role == role ? 'selected' : '' }}>{{ ('role.' ~ role)|trans }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="list-filter-field"><span>{{ 'users.active'|trans }}</span>
+      <select name="active">
+        <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+        <option value="1" {{ filters.active == '1' ? 'selected' : '' }}>{{ 'list_filters.active'|trans({}, 'list_filters') }}</option>
+        <option value="0" {{ filters.active == '0' ? 'selected' : '' }}>{{ 'list_filters.inactive'|trans({}, 'list_filters') }}</option>
+      </select>
+    </label>
+    <label class="list-filter-field"><span>Google</span>
+      <select name="google">
+        <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+        <option value="linked" {{ filters.google == 'linked' ? 'selected' : '' }}>{{ 'list_filters.linked'|trans({}, 'list_filters') }}</option>
+        <option value="local" {{ filters.google == 'local' ? 'selected' : '' }}>{{ 'list_filters.local_only'|trans({}, 'list_filters') }}</option>
+      </select>
+    </label>
+    <label class="list-filter-field"><span>{{ 'locale.label'|trans }}</span>
+      <select name="locale">
+        <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+        {% for locale in supported_locales %}<option value="{{ locale }}" {{ filters.locale == locale ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="list-filter-actions">
+      <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+      <a class="list-filter-clear" href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+    </div>
+  </form>
+
+  <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+    <a class="{{ filters.letter is null ? 'active' : '' }}" href="{{ path('admin_users', {'_locale': app.request.locale, q: filters.q ?: null, role: filters.role ?: null, active: filters.active ?: null, google: filters.google ?: null, locale: filters.locale ?: null}) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+    {% for alpha in alphabet %}
+      <a class="{{ filters.letter == alpha ? 'active' : '' }}" href="{{ path('admin_users', {'_locale': app.request.locale, q: filters.q ?: null, role: filters.role ?: null, active: filters.active ?: null, google: filters.google ?: null, locale: filters.locale ?: null, letter: alpha}) }}">{{ alpha }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="list-results-head">
+    <strong>{{ 'list_filters.results'|trans({'%count%': pager.total}, 'list_filters') }}</strong>
+    <span>{{ 'list_filters.page_of'|trans({'%page%': pager.page, '%pages%': pager.pages}, 'list_filters') }}</span>
+  </div>
+</section>
+
+<section class="panel">
+<div class="table-wrap"><table class="users-table">
 <thead><tr><th>{{ 'users.account'|trans }}</th><th>{{ 'users.role'|trans }}</th><th>{{ 'locale.label'|trans }}</th><th>{{ 'users.active'|trans }}</th><th>Google</th><th>{{ 'users.password'|trans }}</th><th>{{ 'users.actions'|trans }}</th></tr></thead>
 <tbody>
 {% for user in users %}
 <tr><td colspan="7"><div class="user-admin-row">
-<form id="user-edit-{{ user.id }}" method="post" action="{{ path('admin_user_update', {id: user.id}) }}" class="user-edit-grid" data-dirty-track>
+<form id="user-edit-{{ user.id }}" method="post" action="{{ path('admin_user_update', {'_locale': app.request.locale, id: user.id}) }}" class="user-edit-grid" data-dirty-track>
 <input type="hidden" name="_token" value="{{ csrf_token('user_' ~ user.id) }}">
+{% for key,value in filters %}{% if value is not null and value != '' %}<input type="hidden" name="filter_{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+<input type="hidden" name="filter_page" value="{{ pager.page }}">
 <div class="identity-fields"><input name="display_name" value="{{ user.displayName }}" required><input type="email" name="email" value="{{ user.email }}" required></div>
 <select name="role"><option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>{{ 'role.ROLE_READER'|trans }}</option><option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>{{ 'role.ROLE_EDITOR'|trans }}</option><option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>{{ 'role.ROLE_ADMIN'|trans }}</option></select>
 <select name="locale">{% for locale in supported_locales %}<option value="{{ locale }}" {{ user.locale == locale ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>{% endfor %}</select>
@@ -31,11 +94,30 @@
 </form>
 <div class="user-actions">
 <button type="submit" form="user-edit-{{ user.id }}" class="save-button">{{ 'common.save'|trans }}</button>
-<form method="post" action="{{ path('admin_user_delete', {id: user.id}) }}" class="user-delete-form" onsubmit="return confirm('{{ 'users.delete.confirm'|trans({'%name%': user.displayName})|e('js') }}');">
-<input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ user.id) }}"><button type="submit" class="danger-button">{{ 'users.delete.button'|trans }}</button>
+<form method="post" action="{{ path('admin_user_delete', {'_locale': app.request.locale, id: user.id}) }}" class="user-delete-form" onsubmit="return confirm('{{ 'users.delete.confirm'|trans({'%name%': user.displayName})|e('js') }}');">
+<input type="hidden" name="_token" value="{{ csrf_token('delete_user_' ~ user.id) }}">
+{% for key,value in filters %}{% if value is not null and value != '' %}<input type="hidden" name="filter_{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+<input type="hidden" name="filter_page" value="{{ pager.page }}">
+<button type="submit" class="danger-button">{{ 'users.delete.button'|trans }}</button>
 </form>
 </div>
 </div></td></tr>
 {% else %}<tr><td colspan="7">{{ 'users.empty'|trans }}</td></tr>{% endfor %}
-</tbody></table></div></section>
+</tbody></table></div>
+
+{% if pager.pages > 1 %}
+<nav class="list-pagination" aria-label="{{ 'list_filters.pagination'|trans({}, 'list_filters') }}">
+  {% set common = {'_locale': app.request.locale, q: filters.q ?: null, letter: filters.letter, role: filters.role ?: null, active: filters.active ?: null, google: filters.google ?: null, locale: filters.locale ?: null} %}
+  {% if pager.page > 1 %}<a href="{{ path('admin_users', common|merge({page: pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+  {% for p in 1..pager.pages %}
+    {% if p == 1 or p == pager.pages or (p >= pager.page - 2 and p <= pager.page + 2) %}
+      <a class="{{ p == pager.page ? 'current' : '' }}" href="{{ path('admin_users', common|merge({page: p})) }}">{{ p }}</a>
+    {% elseif p == 2 or p == pager.pages - 1 %}
+      <span>…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pager.page < pager.pages %}<a href="{{ path('admin_users', common|merge({page: pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+</nav>
+{% endif %}
+</section>
 {% endblock %}

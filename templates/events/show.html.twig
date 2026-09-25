@@ -1,8 +1,9 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ event.title }} — EZScore_v1{% endblock %}
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/events.css?v=20260925r19">
-<link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r19">
+<link rel="stylesheet" href="/assets/css/events.css?v=20260925r20">
+<link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r20">
+<link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
 {% endblock %}
 {% block body %}
 {% set share_url = url('app_event_show', {'_locale': app.request.locale, id: event.id}) %}
@@ -84,7 +85,30 @@
 {% endif %}
 
 <section class="panel">
-  <h2>{{ 'event.participants'|trans({}, 'event') }}</h2>
+  <h2>{{ 'event.participants'|trans({}, 'event') }} <small class="list-filter-chip">{{ participant_pager.total }}</small></h2>
+
+  <form method="get" action="{{ path('app_event_show', {'_locale': app.request.locale, id: event.id}) }}" class="list-filter-panel">
+    <div class="list-filter-row compact">
+      <label class="list-filter-field"><span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span><input type="search" name="pq" value="{{ participant_filters.q }}" placeholder="{{ 'list_filters.participant_search'|trans({}, 'list_filters') }}"></label>
+      <label class="list-filter-field"><span>{{ 'list_filters.rsvp'|trans({}, 'list_filters') }}</span>
+        <select name="pstatus">
+          <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+          {% for status in ['invited','accepted','declined','maybe'] %}<option value="{{ status }}" {{ participant_filters.status == status ? 'selected' : '' }}>{{ ('event.rsvp.' ~ status)|trans({}, 'event') }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="list-filter-actions">
+        <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+        <a class="list-filter-clear" href="{{ path('app_event_show', {'_locale': app.request.locale, id: event.id}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+      </div>
+    </div>
+  </form>
+
+  {% set participant_common = {'_locale': app.request.locale, id: event.id, pq: participant_filters.q ?: null, pstatus: participant_filters.status ?: null} %}
+  <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+    <a class="{{ participant_filters.letter is null ? 'active' : '' }}" href="{{ path('app_event_show', participant_common) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+    {% for alpha in alphabet %}<a class="{{ participant_filters.letter == alpha ? 'active' : '' }}" href="{{ path('app_event_show', participant_common|merge({pletter: alpha})) }}">{{ alpha }}</a>{% endfor %}
+  </nav>
+
   <div class="event-participant-list">
     {% for participant in participants %}
       <div class="event-participant-row">
@@ -96,6 +120,19 @@
       <div class="empty">{{ 'event.no_participants'|trans({}, 'event') }}</div>
     {% endfor %}
   </div>
+
+  {% if participant_pager.pages > 1 %}
+  <nav class="list-pagination">
+    {% set pc = participant_common|merge({pletter: participant_filters.letter}) %}
+    {% if participant_pager.page > 1 %}<a href="{{ path('app_event_show', pc|merge({ppage: participant_pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+    {% for p in 1..participant_pager.pages %}
+      {% if p == 1 or p == participant_pager.pages or (p >= participant_pager.page - 2 and p <= participant_pager.page + 2) %}
+        <a class="{{ p == participant_pager.page ? 'current' : '' }}" href="{{ path('app_event_show', pc|merge({ppage: p})) }}">{{ p }}</a>
+      {% elseif p == 2 or p == participant_pager.pages - 1 %}<span>…</span>{% endif %}
+    {% endfor %}
+    {% if participant_pager.page < participant_pager.pages %}<a href="{{ path('app_event_show', pc|merge({ppage: participant_pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+  </nav>
+  {% endif %}
 
   {% if is_granted('EVENT_INVITE', event) %}
   <div class="collection-actions">
@@ -140,4 +177,4 @@
 
 {% include 'components/_entity_picker_modal.html.twig' %}
 {% endblock %}
-{% block javascripts %}<script src="/assets/js/entity-picker.js?v=20260925r19"></script>{% endblock %}
+{% block javascripts %}<script src="/assets/js/entity-picker.js?v=20260925r20"></script>{% endblock %}

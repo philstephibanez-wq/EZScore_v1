@@ -32,7 +32,7 @@ Pour chaque KO noter : profil, URL, action, obtenu, attendu, capture et extrait 
 - [ ] peut inviter des utilisateurs inscrits à sa playlist
 - [ ] ne peut pas créer de groupe
 - [ ] ne peut pas importer ou éditer une chanson
-- [ ] peut créer un événement personnel
+- [ ] peut créer un Session personnelle
 
 ### Éditeur
 
@@ -40,7 +40,7 @@ Pour chaque KO noter : profil, URL, action, obtenu, attendu, capture et extrait 
 - [ ] peut créer un groupe
 - [ ] peut gérer ses groupes
 - [ ] peut affecter ses playlists à ses groupes
-- [ ] peut créer un événement pour un groupe qu'il gère
+- [ ] peut créer un Session pour un groupe qu'il gère
 
 ### Admin
 
@@ -97,9 +97,9 @@ Pour chaque KO noter : profil, URL, action, obtenu, attendu, capture et extrait 
 - [ ] mode multiple pour participants
 - [ ] aucune listbox volumineuse pour users/chansons/playlists
 
-## 7. Événements — création
+## 7. Sessions — création
 
-- [ ] entrée Événements visible dans le menu
+- [ ] entrée Sessions visible dans le menu
 - [ ] création avec titre
 - [ ] date/heure de début obligatoire
 - [ ] date/heure de fin facultative
@@ -109,9 +109,9 @@ Pour chaque KO noter : profil, URL, action, obtenu, attendu, capture et extrait 
 - [ ] lieu persistant
 - [ ] URL distante persistante
 - [ ] description persistante
-- [ ] créateur ajouté comme participant `accepted`
+- [ ] créateur de la Session ajouté comme participant `accepted`
 
-## 8. Événements — groupe
+## 8. Sessions — groupe
 
 - [ ] association d'un groupe via popup en sélection simple
 - [ ] seuls les groupes administrables sont proposés à un non-Admin
@@ -119,20 +119,20 @@ Pour chaque KO noter : profil, URL, action, obtenu, attendu, capture et extrait 
 - [ ] créateur reste `accepted`
 - [ ] autres membres commencent `invited`
 - [ ] aucune `PlaylistInvitation` individuelle créée
-- [ ] un membre du groupe peut voir l'événement
-- [ ] un non-membre non invité ne peut pas voir l'événement
+- [ ] un membre du groupe peut voir la Session
+- [ ] un non-membre non invité ne peut pas voir la Session
 
-## 9. Événements — playlist
+## 9. Sessions — playlist
 
 - [ ] association d'une playlist via popup
 - [ ] un Éditeur ne voit que les playlists qu'il peut modifier
 - [ ] si groupe + playlist et droits suffisants, `PlaylistGroup` est créé automatiquement
 - [ ] les membres du groupe ont donc accès à la playlist sans invitation
-- [ ] l'événement ne contourne jamais les droits chanson
+- [ ] la Session ne contourne jamais les droits chanson
 
-## 10. Événements — session hors groupe
+## 10. Sessions — hors groupe
 
-- [ ] événement sans groupe possible
+- [ ] Session sans groupe possible
 - [ ] playlist facultative
 - [ ] si playlist associée, seuls les users ayant déjà accès sont proposés
 - [ ] propriétaire playlist éligible
@@ -180,7 +180,7 @@ Non implémentés en R19, à ne pas considérer comme disponibles.
 - [ ] futur connecteur Telegram Bot optionnel
 - [ ] futur connecteur Discord Webhook optionnel
 
-## 15. Modification / cycle de vie événement
+## 15. Modification / cycle de vie Session
 
 - [ ] modification titre
 - [ ] modification horaires
@@ -191,7 +191,7 @@ Non implémentés en R19, à ne pas considérer comme disponibles.
 - [ ] statut Planifié
 - [ ] statut Annulé
 - [ ] statut Terminé
-- [ ] suppression événement cascade sur participants
+- [ ] suppression Session cascade sur participants
 
 ## 16. I18N
 
@@ -213,7 +213,7 @@ Non implémentés en R19, à ne pas considérer comme disponibles.
 
 - [ ] aucun bug bloquant
 - [ ] ACL groupe/playlist cohérentes
-- [ ] événements cohérents
+- [ ] Sessions cohérentes
 - [ ] invitations personnelles cohérentes
 - [ ] accès automatique groupe cohérent
 - [ ] Doctrine synchronisé
@@ -223,3 +223,94 @@ Date :
 Version / commit :
 Testeur :
 Commentaires :
+
+
+## 19. Scalabilité / filtres globaux R20
+
+### Administration Utilisateurs
+
+- [ ] recherche par nom
+- [ ] recherche par e-mail
+- [ ] index A-Z
+- [ ] filtre rôle Reader / Editor / Admin
+- [ ] filtre actif / inactif
+- [ ] filtre Google lié / local
+- [ ] pagination serveur
+- [ ] modification conserve filtres + page
+- [ ] suppression conserve filtres + page
+- [ ] 500 utilisateurs ne produisent pas une page HTML géante
+
+### Administration Groupes
+
+- [ ] recherche groupe par nom / description
+- [ ] recherche par membre
+- [ ] recherche par e-mail membre
+- [ ] filtre owner / manager / member
+- [ ] index A-Z
+- [ ] pagination indépendante des groupes
+- [ ] filtre groupes ne réinitialise pas les filtres playlists du back-office
+- [ ] compteur exact de groupes
+
+### Administration Playlists
+
+- [ ] recherche par nom / description
+- [ ] recherche propriétaire
+- [ ] recherche groupe associé
+- [ ] filtre publique / privée
+- [ ] index A-Z
+- [ ] pagination indépendante des playlists
+- [ ] compteur exact de playlists
+
+### Page Groupes utilisateur
+
+- [ ] recherche groupe
+- [ ] index A-Z
+- [ ] recherche membre
+- [ ] recherche playlist liée
+- [ ] pagination serveur
+- [ ] aperçu membres limité hors recherche
+- [ ] aperçu playlists limité hors recherche
+- [ ] nombre total membres visible
+- [ ] nombre total playlists visible
+- [ ] ajout/retrait complet toujours disponible par picker
+
+### Page Playlists utilisateur
+
+- [ ] recherche nom / description / propriétaire / groupe
+- [ ] index A-Z
+- [ ] filtre Mes playlists
+- [ ] filtre Via mes groupes
+- [ ] filtre Partagées
+- [ ] filtre Publiques
+- [ ] recherche chanson contenue
+- [ ] pagination serveur
+- [ ] aperçu chansons limité hors recherche
+- [ ] nombre total de chansons visible
+- [ ] partages affichés sous forme de compteurs
+- [ ] gestion complète des partages via picker
+- [ ] les ACL restent identiques à R18
+
+### Sessions
+
+- [ ] recherche titre / groupe / playlist / créateur
+- [ ] index A-Z
+- [ ] filtre statut
+- [ ] filtre mode
+- [ ] filtre période
+- [ ] pagination serveur
+- [ ] invitations personnelles affichées en aperçu borné
+- [ ] participants d'une session recherchables
+- [ ] index A-Z participants
+- [ ] filtre RSVP participants
+- [ ] pagination participants
+- [ ] 500 participants ne créent pas un scroll massif
+
+### Performance
+
+- [ ] aucune page testée ne charge toutes les entités avant filtrage PHP
+- [ ] pagination appliquée avant hydratation des lignes principales
+- [ ] les jointures utilisent un comptage distinct
+- [ ] les collections imbriquées sont bornées
+- [ ] aucune régression ACL
+- [ ] `doctrine:schema:validate` OK
+- [ ] `doctrine:schema:update --dump-sql` vide

@@ -1,12 +1,15 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'event.title'|trans({}, 'event') }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/events.css?v=20260925r19">{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/events.css?v=20260925r20">
+<link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
+{% endblock %}
 {% block body %}
 <header class="page-head"><div><div class="eyebrow">{{ 'event.eyebrow'|trans({}, 'event') }}</div><h1>{{ 'event.title'|trans({}, 'event') }}</h1><p class="page-note">{{ 'event.lead'|trans({}, 'event') }}</p></div></header>
 
 {% if my_invitations %}
 <section class="panel">
-  <h2>{{ 'event.my_invitations'|trans({}, 'event') }}</h2>
+  <h2>{{ 'event.my_invitations'|trans({}, 'event') }} <small class="list-filter-chip">{{ my_invitation_count }}</small></h2>
   <div class="event-list">
   {% for participation in my_invitations %}
     <a class="event-row" href="{{ path('app_event_show', {'_locale': app.request.locale, id: participation.event.id}) }}">
@@ -15,6 +18,9 @@
     </a>
   {% endfor %}
   </div>
+  {% if my_invitation_count > my_invitations|length %}
+    <small class="page-note">{{ 'list_filters.preview_only'|trans({'%shown%': my_invitations|length, '%total%': my_invitation_count}, 'list_filters') }}</small>
+  {% endif %}
 </section>
 {% endif %}
 
@@ -35,6 +41,46 @@
   </form>
 </section>
 
+<section class="panel list-filter-panel">
+  <form method="get" action="{{ path('app_events', {'_locale': app.request.locale}) }}" class="list-filter-row">
+    <label class="list-filter-field"><span>{{ 'list_filters.search'|trans({}, 'list_filters') }}</span><input type="search" name="q" value="{{ filters.q }}" placeholder="{{ 'list_filters.session_search'|trans({}, 'list_filters') }}"></label>
+    <label class="list-filter-field"><span>{{ 'event.fields.status'|trans({}, 'event') }}</span>
+      <select name="status">
+        <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+        {% for status in ['draft','scheduled','cancelled','completed'] %}<option value="{{ status }}" {{ filters.status == status ? 'selected' : '' }}>{{ ('event.status.' ~ status)|trans({}, 'event') }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="list-filter-field"><span>{{ 'event.fields.mode'|trans({}, 'event') }}</span>
+      <select name="mode">
+        <option value="">{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+        {% for mode in ['onsite','remote','hybrid'] %}<option value="{{ mode }}" {{ filters.mode == mode ? 'selected' : '' }}>{{ ('event.mode.' ~ mode)|trans({}, 'event') }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="list-filter-field"><span>{{ 'list_filters.period'|trans({}, 'list_filters') }}</span>
+      <select name="period">
+        <option value="upcoming" {{ filters.period == 'upcoming' ? 'selected' : '' }}>{{ 'list_filters.upcoming'|trans({}, 'list_filters') }}</option>
+        <option value="past" {{ filters.period == 'past' ? 'selected' : '' }}>{{ 'list_filters.past'|trans({}, 'list_filters') }}</option>
+        <option value="all" {{ filters.period == 'all' ? 'selected' : '' }}>{{ 'list_filters.all'|trans({}, 'list_filters') }}</option>
+      </select>
+    </label>
+    <div class="list-filter-actions">
+      <button class="primary" type="submit">{{ 'list_filters.filter'|trans({}, 'list_filters') }}</button>
+      <a class="list-filter-clear" href="{{ path('app_events', {'_locale': app.request.locale}) }}">{{ 'list_filters.clear'|trans({}, 'list_filters') }}</a>
+    </div>
+  </form>
+
+  {% set event_common = {'_locale': app.request.locale, q: filters.q ?: null, status: filters.status ?: null, mode: filters.mode ?: null, period: filters.period != 'upcoming' ? filters.period : null} %}
+  <nav class="list-alphabet" aria-label="{{ 'list_filters.alphabet'|trans({}, 'list_filters') }}">
+    <a class="{{ filters.letter is null ? 'active' : '' }}" href="{{ path('app_events', event_common) }}">{{ 'list_filters.all'|trans({}, 'list_filters') }}</a>
+    {% for alpha in alphabet %}<a class="{{ filters.letter == alpha ? 'active' : '' }}" href="{{ path('app_events', event_common|merge({letter: alpha})) }}">{{ alpha }}</a>{% endfor %}
+  </nav>
+
+  <div class="list-results-head">
+    <strong>{{ 'list_filters.results'|trans({'%count%': pager.total}, 'list_filters') }}</strong>
+    <span>{{ 'list_filters.page_of'|trans({'%page%': pager.page, '%pages%': pager.pages}, 'list_filters') }}</span>
+  </div>
+</section>
+
 <section class="panel">
   <h2>{{ 'event.upcoming'|trans({}, 'event') }}</h2>
   <div class="event-grid">
@@ -48,5 +94,18 @@
     <div class="empty">{{ 'event.empty'|trans({}, 'event') }}</div>
   {% endfor %}
   </div>
+
+  {% if pager.pages > 1 %}
+  <nav class="list-pagination" aria-label="{{ 'list_filters.pagination'|trans({}, 'list_filters') }}">
+    {% set pc = event_common|merge({letter: filters.letter}) %}
+    {% if pager.page > 1 %}<a href="{{ path('app_events', pc|merge({page: pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+    {% for p in 1..pager.pages %}
+      {% if p == 1 or p == pager.pages or (p >= pager.page - 2 and p <= pager.page + 2) %}
+        <a class="{{ p == pager.page ? 'current' : '' }}" href="{{ path('app_events', pc|merge({page: p})) }}">{{ p }}</a>
+      {% elseif p == 2 or p == pager.pages - 1 %}<span>…</span>{% endif %}
+    {% endfor %}
+    {% if pager.page < pager.pages %}<a href="{{ path('app_events', pc|merge({page: pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+  </nav>
+  {% endif %}
 </section>
 {% endblock %}

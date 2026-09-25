@@ -1,10 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controller;
 
 use App\Domain\User\User;
 use App\Domain\User\UserRepository;
+use App\Service\ListPagination;
 use App\Service\UserDeletionService;
 use App\Service\UserManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,8 +18,12 @@ use Symfony\Component\Routing\Attribute\Route;
 final class AdminUserController extends AbstractController
 {
     #[Route('', name: 'admin_users', methods: ['GET', 'POST'])]
-    public function index(Request $request, UserRepository $users, UserManager $manager): Response
-    {
+    public function index(
+        Request $request,
+        UserRepository $users,
+        UserManager $manager,
+        ListPagination $pagination,
+    ): Response {
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('create_user', (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException();
@@ -39,15 +45,63 @@ final class AdminUserController extends AbstractController
             if ($errors === []) {
                 $manager->create($name, $email, $password !== '' ? $password : null, $role, $locale);
                 $this->addFlash('success', 'users.created');
-                return $this->redirectToRoute('admin_users');
+                return $this->redirectToRoute('admin_users', ['_locale' => $request->getLocale()]);
             }
 
             foreach ($errors as $error) $this->addFlash('error', $error);
         }
 
+        $query = $pagination->query($request);
+        $letter = $pagination->letter($request);
+        $role = (string) $request->query->get('role', '');
+        $active = (string) $request->query->get('active', '');
+        $google = (string) $request->query->get('google', '');
+        $locale = (string) $request->query->get('locale', '');
+
+        $qb = $users->createQueryBuilder('u');
+
+        if ($query !== '') {
+            $qb->andWhere('(LOWER(u.displayName) LIKE :q OR LOWER(u.email) LIKE :q)')
+                ->setParameter('q', '%'.mb_strtolower($query).'%');
+        }
+
+        if ($letter !== null) {
+            $qb->andWhere('UPPER(SUBSTRING(u.displayName, 1, 1)) = :letter')
+                ->setParameter('letter', $letter);
+        }
+
+        if (in_array($role, ['ROLE_READER', 'ROLE_EDITOR', 'ROLE_ADMIN'], true)) {
+            $qb->andWhere('u.roles LIKE :role')->setParameter('role', '%'.$role.'%');
+        }
+
+        if ($active === '1') $qb->andWhere('u.active = true');
+        elseif ($active === '0') $qb->andWhere('u.active = false');
+
+        if ($google === 'linked') $qb->andWhere('u.googleSub IS NOT NULL');
+        elseif ($google === 'local') $qb->andWhere('u.googleSub IS NULL');
+
+        if (in_array($locale, User::SUPPORTED_LOCALES, true)) {
+            $qb->andWhere('u.locale = :locale')->setParameter('locale', $locale);
+        }
+
+        $qb->orderBy('LOWER(u.displayName)', 'ASC')
+            ->addOrderBy('LOWER(u.email)', 'ASC');
+
+        $pager = $pagination->paginate($qb, $request, 'u', 'page', 50);
+
         return $this->render('admin/users.html.twig', [
-            'users' => $users->findBy([], ['displayName' => 'ASC']),
+            'users' => $pager['rows'],
+            'pager' => $pager,
             'supported_locales' => User::SUPPORTED_LOCALES,
+            'alphabet' => $pagination->alphabet(),
+            'filters' => [
+                'q' => $query,
+                'letter' => $letter,
+                'role' => $role,
+                'active' => $active,
+                'google' => $google,
+                'locale' => $locale,
+            ],
         ]);
     }
 
@@ -81,15 +135,18 @@ final class AdminUserController extends AbstractController
 
         if ($errors !== []) {
             foreach ($errors as $error) $this->addFlash('error', $error);
-            return $this->redirectToRoute('admin_users');
+            return $this->redirectToRoute('admin_users', $this->returnFilters($request));
         }
 
         $actor = $this->getUser();
-
         $manager->update(
-            $user, $name, $email, $role, $active,
+            $user,
+            $name,
+            $email,
+            $role,
+            $active,
             $password !== '' ? $password : null,
-            $locale
+            $locale,
         );
 
         if ($actor instanceof User && $actor->getId() === $user->getId()) {
@@ -98,7 +155,7 @@ final class AdminUserController extends AbstractController
         }
 
         $this->addFlash('success', 'users.updated');
-        return $this->redirectToRoute('admin_users');
+        return $this->redirectToRoute('admin_users', $this->returnFilters($request));
     }
 
     #[Route('/{id}/delete', name: 'admin_user_delete', requirements: ['id' => '\\d+'], methods: ['POST'])]
@@ -118,9 +175,21 @@ final class AdminUserController extends AbstractController
             $this->addFlash('error', $exception->getMessage());
         }
 
-        return $this->redirectToRoute('admin_users');
+        return $this->redirectToRoute('admin_users', $this->returnFilters($request));
     }
 
+    /** @return array<string,string|int> */
+    private function returnFilters(Request $request): array
+    {
+        $params = ['_locale' => $request->getLocale()];
+        foreach (['q', 'letter', 'role', 'active', 'google', 'locale', 'page'] as $key) {
+            $value = trim((string) $request->request->get('filter_'.$key, ''));
+            if ($value !== '') $params[$key] = $key === 'page' ? max(1, (int) $value) : $value;
+        }
+        return $params;
+    }
+
+    /** @return list<string> */
     private function validateIdentity(string $name, string $email): array
     {
         $errors = [];
