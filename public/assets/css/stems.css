@@ -30,3 +30,15 @@
 .stem-tech-grid span{font-size:9px;text-transform:uppercase;letter-spacing:.055em;color:#7e8f9b}
 .stem-tech-grid small{color:#7f909b;overflow-wrap:anywhere}
 @media(max-width:750px){.stems-source{align-items:flex-start;flex-direction:column}.stem-source-meta{text-align:left}.stem-row{grid-template-columns:1fr}.stem-tech-grid{grid-template-columns:1fr}}
+
+.stem-progress-meta{display:flex;gap:12px;flex-wrap:wrap;color:#8296a3}
+.stem-progress-indeterminate{height:10px;border-radius:999px;overflow:hidden;background:#2a3137;position:relative}
+.stem-progress-indeterminate::after{content:"";position:absolute;top:0;bottom:0;width:28%;border-radius:999px;background:currentColor;opacity:.75;animation:stem-wait 1.15s ease-in-out infinite}
+@keyframes stem-wait{0%{left:-30%}100%{left:102%}}
+
+.stem-console-panel{display:grid;gap:12px}
+.stem-console-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stem-console-actions a,.stem-console-actions button{font-size:12px}
+.stem-console-status{font-size:12px;color:#8ca1ad}
+.stem-console{margin:0;min-height:260px;max-height:520px;overflow:auto;padding:14px;border:1px solid #2f3b44;border-radius:9px;background:#070b0f;color:#c8f7d2;font:12px/1.45 Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-word}
+.stem-console.is-error{color:#ffb5b5}

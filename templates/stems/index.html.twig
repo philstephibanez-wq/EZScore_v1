@@ -4,15 +4,11 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2">
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2">
-<link rel="stylesheet" href="/assets/css/stems.css?v=20260925r23_2">
+<link rel="stylesheet" href="/assets/css/stems.css?v=20260925r23_4_4">
 {% endblock %}
 
 {% block body %}
 {% include 'layout/song/_workflow_tabs.html.twig' with {current:'stems', song:song} %}
-
-{% if job_active %}
-<meta http-equiv="refresh" content="3">
-{% endif %}
 
 <header class="page-head stems-head">
     <div>
@@ -38,22 +34,46 @@
 <section class="panel stems-action-panel">
     {% if latest_job %}
         <div class="stem-job-state">
-            <span class="stem-job-badge state-{{ latest_job.status.value }}">{{ ('stems.job.' ~ latest_job.status.value)|trans({}, 'stems') }}</span>
+            <span class="stem-job-badge state-{{ latest_job.status.value }}" data-stem-job-status>{{ ('stems.job.' ~ latest_job.status.value)|trans({}, 'stems') }}</span>
             <small>#{{ latest_job.id }} · {{ latest_job.updatedAt|date('d/m/Y H:i:s') }}</small>
         </div>
     {% endif %}
 
     {% if job_active %}
         {% set pct = progress.percent|default(latest_job ? latest_job.progress : 0) %}
-        <div class="stem-progress">
+        {% set is_queued = latest_job and latest_job.status.value == 'queued' %}
+        <div class="stem-progress" data-stem-progress>
             <div class="stem-progress-head">
-                <strong>{{ progress.message|default('stems.processing'|trans({}, 'stems')) }}</strong>
-                <span>{{ pct }} %</span>
+                <strong data-stem-progress-message>
+                    {% if is_queued %}
+                        En attente du worker STEM…
+                    {% else %}
+                        {{ progress.message|default('stems.processing'|trans({}, 'stems')) }}
+                    {% endif %}
+                </strong>
+                {% if not is_queued %}<span data-stem-progress-percent>{{ pct }} %</span>{% else %}<span data-stem-progress-percent hidden></span>{% endif %}
             </div>
-            <progress max="100" value="{{ pct }}"></progress>
-            {% if progress.stage|default(null) %}<small>{{ progress.stage }}</small>{% endif %}
+
+            {% if is_queued %}
+                <div class="stem-progress-indeterminate" data-stem-progress-wait aria-label="En attente"></div>
+            {% else %}
+                <progress max="100" value="{{ pct }}" data-stem-progress-bar></progress>
+            {% endif %}
+
+            <div class="stem-progress-meta" data-stem-progress-meta>
+                {% if progress.stage|default(null) %}<small>{{ progress.stage }}</small>{% endif %}
+                {% if progress.engine_percent is defined and progress.engine_percent is not null %}
+                    <small>Moteur : {{ progress.engine_percent }} %</small>
+                {% endif %}
+                {% if progress.elapsed_seconds is defined %}
+                    <small>Temps étape : {{ progress.elapsed_seconds|number_format(1, ',', ' ') }} s</small>
+                {% endif %}
+                {% if progress.updated_at|default(null) %}
+                    <small>Activité : {{ progress.updated_at|date('H:i:s') }}</small>
+                {% endif %}
+            </div>
         </div>
-        <p class="page-note">{{ 'stems.auto_refresh'|trans({}, 'stems') }}</p>
+        <p class="page-note">Progression et console mises à jour en direct, sans recharger la page.</p>
     {% elseif stems_complete %}
         <div class="stem-ready">
             <strong>{{ 'stems.ready'|trans({}, 'stems') }}</strong>
@@ -87,6 +107,29 @@
             <button class="primary" type="submit">{{ 'stems.generate'|trans({}, 'stems') }}</button>
         </form>
     {% endif %}
+</section>
+
+
+<section class="panel stem-console-panel">
+    <div class="stems-section-head">
+        <div>
+            <div class="eyebrow">Diagnostic Python</div>
+            <h2>Console STEMS</h2>
+            <p class="page-note">Sortie réelle du worker Python et des moteurs RoFormer. Cette console n'altère pas le traitement.</p>
+        </div>
+        <div class="stem-console-actions">
+            <button type="button" data-stem-log-refresh>Rafraîchir</button>
+            <a href="{{ path('app_song_stems_log_download', {'_locale': app.request.locale, id: song.id}) }}">Télécharger le log</a>
+        </div>
+    </div>
+
+    <div class="stem-console-status" data-stem-log-status>
+        En attente du premier message du worker…
+    </div>
+
+    <pre class="stem-console"
+         data-stem-log-console
+         data-log-url="{{ path('app_song_stems_log', {'_locale': app.request.locale, id: song.id}) }}">Aucun log disponible pour le moment.</pre>
 </section>
 
 {% if stems_complete %}
@@ -125,4 +168,8 @@
     </div>
 </section>
 {% endif %}
+{% endblock %}
+
+{% block javascripts %}
+<script src="/assets/js/stems-console.js?v=20260925r23_4"></script>
 {% endblock %}

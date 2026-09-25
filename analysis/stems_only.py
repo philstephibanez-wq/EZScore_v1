@@ -16,6 +16,9 @@ import json
 import os
 import shutil
 import subprocess
+import queue
+import re
+import threading
 import sys
 import tempfile
 import time
@@ -45,13 +48,26 @@ def _write_json(path: Path, payload: dict) -> None:
     tmp.replace(path)
 
 
-def _progress(path: Path, percent: int, stage: str, message: str) -> None:
-    _write_json(path, {
-        "percent": int(percent),
+def _progress(
+    path: Path,
+    percent: int,
+    stage: str,
+    message: str,
+    *,
+    engine_percent: int | None = None,
+    elapsed_seconds: float | None = None,
+) -> None:
+    payload = {
+        "percent": max(0, min(100, int(percent))),
         "stage": stage,
         "message": message,
         "updated_at": datetime.now(timezone.utc).isoformat(),
-    })
+    }
+    if engine_percent is not None:
+        payload["engine_percent"] = max(0, min(100, int(engine_percent)))
+    if elapsed_seconds is not None:
+        payload["elapsed_seconds"] = round(float(elapsed_seconds), 1)
+    _write_json(path, payload)
 
 
 def _run(command: list[str], *, label: str, timeout: int, log_path: Path) -> None:
@@ -78,6 +94,140 @@ def _run(command: list[str], *, label: str, timeout: int, log_path: Path) -> Non
 
     if proc.returncode != 0:
         raise RuntimeError(f"{label} failed with exit code {proc.returncode}; see {log_path}")
+
+
+_PERCENT_RE = re.compile(r"(?<!\d)(100|\d{1,2})\s*%")
+
+
+def _run_tracked(
+    command: list[str],
+    *,
+    label: str,
+    timeout: int,
+    log_path: Path,
+    progress_path: Path,
+    stage: str,
+    message: str,
+    overall_start: int,
+    overall_end: int,
+) -> None:
+    """Run a model process while exposing real progress when the engine prints it.
+
+    RoFormer/tqdm output is parsed for `NN%`. Between engine updates, a heartbeat
+    is persisted with elapsed time. We never fabricate model progress.
+    """
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    output_queue: queue.Queue[str | None] = queue.Queue()
+    started = time.monotonic()
+    last_engine_percent: int | None = None
+    last_overall = int(overall_start)
+
+    with log_path.open("a", encoding="utf-8", errors="replace") as log:
+        log.write(f"\n[{datetime.now(timezone.utc).isoformat()}] {label}\n")
+        log.write("COMMAND: " + " ".join(command) + "\n")
+        log.flush()
+
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            bufsize=1,
+        )
+
+        def _reader() -> None:
+            assert proc.stdout is not None
+            try:
+                while True:
+                    chunk = proc.stdout.readline()
+                    if chunk == "":
+                        break
+                    output_queue.put(chunk)
+            finally:
+                output_queue.put(None)
+
+        reader = threading.Thread(target=_reader, daemon=True)
+        reader.start()
+
+        deadline = started + float(timeout)
+        reader_done = False
+        last_heartbeat = 0.0
+
+        while True:
+            now = time.monotonic()
+            if now >= deadline and proc.poll() is None:
+                proc.kill()
+                raise TimeoutError(f"{label} timed out after {timeout} seconds.")
+
+            drained = False
+            while True:
+                try:
+                    item = output_queue.get_nowait()
+                except queue.Empty:
+                    break
+
+                drained = True
+                if item is None:
+                    reader_done = True
+                    break
+
+                log.write(item)
+                log.flush()
+
+                for match in _PERCENT_RE.finditer(item):
+                    engine_percent = max(0, min(100, int(match.group(1))))
+                    last_engine_percent = engine_percent
+                    span = max(0, int(overall_end) - int(overall_start))
+                    mapped = int(overall_start) + round(span * engine_percent / 100)
+                    last_overall = max(last_overall, min(int(overall_end), mapped))
+                    _progress(
+                        progress_path,
+                        last_overall,
+                        stage,
+                        message,
+                        engine_percent=engine_percent,
+                        elapsed_seconds=now - started,
+                    )
+
+            if proc.poll() is not None and reader_done:
+                break
+
+            # Heartbeat every 2 s so the UI visibly remains alive even when
+            # the underlying engine is temporarily silent.
+            if now - last_heartbeat >= 2.0:
+                _progress(
+                    progress_path,
+                    last_overall,
+                    stage,
+                    message,
+                    engine_percent=last_engine_percent,
+                    elapsed_seconds=now - started,
+                )
+                last_heartbeat = now
+
+            if not drained:
+                time.sleep(0.20)
+
+        return_code = proc.wait()
+        reader.join(timeout=1.0)
+
+    if return_code != 0:
+        raise RuntimeError(f"{label} failed with exit code {return_code}; see {log_path}")
+
+    _progress(
+        progress_path,
+        overall_end,
+        stage,
+        message,
+        engine_percent=100,
+        elapsed_seconds=time.monotonic() - started,
+    )
 
 
 def _which_ffmpeg() -> str:
@@ -309,7 +459,7 @@ def main() -> int:
         bs_slug, bs_config, bs_checkpoint = _prepare_bs_model(bs_root, timeout, log_path)
 
         _progress(progress_file, 18, "separation", "Separating instrumental stems.")
-        _run(
+        _run_tracked(
             [
                 sys.executable, "-m", "bs_roformer.inference",
                 "--config_path", str(bs_config),
@@ -321,6 +471,11 @@ def main() -> int:
             label="BS-RoFormer 6-stem separation",
             timeout=timeout,
             log_path=log_path,
+            progress_path=progress_file,
+            stage="separation",
+            message="Separating instrumental stems.",
+            overall_start=18,
+            overall_end=70,
         )
 
         located: dict[str, Path] = {
@@ -333,7 +488,7 @@ def main() -> int:
         karaoke_slug = _prepare_karaoke_model(karaoke_root, timeout, log_path)
         shutil.copy2(located["vocals"], karaoke_input / "vocals.wav")
 
-        _run(
+        _run_tracked(
             [
                 sys.executable, "-m", "mel_band_roformer.inference",
                 "--model", karaoke_slug,
@@ -345,6 +500,11 @@ def main() -> int:
             label="MelBand-RoFormer lead/backing separation",
             timeout=timeout,
             log_path=log_path,
+            progress_path=progress_file,
+            stage="vocals",
+            message="Separating lead vocal and backing vocals.",
+            overall_start=72,
+            overall_end=89,
         )
 
         lead = _pick_karaoke_output(karaoke_output, "vocals")

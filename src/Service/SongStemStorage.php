@@ -50,6 +50,48 @@ final class SongStemStorage
         return $this->storageRoot($song) . DIRECTORY_SEPARATOR . 'worker.log';
     }
 
+
+    public function logExists(Song $song): bool
+    {
+        $path = $this->logPath($song);
+
+        return is_file($path) && filesize($path) > 0;
+    }
+
+    public function readLogTail(Song $song, int $maxBytes = 60000): string
+    {
+        $path = $this->logPath($song);
+        if (!is_file($path)) {
+            return '';
+        }
+
+        $size = filesize($path);
+        if ($size === false || $size <= 0) {
+            return '';
+        }
+
+        $maxBytes = max(4096, min(250000, $maxBytes));
+        $offset = max(0, $size - $maxBytes);
+
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return '';
+        }
+
+        try {
+            if ($offset > 0) {
+                fseek($handle, $offset);
+                fgets($handle);
+            }
+
+            $content = stream_get_contents($handle);
+
+            return is_string($content) ? $content : '';
+        } finally {
+            fclose($handle);
+        }
+    }
+
     public function sourcePath(Song $song): string
     {
         $relative = trim((string) $song->getAudioStoragePath());
