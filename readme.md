@@ -1,27 +1,53 @@
-# EZScore_v1 — R10.5 correctif consolidé Import
+# EZScore_v1 — R10.6 bouton Import forcé visuellement
 
-Corrige réellement les deux défauts visibles :
-- Signature `Auto` absente ;
-- bouton Import rendu comme du texte collé.
+Cette correction ne dépend plus du chargement d'une nouvelle feuille CSS pour le bouton Import.
+
+Le style critique du bouton est directement porté par le composant Twig afin d'éviter le rendu observé :
+
+```text
+Importer une chansonMP3 + fiche chanson
+```
+
+Affichage attendu :
+
+```text
+NOUVEL IMPORT
+Importer une chanson
+MP3 + fiche chanson
+```
+
+avec :
+- gros bouton vert/bleu ;
+- bordure claire ;
+- icône `+` ;
+- trois niveaux de texte séparés ;
+- espacement visible.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_IMPORT_UI_AUTO_R10_5.zip" -C H:\EZScore_v1
+
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_IMPORT_CTA_INLINE_R10_6.zip" -C H:\EZScore_v1
+
 php bin\console cache:clear
 php bin\console lint:twig templates
 ```
 
-Puis `Ctrl+F5`.
+Puis :
 
-## Contrôles
-
-```powershell
-Select-String -Path .\templates\layout\song\_metadata.html.twig -Pattern 'value="auto"'
-Select-String -Path .\templates\catalog\index.html.twig -Pattern 'ez-import-cta'
+```text
+Ctrl+F5
 ```
 
-Les deux doivent retourner une ligne.
+## Vérification
+
+```powershell
+Select-String -Path .\templates\catalog\index.html.twig -Pattern "grid-template-columns:56px"
+```
+
+La commande doit retourner une ligne.
 
 Aucune migration Doctrine.
+Aucun changement sur l'import MP3.
+Aucun changement de données.

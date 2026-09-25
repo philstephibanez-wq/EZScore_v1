@@ -68,12 +68,59 @@
     </div>
 
     {% if can_import %}
-        <a class="ez-import-cta" href="{{ path('app_song_import', {'_locale': app.request.locale}) }}">
-            <span class="ez-import-cta-icon" aria-hidden="true">＋</span>
-            <span class="ez-import-cta-copy">
-                <span class="ez-import-cta-kicker">{{ 'catalog.import.kicker'|trans }}</span>
-                <strong>{{ 'catalog.import.label'|trans }}</strong>
-                <small>{{ 'catalog.import.button_help'|trans }}</small>
+        <a href="{{ path('app_song_import', {'_locale': app.request.locale}) }}"
+           style="
+               display:grid;
+               grid-template-columns:56px minmax(0,1fr);
+               align-items:center;
+               gap:14px;
+               min-width:310px;
+               padding:14px 18px;
+               border:2px solid #6fe1d7;
+               border-radius:16px;
+               background:linear-gradient(135deg,#0f5d57 0%,#1d7d74 58%,#124c47 100%);
+               color:#ffffff;
+               text-decoration:none;
+               box-shadow:0 12px 30px rgba(0,0,0,.38);
+           ">
+            <span aria-hidden="true"
+                  style="
+                      width:56px;
+                      height:56px;
+                      display:grid;
+                      place-items:center;
+                      border-radius:14px;
+                      background:rgba(255,255,255,.15);
+                      color:#d9fff9;
+                      font-size:32px;
+                      font-weight:900;
+                      line-height:1;
+                  ">＋</span>
+
+            <span style="display:grid;gap:3px;text-align:left;min-width:0">
+                <span style="
+                    display:block;
+                    font-size:10px;
+                    text-transform:uppercase;
+                    letter-spacing:.13em;
+                    color:#c6f1ed;
+                    font-weight:800;
+                ">{{ 'catalog.import.kicker'|trans }}</span>
+
+                <strong style="
+                    display:block;
+                    font-size:19px;
+                    line-height:1.15;
+                    font-weight:900;
+                    color:#ffffff;
+                ">{{ 'catalog.import.label'|trans }}</strong>
+
+                <small style="
+                    display:block;
+                    font-size:12px;
+                    line-height:1.3;
+                    color:#dcf5f2;
+                ">{{ 'catalog.import.button_help'|trans }}</small>
             </span>
         </a>
     {% endif %}
