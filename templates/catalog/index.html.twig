@@ -2,7 +2,7 @@
 {% block title %}{{ 'catalog.title'|trans }} — EZScore_v1{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r102">
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r104">
 {% endblock %}
 
 {% block body %}
@@ -68,8 +68,9 @@
 
     {% if can_import %}
         <a class="catalog-import-button" href="{{ path('app_song_import', {'_locale': app.request.locale}) }}">
-            <span class="catalog-import-icon" aria-hidden="true">＋</span>
+            <span class="catalog-import-icon" aria-hidden="true">↥</span>
             <span class="catalog-import-copy">
+                <span class="catalog-import-kicker">{{ 'catalog.import.kicker'|trans }}</span>
                 <strong>{{ 'catalog.import.label'|trans }}</strong>
                 <small>{{ 'catalog.import.button_help'|trans }}</small>
             </span>

@@ -172,8 +172,9 @@ catalog:
     preview_badge: Démo 20 s
     empty_hint: Les chansons apparaîtront ici dès leur publication.
   import:
-    label: Importer
+    label: Importer une chanson
     button_help: MP3 + fiche chanson
+    kicker: Nouvel import
     eyebrow: Bibliothèque
     heading: Importer une chanson
     lead: Importez le MP3 et renseignez sa fiche. Aucune analyse Python n’est lancée à cette étape.

@@ -172,8 +172,9 @@ catalog:
     preview_badge: 20 s preview
     empty_hint: Songs will appear here as soon as they are published.
   import:
-    label: Import
+    label: Import a song
     button_help: MP3 + song sheet
+    kicker: New import
     eyebrow: Library
     heading: Import a song
     lead: Import the MP3 and complete its song sheet. No Python analysis is started at this stage.
