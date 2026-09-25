@@ -4,7 +4,7 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2">
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2">
-<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r24_7">
+<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r24_10">
 {% endblock %}
 
 {% block body %}
@@ -42,7 +42,10 @@
     {% if job_active %}
         {% set pct = progress.percent|default(latest_job ? latest_job.progress : 0) %}
         {% set is_queued = latest_job and latest_job.status.value == 'queued' %}
-        <div class="stem-progress" data-stem-progress>
+
+        <div class="stem-progress"
+             data-stem-progress
+             data-stem-status-url="{{ path('app_song_stems_log', {'_locale': app.request.locale, id: song.id}) }}">
             <div class="stem-progress-head">
                 <strong data-stem-progress-message>
                     {% if is_queued %}
@@ -51,7 +54,11 @@
                         {{ progress.message|default('stems.processing'|trans({}, 'stems')) }}
                     {% endif %}
                 </strong>
-                {% if not is_queued %}<span data-stem-progress-percent>{{ pct }} %</span>{% else %}<span data-stem-progress-percent hidden></span>{% endif %}
+                {% if not is_queued %}
+                    <span data-stem-progress-percent>{{ pct }} %</span>
+                {% else %}
+                    <span data-stem-progress-percent hidden></span>
+                {% endif %}
             </div>
 
             {% if is_queued %}
@@ -73,7 +80,10 @@
                 {% endif %}
             </div>
         </div>
-        <p class="page-note">Progression et console mises à jour en direct, sans recharger la page.</p>
+
+        <p class="page-note" data-stem-progress-note>
+            Analyse en cours. Vous pouvez quitter cette page : le traitement continue en arrière-plan.
+        </p>
     {% elseif stems_complete %}
         <div class="stem-ready">
             <strong>{{ 'stems.ready'|trans({}, 'stems') }}</strong>
@@ -129,28 +139,6 @@
 </div>
 {% endif %}
 
-<section class="panel stem-console-panel">
-    <div class="stems-section-head">
-        <div>
-            <div class="eyebrow">Diagnostic Python</div>
-            <h2>Console STEMS</h2>
-            <p class="page-note">Sortie réelle du worker Python et des moteurs RoFormer. Cette console n'altère pas le traitement.</p>
-        </div>
-        <div class="stem-console-actions">
-            <button type="button" data-stem-log-refresh>Rafraîchir</button>
-            <a href="{{ path('app_song_stems_log_download', {'_locale': app.request.locale, id: song.id}) }}">Télécharger le log</a>
-        </div>
-    </div>
-
-    <div class="stem-console-status" data-stem-log-status>
-        En attente du premier message du worker…
-    </div>
-
-    <pre class="stem-console"
-         data-stem-log-console
-         data-log-url="{{ path('app_song_stems_log', {'_locale': app.request.locale, id: song.id}) }}">Aucun log disponible pour le moment.</pre>
-</section>
-
 {% if stems_complete %}
 <section class="panel">
     <div class="stems-section-head">
@@ -190,5 +178,5 @@
 {% endblock %}
 
 {% block javascripts %}
-<script src="/assets/js/stems-console.js?v=20260926r24_7"></script>
+<script src="/assets/js/stems-progress.js?v=20260926r24_10"></script>
 {% endblock %}
