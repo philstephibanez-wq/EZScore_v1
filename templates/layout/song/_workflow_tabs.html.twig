@@ -1,0 +1,18 @@
+{% set current = current|default('') %}
+{% set existing_song = song is defined and song and song.id %}
+
+<nav class="workflow-tabs song-workflow-tabs" aria-label="Workflow chanson">
+    {% if current == 'import' %}
+        <span class="workflow-tab active">1 · IMPORTER</span>
+        <span class="workflow-tab disabled" aria-disabled="true" title="Disponible après création de la chanson">2 · STEMS</span>
+    {% else %}
+        <a class="workflow-tab {{ current == 'edit' ? 'active' : '' }}"
+           href="{{ path('app_song_edit', {'_locale': app.request.locale, id: song.id}) }}">
+            1 · MODIFIER
+        </a>
+        <a class="workflow-tab {{ current == 'stems' ? 'active' : '' }}"
+           href="{{ path('app_song_stems', {'_locale': app.request.locale, id: song.id}) }}">
+            2 · STEMS
+        </a>
+    {% endif %}
+</nav>

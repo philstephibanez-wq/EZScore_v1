@@ -1,48 +1,39 @@
-# EZScore_v1 — R23.1 STEM route fix
+# EZScore_v1 — R23.2 Workflow intuitif
 
-R23 ajoutait `SongStemController.php` mais `config/routes.yaml` n'importait pas ce contrôleur.
+Ce correctif ne touche pas au moteur STEMS.
 
-Conséquence :
+Il met en place le workflow validé :
+
+## Nouvelle chanson
 
 ```text
-RouteNotFoundException
-Unable to generate a URL for the named route "app_song_stems"
+1 · IMPORTER
+2 · STEMS
 ```
 
-R23.1 ajoute l'import localisé :
+`STEMS` est visible mais désactivé avant validation de l'import.
 
-```yaml
-localized_song_stems:
-    resource: ../src/Controller/SongStemController.php
-    type: attribute
-    prefix:
-        fr: /fr
-        en: /en
+## Chanson existante
+
+```text
+1 · MODIFIER
+2 · STEMS
 ```
 
-Aucun autre comportement n'est modifié.
+Le bouton `Modifier` redondant du workspace est supprimé au profit de l'onglet canonique.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_STEMS_ROUTE_FIX_R23_1.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_WORKFLOW_R23_2.zip" -C H:\EZScore_v1
 
-php bin\console lint:yaml config
+php bin\console lint:twig templates
 php bin\console cache:clear
 
-php bin\console debug:router | Select-String "song_stems"
-
-php tests\stems_route_r23_1_contract.php
+php tests\workflow_tabs_r23_2_contract.php
 ```
 
-Attendu dans `debug:router` :
-
-```text
-app_song_stems
-app_song_stems_generate
-app_song_stem_audio
-```
-
-Pas de migration Doctrine.
+Aucune migration Doctrine.
+Aucune nouvelle analyse.

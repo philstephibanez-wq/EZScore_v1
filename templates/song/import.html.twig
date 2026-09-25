@@ -1,7 +1,10 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'catalog.import.heading'|trans }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r21"><link rel="stylesheet" href="/assets/css/song-import-preview.css?v=20260925r21">{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2"><link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2"><link rel="stylesheet" href="/assets/css/song-import-preview.css?v=20260925r21">{% endblock %}
 {% block body %}
+{% include 'layout/song/_workflow_tabs.html.twig' with {current:'import'} %}
+
 <header class="page-head">
     <div>
         <div class="eyebrow">{{ 'catalog.import.eyebrow'|trans }}</div>

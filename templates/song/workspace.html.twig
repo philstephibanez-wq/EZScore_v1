@@ -2,18 +2,17 @@
 {% block title %}{{ song.title }} — EZScore_v1{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23">
+<link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2">
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2">
 {% endblock %}
 
 {% block body %}
 <div class="workspace" data-can-edit="{{ can_edit ? '1' : '0' }}">
     {% if can_edit %}
-    <nav class="workflow-tabs">
-        <a class="workflow-tab active" href="{{ path('app_song_stems', {'_locale': app.request.locale, id: song.id}) }}">1 · STEMS</a>
-    </nav>
+        {% include 'layout/song/_workflow_tabs.html.twig' with {current:'', song:song} %}
     {% endif %}
 
-    {% include 'layout/song/_card.html.twig' with {mode:'display', song:song, rating_summary:rating_summary, user_rating:user_rating, show_internal_comment:can_edit} %}
+{% include 'layout/song/_card.html.twig' with {mode:'display', song:song, rating_summary:rating_summary, user_rating:user_rating, show_internal_comment:can_edit} %}
 
     <section class="song-access-bar">
         <div>
@@ -31,10 +30,6 @@
         </div>
 
         <div class="song-workspace-actions">
-            {% if can_edit %}
-                <a class="song-edit-button" href="{{ path('app_song_edit', {'_locale': app.request.locale, id: song.id}) }}">{{ 'song.edit.button'|trans }}</a>
-            {% endif %}
-
             {% if can_publish %}
                 <form method="post" action="{{ path('app_song_publication', {'_locale': app.request.locale, id: song.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('song_publication_' ~ song.id) }}">
