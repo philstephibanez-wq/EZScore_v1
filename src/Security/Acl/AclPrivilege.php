@@ -24,6 +24,10 @@ final class AclPrivilege
     public const GROUP_MANAGE_PLAYLISTS = 'GROUP_MANAGE_PLAYLISTS';
     public const GROUP_DELEGATE = 'GROUP_DELEGATE';
 
+    public const EVENT_VIEW = 'EVENT_VIEW';
+    public const EVENT_MANAGE = 'EVENT_MANAGE';
+    public const EVENT_INVITE = 'EVENT_INVITE';
+
     public const SONG_VIEW = 'SONG_VIEW';
     public const SONG_EDIT = 'SONG_EDIT';
     public const SONG_PUBLISH = 'SONG_PUBLISH';

@@ -1,0 +1,8 @@
+{{ 'event.email.heading'|trans({'%title%': event.title}, 'event', locale) }}
+
+{{ 'event.email.hello'|trans({'%name%': recipient.displayName}, 'event', locale) }}
+{{ event.startsAt|date('d/m/Y H:i') }}
+{% if event.group %}{{ 'event.fields.group'|trans({}, 'event', locale) }}: {{ event.group.name }}
+{% endif %}{% if event.playlist %}{{ 'event.fields.playlist'|trans({}, 'event', locale) }}: {{ event.playlist.name }}
+{% endif %}
+{{ event_url }}

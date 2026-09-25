@@ -54,6 +54,21 @@ localized_picker:
         fr: /fr
         en: /en
 
+
+localized_events:
+    resource: ../src/Controller/EventController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
+localized_event_picker:
+    resource: ../src/Controller/EventPickerController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
 localized_admin_overview:
     resource: ../src/Controller/AdminOverviewController.php
     type: attribute

@@ -1,0 +1,58 @@
+event:
+  nav: Événements
+  title: Événements
+  eyebrow: Organisation
+  lead: Planifiez répétitions, sessions et rendez-vous autour d’un groupe et d’une playlist.
+  create: Nouvel événement
+  create_button: Créer l’événement
+  created: Événement créé.
+  updated: Événement mis à jour.
+  deleted: Événement supprimé.
+  upcoming: Mes événements
+  empty: Aucun événement.
+  my_invitations: Invitations à confirmer
+  edit: Modifier l’événement
+  save: Enregistrer
+  delete: Supprimer l’événement
+  delete_confirm: Supprimer définitivement cet événement ?
+  assign_group: Associer un groupe
+  assign_playlist: Associer une playlist
+  participants: Participants
+  no_participants: Aucun participant.
+  add_participants: Ajouter des participants
+  remove_participants: Retirer des participants
+  my_response: Ma réponse
+  email_sent: E-mail envoyé
+  fields:
+    title: Titre
+    description: Description
+    starts_at: Début
+    ends_at: Fin
+    mode: Mode
+    location: Lieu
+    remote_url: Lien distant
+    status: Statut
+    group: Groupe
+    playlist: Playlist
+    creator: Créateur
+  mode:
+    onsite: Présentiel
+    remote: À distance
+    hybrid: Hybride
+  status:
+    draft: Brouillon
+    scheduled: Planifié
+    cancelled: Annulé
+    completed: Terminé
+  rsvp:
+    invited: Invité
+    accepted: Présent
+    declined: Absent
+    maybe: Peut-être
+  validation:
+    required: Le titre et la date de début sont obligatoires.
+  email:
+    subject: 'Invitation EZScore : %title%'
+    heading: 'Invitation : %title%'
+    hello: 'Bonjour %name%,'
+    open: Ouvrir l’événement et répondre

@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="{{ locale }}">
+<body>
+  <h1>{{ 'event.email.heading'|trans({'%title%': event.title}, 'event', locale) }}</h1>
+  <p>{{ 'event.email.hello'|trans({'%name%': recipient.displayName}, 'event', locale) }}</p>
+  <p>{{ event.startsAt|date('d/m/Y H:i') }} · {{ ('event.mode.' ~ event.mode.value)|trans({}, 'event', locale) }}</p>
+  {% if event.group %}<p>{{ 'event.fields.group'|trans({}, 'event', locale) }} : {{ event.group.name }}</p>{% endif %}
+  {% if event.playlist %}<p>{{ 'event.fields.playlist'|trans({}, 'event', locale) }} : {{ event.playlist.name }}</p>{% endif %}
+  <p><a href="{{ event_url }}">{{ 'event.email.open'|trans({}, 'event', locale) }}</a></p>
+</body>
+</html>

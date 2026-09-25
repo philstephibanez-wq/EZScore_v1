@@ -15,17 +15,11 @@
 {% macro flag(locale) %}
     {% if locale == 'fr' %}
         <svg class="ez-flag" viewBox="0 0 3 2" aria-hidden="true" focusable="false">
-            <rect width="1" height="2" x="0" fill="#0055A4"/>
-            <rect width="1" height="2" x="1" fill="#FFFFFF"/>
-            <rect width="1" height="2" x="2" fill="#EF4135"/>
+            <rect width="1" height="2" x="0" fill="#0055A4"/><rect width="1" height="2" x="1" fill="#FFFFFF"/><rect width="1" height="2" x="2" fill="#EF4135"/>
         </svg>
     {% else %}
         <svg class="ez-flag" viewBox="0 0 60 36" aria-hidden="true" focusable="false">
-            <rect width="60" height="36" fill="#012169"/>
-            <path d="M0 0 60 36M60 0 0 36" stroke="#fff" stroke-width="8"/>
-            <path d="M0 0 60 36M60 0 0 36" stroke="#C8102E" stroke-width="4"/>
-            <path d="M30 0v36M0 18h60" stroke="#fff" stroke-width="12"/>
-            <path d="M30 0v36M0 18h60" stroke="#C8102E" stroke-width="7"/>
+            <rect width="60" height="36" fill="#012169"/><path d="M0 0 60 36M60 0 0 36" stroke="#fff" stroke-width="8"/><path d="M0 0 60 36M60 0 0 36" stroke="#C8102E" stroke-width="4"/><path d="M30 0v36M0 18h60" stroke="#fff" stroke-width="12"/><path d="M30 0v36M0 18h60" stroke="#C8102E" stroke-width="7"/>
         </svg>
     {% endif %}
 {% endmacro %}
@@ -41,22 +35,8 @@
                 <span class="ez-language-chevron" aria-hidden="true">⌄</span>
             </button>
             <div class="ez-language-menu" role="listbox" aria-label="{{ 'locale.label'|trans }}" data-language-menu hidden>
-                <button type="button"
-                        class="ez-language-option {{ app.request.locale == 'fr' ? 'active' : '' }}"
-                        role="option"
-                        aria-selected="{{ app.request.locale == 'fr' ? 'true' : 'false' }}"
-                        data-language-option="fr">
-                    {{ self.flag('fr') }}
-                    <span>{{ 'locale.fr_name'|trans }}</span>
-                </button>
-                <button type="button"
-                        class="ez-language-option {{ app.request.locale == 'en' ? 'active' : '' }}"
-                        role="option"
-                        aria-selected="{{ app.request.locale == 'en' ? 'true' : 'false' }}"
-                        data-language-option="en">
-                    {{ self.flag('en') }}
-                    <span>{{ 'locale.en_name'|trans }}</span>
-                </button>
+                <button type="button" class="ez-language-option {{ app.request.locale == 'fr' ? 'active' : '' }}" role="option" aria-selected="{{ app.request.locale == 'fr' ? 'true' : 'false' }}" data-language-option="fr">{{ self.flag('fr') }}<span>{{ 'locale.fr_name'|trans }}</span></button>
+                <button type="button" class="ez-language-option {{ app.request.locale == 'en' ? 'active' : '' }}" role="option" aria-selected="{{ app.request.locale == 'en' ? 'true' : 'false' }}" data-language-option="en">{{ self.flag('en') }}<span>{{ 'locale.en_name'|trans }}</span></button>
             </div>
         </div>
     </form>
@@ -71,7 +51,6 @@
             <button type="button" class="ez-menu-button" data-ez-menu-button aria-controls="ez-drawer" aria-expanded="false" aria-label="{{ 'layout.sidebar.toggle'|trans }}" title="{{ 'layout.sidebar.toggle'|trans }}"><span aria-hidden="true"></span></button>
             <a class="ez-brand" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}" aria-label="EZSCORE v1"><strong>EZSCORE</strong><small>v1</small></a>
         </div>
-
         <div class="ez-search-slot">
             <form class="ez-search-form" method="get" action="{{ path('app_catalog', {'_locale': app.request.locale}) }}" role="search">
                 <label class="sr-only" for="ez-global-search">{{ 'layout.search.label'|trans }}</label>
@@ -79,13 +58,10 @@
                 <button type="submit" aria-label="{{ 'layout.search.submit'|trans }}" title="{{ 'layout.search.submit'|trans }}"><span aria-hidden="true"></span></button>
             </form>
         </div>
-
         <div class="ez-topbar-right">
             {{ ui.language_select() }}
-
             <a class="ez-user-badge" href="{{ path('app_profile', {'_locale': app.request.locale}) }}" title="{{ app.user.email }}">
-                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">
-                {% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
+                {% if app.user.avatarUrl %}<img src="{{ app.user.avatarUrl }}" alt="">{% else %}<span class="ez-user-avatar">{{ app.user.displayName|slice(0, 1)|upper }}</span>{% endif %}
                 <span class="ez-user-copy"><strong>{{ app.user.displayName }}</strong><small>{{ ('role.' ~ app.user.primaryRole)|trans }}</small></span>
             </a>
         </div>
@@ -98,14 +74,13 @@
             <a href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'nav.catalog'|trans }}</a>
             <a href="{{ path('app_playlists', {'_locale': app.request.locale}) }}">{{ 'nav.playlists'|trans }}</a>
             <a href="{{ path('app_groups', {'_locale': app.request.locale}) }}">{{ 'nav.groups'|trans }}</a>
+            <a href="{{ path('app_events', {'_locale': app.request.locale}) }}">{{ 'event.nav'|trans({}, 'event') }}</a>
             <a href="{{ path('app_profile', {'_locale': app.request.locale}) }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
-
             {% if is_granted('ROLE_ADMIN') %}
                 <div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div>
                 <a href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'nav.users'|trans }}</a>
             {% endif %}
         </nav>
-
         <div class="ez-drawer-footer">
             <div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div>
             <a class="ez-logout" href="{{ path('app_logout', {'_locale': app.request.locale}) }}">{{ 'nav.logout'|trans }}</a>
@@ -114,77 +89,42 @@
 
     <main class="ez-main" id="main-content">
         {% if app.request.attributes.get('_route') not in ['app_catalog', 'app_dashboard'] %}
-            <a class="ez-back-link" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">
-                ← {{ 'common.back'|trans({}, 'navigation') }}
-            </a>
+            <a class="ez-back-link" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">← {{ 'common.back'|trans({}, 'navigation') }}</a>
         {% endif %}
 {% else %}
 <main class="{{ public_catalog ? 'public-shell' : 'auth-shell' }}">
     <div class="auth-topbar">
         <a class="ez-brand" href="{{ path('app_home') }}"><strong>EZSCORE</strong><small>v1</small></a>
-
         <div class="public-topbar-actions">
             {% if public_catalog %}
                 <a class="public-login-link" href="{{ path('app_login', {'_locale': app.request.locale}) }}">{{ 'auth.login.submit'|trans }}</a>
                 <a class="public-register-link" href="{{ path('app_register', {'_locale': app.request.locale}) }}">{{ 'registration.register_link'|trans }}</a>
             {% endif %}
-
             {{ ui.language_select() }}
         </div>
     </div>
 {% endif %}
 
         {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="flash flash-{{ label }}">{{ message|trans }}</div>
-            {% endfor %}
+            {% for message in messages %}<div class="flash flash-{{ label }}">{{ message starts with 'event.' ? message|trans({}, 'event') : message|trans }}</div>{% endfor %}
         {% endfor %}
-
         {% block body %}{% endblock %}
     </main>
 
 {% if app.user %}</div>{% endif %}
-
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="/assets/js/app.js?v=20260924f"></script>
 <script src="/assets/js/dirty-tracker.js?v=20260924"></script>
 <script>
 (() => {
     document.querySelectorAll('[data-language-listbox]').forEach((listbox) => {
-        const form = listbox.closest('[data-language-form]');
-        const trigger = listbox.querySelector('[data-language-trigger]');
-        const menu = listbox.querySelector('[data-language-menu]');
-        if (!form || !trigger || !menu) return;
-
-        const close = () => {
-            menu.hidden = true;
-            trigger.setAttribute('aria-expanded', 'false');
-        };
-
-        trigger.addEventListener('click', () => {
-            const open = menu.hidden;
-            document.querySelectorAll('[data-language-menu]').forEach((other) => {
-                if (other !== menu) other.hidden = true;
-            });
-            menu.hidden = !open;
-            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-
-        menu.querySelectorAll('[data-language-option]').forEach((option) => {
-            option.addEventListener('click', () => {
-                const locale = option.dataset.languageOption;
-                form.action = '/locale/' + encodeURIComponent(locale);
-                form.submit();
-            });
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!listbox.contains(event.target)) close();
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') close();
-        });
+        const form=listbox.closest('[data-language-form]'),trigger=listbox.querySelector('[data-language-trigger]'),menu=listbox.querySelector('[data-language-menu]');
+        if(!form||!trigger||!menu)return;
+        const close=()=>{menu.hidden=true;trigger.setAttribute('aria-expanded','false');};
+        trigger.addEventListener('click',()=>{const open=menu.hidden;document.querySelectorAll('[data-language-menu]').forEach((other)=>{if(other!==menu)other.hidden=true;});menu.hidden=!open;trigger.setAttribute('aria-expanded',open?'true':'false');});
+        menu.querySelectorAll('[data-language-option]').forEach((option)=>{option.addEventListener('click',()=>{form.action='/locale/'+encodeURIComponent(option.dataset.languageOption);form.submit();});});
+        document.addEventListener('click',(event)=>{if(!listbox.contains(event.target))close();});
+        document.addEventListener('keydown',(event)=>{if(event.key==='Escape')close();});
     });
 })();
 </script>

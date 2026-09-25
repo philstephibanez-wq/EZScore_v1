@@ -1,0 +1,143 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ event.title }} — EZScore_v1{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/events.css?v=20260925r19">
+<link rel="stylesheet" href="/assets/css/entity-picker.css?v=20260925r19">
+{% endblock %}
+{% block body %}
+{% set share_url = url('app_event_show', {'_locale': app.request.locale, id: event.id}) %}
+{% set share_text = event.title ~ ' — ' ~ event.startsAt|date('d/m/Y H:i') ~ ' — ' ~ share_url %}
+
+<header class="page-head">
+  <div>
+    <div class="eyebrow">{{ 'event.eyebrow'|trans({}, 'event') }}</div>
+    <h1>{{ event.title }}</h1>
+    <p class="page-note">{{ event.startsAt|date('d/m/Y H:i') }} · {{ ('event.mode.' ~ event.mode.value)|trans({}, 'event') }}</p>
+  </div>
+</header>
+
+<section class="panel">
+  <div class="event-summary-grid">
+    <div><span>{{ 'event.fields.group'|trans({}, 'event') }}</span><strong>{{ event.group ? event.group.name : '—' }}</strong></div>
+    <div><span>{{ 'event.fields.playlist'|trans({}, 'event') }}</span><strong>{{ event.playlist ? event.playlist.name : '—' }}</strong></div>
+    <div><span>{{ 'event.fields.location'|trans({}, 'event') }}</span><strong>{{ event.location ?: '—' }}</strong></div>
+    <div><span>{{ 'event.fields.remote_url'|trans({}, 'event') }}</span>{% if event.remoteUrl %}<a href="{{ event.remoteUrl }}" target="_blank" rel="noopener">{{ event.remoteUrl }}</a>{% else %}<strong>—</strong>{% endif %}</div>
+    <div><span>{{ 'event.fields.status'|trans({}, 'event') }}</span><strong>{{ ('event.status.' ~ event.status.value)|trans({}, 'event') }}</strong></div>
+    <div><span>{{ 'event.fields.creator'|trans({}, 'event') }}</span><strong>{{ event.createdBy.displayName }}</strong></div>
+  </div>
+
+  {% if event.description %}<p class="event-description-view">{{ event.description }}</p>{% endif %}
+
+  <div class="event-share-actions">
+    <a class="primary" href="https://wa.me/?text={{ share_text|url_encode }}" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|url_encode }}" target="_blank" rel="noopener">Facebook</a>
+    <a href="https://twitter.com/intent/tweet?text={{ event.title|url_encode }}&url={{ share_url|url_encode }}" target="_blank" rel="noopener">X</a>
+  </div>
+</section>
+
+{% if is_granted('EVENT_MANAGE', event) %}
+<section class="panel">
+  <h2>{{ 'event.edit'|trans({}, 'event') }}</h2>
+  <form method="post" action="{{ path('app_event_update', {'_locale': app.request.locale, id: event.id}) }}" class="event-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('event_update_' ~ event.id) }}">
+    <label>{{ 'event.fields.title'|trans({}, 'event') }}<input name="title" value="{{ event.title }}" required></label>
+    <label>{{ 'event.fields.starts_at'|trans({}, 'event') }}<input type="datetime-local" name="starts_at" value="{{ event.startsAt|date('Y-m-d\\TH:i') }}" required></label>
+    <label>{{ 'event.fields.ends_at'|trans({}, 'event') }}<input type="datetime-local" name="ends_at" value="{{ event.endsAt ? event.endsAt|date('Y-m-d\\TH:i') : '' }}"></label>
+    <label>{{ 'event.fields.mode'|trans({}, 'event') }}
+      <select name="mode">
+        {% for mode in ['onsite','remote','hybrid'] %}<option value="{{ mode }}" {{ event.mode.value == mode ? 'selected' : '' }}>{{ ('event.mode.' ~ mode)|trans({}, 'event') }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>{{ 'event.fields.location'|trans({}, 'event') }}<input name="location" value="{{ event.location }}"></label>
+    <label>{{ 'event.fields.remote_url'|trans({}, 'event') }}<input type="url" name="remote_url" value="{{ event.remoteUrl }}"></label>
+    <label>{{ 'event.fields.status'|trans({}, 'event') }}
+      <select name="status">
+        {% for status in ['draft','scheduled','cancelled','completed'] %}<option value="{{ status }}" {{ event.status.value == status ? 'selected' : '' }}>{{ ('event.status.' ~ status)|trans({}, 'event') }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="event-description">{{ 'event.fields.description'|trans({}, 'event') }}<textarea name="description" rows="3">{{ event.description }}</textarea></label>
+    <button class="primary" type="submit">{{ 'event.save'|trans({}, 'event') }}</button>
+  </form>
+
+  <div class="collection-actions">
+    <button type="button"
+            data-entity-picker
+            data-picker-mode="single"
+            data-picker-title="{{ 'event.assign_group'|trans({}, 'event') }}"
+            data-picker-url="{{ path('app_event_picker_groups', {'_locale': app.request.locale, event_id: event.id}) }}"
+            data-picker-submit-url="{{ path('app_event_set_group', {'_locale': app.request.locale, id: event.id}) }}"
+            data-picker-csrf="{{ csrf_token('event_group_' ~ event.id) }}">
+      {{ 'event.assign_group'|trans({}, 'event') }}
+    </button>
+
+    <button type="button"
+            data-entity-picker
+            data-picker-mode="single"
+            data-picker-title="{{ 'event.assign_playlist'|trans({}, 'event') }}"
+            data-picker-url="{{ path('app_event_picker_playlists', {'_locale': app.request.locale, event_id: event.id}) }}"
+            data-picker-submit-url="{{ path('app_event_set_playlist', {'_locale': app.request.locale, id: event.id}) }}"
+            data-picker-csrf="{{ csrf_token('event_playlist_' ~ event.id) }}">
+      {{ 'event.assign_playlist'|trans({}, 'event') }}
+    </button>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>{{ 'event.participants'|trans({}, 'event') }}</h2>
+  <div class="event-participant-list">
+    {% for participant in participants %}
+      <div class="event-participant-row">
+        <strong>{{ participant.user.displayName }}</strong>
+        <span>{{ ('event.rsvp.' ~ participant.status.value)|trans({}, 'event') }}</span>
+        <small>{{ participant.emailNotifiedAt ? ('event.email_sent'|trans({}, 'event')) : '' }}</small>
+      </div>
+    {% else %}
+      <div class="empty">{{ 'event.no_participants'|trans({}, 'event') }}</div>
+    {% endfor %}
+  </div>
+
+  {% if is_granted('EVENT_INVITE', event) %}
+  <div class="collection-actions">
+    <button type="button"
+            data-entity-picker
+            data-picker-title="{{ 'event.add_participants'|trans({}, 'event') }}"
+            data-picker-url="{{ path('app_event_picker_users', {'_locale': app.request.locale, event_id: event.id, membership: 'out'}) }}"
+            data-picker-submit-url="{{ path('app_event_participants_bulk_add', {'_locale': app.request.locale, id: event.id}) }}"
+            data-picker-csrf="{{ csrf_token('event_participants_' ~ event.id) }}">
+      {{ 'event.add_participants'|trans({}, 'event') }}
+    </button>
+    <button type="button"
+            data-entity-picker
+            data-picker-title="{{ 'event.remove_participants'|trans({}, 'event') }}"
+            data-picker-url="{{ path('app_event_picker_users', {'_locale': app.request.locale, event_id: event.id, membership: 'in'}) }}"
+            data-picker-submit-url="{{ path('app_event_participants_bulk_remove', {'_locale': app.request.locale, id: event.id}) }}"
+            data-picker-csrf="{{ csrf_token('event_participants_' ~ event.id) }}">
+      {{ 'event.remove_participants'|trans({}, 'event') }}
+    </button>
+  </div>
+  {% endif %}
+</section>
+
+{% if my_participation %}
+<section class="panel">
+  <h2>{{ 'event.my_response'|trans({}, 'event') }}</h2>
+  <form method="post" action="{{ path('app_event_rsvp', {'_locale': app.request.locale, id: event.id}) }}" class="event-rsvp-actions">
+    <input type="hidden" name="_token" value="{{ csrf_token('event_rsvp_' ~ event.id) }}">
+    <button name="status" value="accepted" class="primary">{{ 'event.rsvp.accepted'|trans({}, 'event') }}</button>
+    <button name="status" value="maybe">{{ 'event.rsvp.maybe'|trans({}, 'event') }}</button>
+    <button name="status" value="declined">{{ 'event.rsvp.declined'|trans({}, 'event') }}</button>
+  </form>
+</section>
+{% endif %}
+
+{% if is_granted('EVENT_MANAGE', event) %}
+<form method="post" action="{{ path('app_event_delete', {'_locale': app.request.locale, id: event.id}) }}" onsubmit="return confirm('{{ 'event.delete_confirm'|trans({}, 'event')|e('js') }}');">
+  <input type="hidden" name="_token" value="{{ csrf_token('event_delete_' ~ event.id) }}">
+  <button type="submit">{{ 'event.delete'|trans({}, 'event') }}</button>
+</form>
+{% endif %}
+
+{% include 'components/_entity_picker_modal.html.twig' %}
+{% endblock %}
+{% block javascripts %}<script src="/assets/js/entity-picker.js?v=20260925r19"></script>{% endblock %}
