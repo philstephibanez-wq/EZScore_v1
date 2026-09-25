@@ -9,6 +9,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 final class AnalysisDesktopStateStore
 {
     public const SCHEMA_VERSION = 'ezscore.worker.desktop.v1';
+    public const ONLINE_AFTER_SECONDS = 8;
 
     public function __construct(
         #[Autowire('%kernel.project_dir%')]
@@ -45,6 +46,53 @@ final class AnalysisDesktopStateStore
             'schema_version' => self::SCHEMA_VERSION,
             'status' => 'offline',
             'last_seen_at' => null,
+        ];
+    }
+
+    public function isOnline(int $maxAgeSeconds = self::ONLINE_AFTER_SECONDS): bool
+    {
+        $state = $this->state();
+        $lastSeen = trim((string) ($state['last_seen_at'] ?? ''));
+        if ($lastSeen === '') {
+            return false;
+        }
+
+        try {
+            $lastSeenAt = new \DateTimeImmutable($lastSeen);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        $age = time() - $lastSeenAt->getTimestamp();
+
+        return $age >= 0 && $age <= max(1, $maxAgeSeconds);
+    }
+
+    /**
+     * @return array{online:bool,status:string,last_seen_at:?string,last_seen_age_seconds:?int}
+     */
+    public function publicStatus(): array
+    {
+        $state = $this->state();
+        $lastSeen = trim((string) ($state['last_seen_at'] ?? ''));
+        $age = null;
+
+        if ($lastSeen !== '') {
+            try {
+                $lastSeenAt = new \DateTimeImmutable($lastSeen);
+                $age = max(0, time() - $lastSeenAt->getTimestamp());
+            } catch (\Throwable) {
+                $age = null;
+            }
+        }
+
+        return [
+            'online' => $this->isOnline(),
+            'status' => $this->isOnline()
+                ? trim((string) ($state['status'] ?? 'online'))
+                : 'offline',
+            'last_seen_at' => $lastSeen !== '' ? $lastSeen : null,
+            'last_seen_age_seconds' => $age,
         ];
     }
 

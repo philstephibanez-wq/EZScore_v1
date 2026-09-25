@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Domain\Analysis\AnalysisJobStatus;
 use App\Domain\Song\Song;
 use App\Domain\User\User;
+use App\Service\AnalysisDesktopStateStore;
 use App\Service\SongStemJobService;
 use App\Service\SongStemStorage;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,6 +26,7 @@ final class SongStemController extends AbstractController
         Song $song,
         SongStemJobService $jobs,
         SongStemStorage $storage,
+        AnalysisDesktopStateStore $workerState,
     ): Response {
         $this->requireEditor($song);
 
@@ -47,6 +49,7 @@ final class SongStemController extends AbstractController
             'stems_complete' => $complete,
             'stem_names' => SongStemStorage::STEMS,
             'job_active' => $isActive,
+            'analysis_worker_online' => $workerState->isOnline(),
         ]);
     }
 
@@ -55,6 +58,7 @@ final class SongStemController extends AbstractController
         Song $song,
         Request $request,
         SongStemJobService $jobs,
+        AnalysisDesktopStateStore $workerState,
     ): Response {
         $user = $this->requireEditor($song);
 
@@ -63,6 +67,15 @@ final class SongStemController extends AbstractController
             (string) $request->request->get('_token'),
         )) {
             throw $this->createAccessDeniedException();
+        }
+
+        if (!$workerState->isOnline()) {
+            $this->addFlash('error', 'stems.error.worker_offline');
+
+            return $this->redirectToRoute('app_song_stems', [
+                '_locale' => $request->getLocale(),
+                'id' => $song->getId(),
+            ]);
         }
 
         if (!$song->getAudioStoragePath() || !$song->getAudioSha256()) {

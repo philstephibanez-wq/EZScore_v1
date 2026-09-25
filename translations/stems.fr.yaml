@@ -20,6 +20,7 @@ stems:
   failed: La dernière séparation a échoué.
   error:
     no_audio: Aucun audio source exploitable n’est associé à ce morceau.
+    worker_offline: Le moteur d’analyse est hors ligne. Démarrez EZScore Analysis Worker avant de lancer une analyse.
   outputs_eyebrow: Résultat persistant
   outputs: Écoute des STEMS
   technical: Informations techniques

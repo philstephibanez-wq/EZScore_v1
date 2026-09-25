@@ -9,6 +9,9 @@
     {% block stylesheets %}{% endblock %}
     <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
     <link rel="stylesheet" href="/assets/css/r21-admin.css?v=20260925r21">
+    {% if app.user and is_granted('ROLE_EDITOR') %}
+        <link rel="stylesheet" href="/assets/css/analysis-worker-status.css?v=20260926r24_16">
+    {% endif %}
 </head>
 <body>
 {% set public_catalog = not app.user and app.request.attributes.get('_route') == 'app_catalog' %}
@@ -68,6 +71,18 @@
         </div>
     </header>
 
+    {% if is_granted('ROLE_EDITOR') %}
+        <div class="analysis-worker-banner"
+             data-analysis-worker-banner
+             data-status-url="{{ path('app_analysis_worker_status') }}"
+             role="status"
+             hidden>
+            <span class="analysis-worker-banner-dot" aria-hidden="true"></span>
+            <strong>{{ 'analysis_worker.offline.title'|trans }}</strong>
+            <span>{{ 'analysis_worker.offline.body'|trans }}</span>
+        </div>
+    {% endif %}
+
     <button type="button" class="ez-drawer-backdrop" data-ez-drawer-backdrop aria-hidden="true" tabindex="-1"></button>
 
     <aside class="ez-drawer" id="ez-drawer" data-ez-drawer aria-label="{{ 'layout.sidebar.navigation'|trans }}">
@@ -119,6 +134,9 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="/assets/js/app.js?v=20260924f"></script>
 <script src="/assets/js/dirty-tracker.js?v=20260924"></script>
+{% if app.user and is_granted('ROLE_EDITOR') %}
+<script src="/assets/js/analysis-worker-status.js?v=20260926r24_16"></script>
+{% endif %}
 <script>
 (() => {
     document.querySelectorAll('[data-language-listbox]').forEach((listbox) => {

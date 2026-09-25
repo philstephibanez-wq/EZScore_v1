@@ -1,40 +1,84 @@
-# EZScore_v1 — R24.15 Reuse du serveur PHP deja actif
+# EZScore_v1 — R24.16 Notification Worker hors ligne
 
-Le splash R24.14 affichait une erreur si le port 8501 etait deja occupe, meme lorsque le processus etait justement le bon serveur EZScore.
+EZScore doit signaler clairement quand l'application `EZScore Analysis Worker` n'est plus active.
 
-R24.15 inspecte maintenant la ligne de commande du processus qui ecoute sur 8501.
+## Détection
 
-Si elle correspond a :
+Le Worker envoie déjà un heartbeat environ toutes les 2 secondes.
 
-```powershell
-php -S 127.0.0.1:8501 -t H:\EZScore_v1\public
+R24.16 considère le Worker hors ligne si aucun heartbeat valide n'a été reçu depuis plus de :
+
+```text
+8 secondes
 ```
 
-le launcher :
+Cela évite un faux positif sur un simple retard de heartbeat.
 
-1. reconnait le serveur comme valide ;
-2. memorise son PID ;
-3. le reutilise ;
-4. poursuit vers Analysis Worker puis le navigateur.
+## Notification globale
 
-Si 8501 est utilise par un autre processus ou par un serveur PHP avec un autre document root, le launcher conserve une erreur explicite.
+Pour les rôles `EDITOR` et `ADMIN`, EZScore affiche une bannière persistante :
 
-Les scripts PowerShell sont egalement ecrits avec BOM UTF-8, et les messages visibles utilisent des caracteres simples pour eviter les textes corrompus de type `DÃ©marrage`.
+```text
+Moteur d'analyse hors ligne
+Les analyses sont indisponibles tant que EZScore Analysis Worker n'est pas démarré.
+```
+
+La bannière est vérifiée toutes les 5 secondes.
+
+Elle disparaît automatiquement lorsque le Worker recommence à envoyer ses heartbeats.
+
+Les lecteurs ne voient pas cette alerte puisqu'ils ne lancent pas d'analyses.
+
+## Sécurité fonctionnelle
+
+La notification n'est pas seulement visuelle.
+
+La route qui crée un job STEMS refuse maintenant de mettre un job en file si le Worker est hors ligne :
+
+```text
+Le moteur d'analyse est hors ligne.
+Démarrez EZScore Analysis Worker avant de lancer une analyse.
+```
+
+Cela évite d'accumuler des jobs impossibles à traiter.
+
+## Endpoint
+
+Nouveau endpoint authentifié :
+
+```text
+GET /analysis/worker/status
+```
+
+Réponse minimale :
+
+```json
+{
+  "online": false,
+  "status": "offline",
+  "last_seen_at": "...",
+  "last_seen_age_seconds": 12
+}
+```
+
+Aucune capacité GPU, aucun chemin local, aucun token et aucune information technique sensible ne sont exposés.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_15_REUSE_EXISTING_PHP_SERVER.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_16_WORKER_OFFLINE_NOTIFICATION.zip" -C H:\EZScore_v1
 
-php tests\launcher_r24_15_contract.php
-```
+Get-ChildItem src,tests -Recurse -Filter *.php | ForEach-Object {
+    php -l $_.FullName
+}
 
-Puis :
-
-```powershell
-.\EZScore-Launcher.cmd
+php tests\analysis_worker_offline_r24_16_contract.php
+php bin\console lint:yaml config translations
+php bin\console lint:twig templates
+php bin\console cache:clear
+php bin\console debug:router | Select-String "analysis_worker_status"
 ```
 
 Aucune migration Doctrine.

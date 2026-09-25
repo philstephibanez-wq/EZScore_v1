@@ -118,6 +118,10 @@ analysis_desktop_controller:
     resource: ../src/Controller/AnalysisDesktopController.php
     type: attribute
 
+analysis_worker_status_controller:
+    resource: ../src/Controller/AnalysisWorkerStatusController.php
+    type: attribute
+
 root_controller:
     resource: ../src/Controller/RootController.php
     type: attribute

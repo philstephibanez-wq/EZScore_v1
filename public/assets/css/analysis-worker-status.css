@@ -1,0 +1,21 @@
+.analysis-worker-banner[hidden]{display:none!important}
+.analysis-worker-banner{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-height:38px;
+    padding:8px 18px;
+    border-bottom:1px solid #7f4d39;
+    background:#2b1d18;
+    color:#f5d4c4;
+    font-size:13px;
+}
+.analysis-worker-banner strong{color:#ffd2bd}
+.analysis-worker-banner-dot{
+    width:9px;
+    height:9px;
+    flex:0 0 9px;
+    border-radius:50%;
+    background:#e27855;
+    box-shadow:0 0 0 3px rgba(226,120,85,.13);
+}

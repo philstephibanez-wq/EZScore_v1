@@ -20,6 +20,7 @@ stems:
   failed: The last separation failed.
   error:
     no_audio: No usable source audio is associated with this song.
+    worker_offline: The analysis engine is offline. Start EZScore Analysis Worker before launching an analysis.
   outputs_eyebrow: Persistent result
   outputs: STEM playback
   technical: Technical information
