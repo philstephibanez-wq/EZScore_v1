@@ -8,12 +8,16 @@ use App\Domain\Song\Song;
 use App\Domain\Song\SongRating;
 use App\Domain\Song\SongRatingRepository;
 use App\Domain\Song\SongRepository;
+use App\Domain\Song\SongStatus;
 use App\Domain\User\User;
+use App\Domain\User\UserRepository;
+use App\Service\ListPagination;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class CatalogController extends AbstractController
 {
@@ -22,6 +26,8 @@ final class CatalogController extends AbstractController
         Request $request,
         SongRepository $songs,
         SongRatingRepository $ratings,
+        UserRepository $users,
+        ListPagination $pagination,
     ): Response {
         $user = $this->getUser();
         $query = trim((string) $request->query->get('q', ''));
@@ -32,8 +38,68 @@ final class CatalogController extends AbstractController
         $letter = mb_strtoupper(trim((string) $request->query->get('letter', '')));
         $letter = preg_match('/^[A-Z]$/', $letter) ? $letter : null;
 
+        $pager = null;
+        $editors = [];
+        $adminFilters = [
+            'status' => '',
+            'editor' => '',
+        ];
+
         if ($this->isGranted('ROLE_ADMIN')) {
-            $visibleSongs = $songs->findCatalog($query, $sort, $letter);
+            $statusFilter = (string) $request->query->get('status', '');
+            $editorFilter = (string) $request->query->get('editor', '');
+
+            $qb = $songs->createQueryBuilder('s')
+                ->leftJoin('s.editor', 'editor')
+                ->addSelect('editor');
+
+            if ($query !== '') {
+                $qb->andWhere(
+                    "(LOWER(s.title) LIKE :q
+                      OR LOWER(s.artist) LIKE :q
+                      OR LOWER(COALESCE(s.author, '')) LIKE :q
+                      OR LOWER(COALESCE(s.composer, '')) LIKE :q
+                      OR LOWER(COALESCE(editor.displayName, '')) LIKE :q)"
+                )->setParameter('q', '%'.mb_strtolower($query).'%');
+            }
+
+            if ($letter !== null) {
+                $letterField = $sort === 'artist' ? 's.artist' : 's.title';
+                $qb->andWhere(sprintf('UPPER(SUBSTRING(%s, 1, 1)) = :letter', $letterField))
+                    ->setParameter('letter', $letter);
+            }
+
+            $status = SongStatus::tryFrom($statusFilter);
+            if ($status instanceof SongStatus) {
+                $qb->andWhere('s.status = :status')
+                    ->setParameter('status', $status->value);
+            } else {
+                $statusFilter = '';
+            }
+
+            if ($editorFilter === 'none') {
+                $qb->andWhere('s.editor IS NULL');
+            } elseif (ctype_digit($editorFilter) && (int) $editorFilter > 0) {
+                $qb->andWhere('editor.id = :editorId')
+                    ->setParameter('editorId', (int) $editorFilter);
+            } else {
+                $editorFilter = '';
+            }
+
+            $primarySort = $sort === 'artist' ? 's.artist' : 's.title';
+            $secondarySort = $sort === 'artist' ? 's.title' : 's.artist';
+
+            $qb->orderBy('LOWER('.$primarySort.')', 'ASC')
+                ->addOrderBy('LOWER('.$secondarySort.')', 'ASC');
+
+            $pager = $pagination->paginate($qb, $request, 's', 'page', 50);
+            $visibleSongs = $pager['rows'];
+
+            $editors = $this->activeEditors($users);
+            $adminFilters = [
+                'status' => $statusFilter,
+                'editor' => $editorFilter,
+            ];
         } elseif ($user instanceof User && $this->isGranted('ROLE_EDITOR')) {
             $visibleSongs = $songs->findForEditor($user, $query, $sort, $letter);
         } else {
@@ -49,7 +115,99 @@ final class CatalogController extends AbstractController
             'alphabet' => range('A', 'Z'),
             'can_import' => $this->isGranted('ROLE_ADMIN') || $this->isGranted('ROLE_EDITOR'),
             'is_public_catalog' => !$user instanceof User,
+            'admin_pager' => $pager,
+            'admin_editors' => $editors,
+            'admin_filters' => $adminFilters,
+            'admin_statuses' => SongStatus::cases(),
         ]);
+    }
+
+    #[Route('/catalog/song/{id}/admin', name: 'admin_catalog_song_update', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function adminUpdateSong(
+        Song $song,
+        Request $request,
+        UserRepository $users,
+        EntityManagerInterface $em,
+        TranslatorInterface $translator,
+    ): Response {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        if (!$this->isCsrfTokenValid(
+            'admin_catalog_song_'.$song->getId(),
+            (string) $request->request->get('_token'),
+        )) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $editorId = (int) $request->request->get('editor_id');
+        $editor = null;
+
+        if ($editorId > 0) {
+            $editor = $users->find($editorId);
+
+            if (!$editor instanceof User
+                || !$editor->isActive()
+                || !in_array($editor->getPrimaryRole(), ['ROLE_EDITOR', 'ROLE_ADMIN'], true)) {
+                $this->addFlash('error', $translator->trans('catalog_admin.invalid_editor', [], 'admin_catalog'));
+                return $this->redirectToRoute('app_catalog', $this->catalogReturnParams($request));
+            }
+        }
+
+        $requestedStatus = SongStatus::tryFrom((string) $request->request->get('status', ''));
+        if (!$requestedStatus instanceof SongStatus) {
+            $this->addFlash('error', $translator->trans('catalog_admin.invalid_status', [], 'admin_catalog'));
+            return $this->redirectToRoute('app_catalog', $this->catalogReturnParams($request));
+        }
+
+        // "Analyzed" remains owned by the analysis pipeline. Admin may keep it,
+        // but cannot manufacture that state manually.
+        if ($requestedStatus === SongStatus::Analyzed && $song->getStatus() !== SongStatus::Analyzed) {
+            $this->addFlash('error', $translator->trans('catalog_admin.analyzed_pipeline_only', [], 'admin_catalog'));
+            return $this->redirectToRoute('app_catalog', $this->catalogReturnParams($request));
+        }
+
+        if ($editor instanceof User) {
+            $song->setEditor($editor);
+        }
+
+        $this->applyStatus($song, $requestedStatus);
+
+        $em->flush();
+
+        $this->addFlash(
+            'success',
+            $translator->trans('catalog_admin.updated', ['%title%' => $song->getTitle()], 'admin_catalog'),
+        );
+
+        return $this->redirectToRoute('app_catalog', $this->catalogReturnParams($request));
+    }
+
+    #[Route('/catalog/song/{id}/delete', name: 'admin_catalog_song_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function adminDeleteSong(
+        Song $song,
+        Request $request,
+        EntityManagerInterface $em,
+        TranslatorInterface $translator,
+    ): Response {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
+        if (!$this->isCsrfTokenValid(
+            'admin_catalog_song_delete_'.$song->getId(),
+            (string) $request->request->get('_token'),
+        )) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $title = $song->getTitle();
+        $em->remove($song);
+        $em->flush();
+
+        $this->addFlash(
+            'success',
+            $translator->trans('catalog_admin.deleted', ['%title%' => $title], 'admin_catalog'),
+        );
+
+        return $this->redirectToRoute('app_catalog', $this->catalogReturnParams($request));
     }
 
     #[Route('/song/{id}', name: 'app_song_workspace', requirements: ['id' => '\d+'], methods: ['GET'])]
@@ -144,8 +302,12 @@ final class CatalogController extends AbstractController
     }
 
     #[Route('/song/{id}/publication', name: 'app_song_publication', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function publication(Song $song, Request $request, EntityManagerInterface $em): Response
-    {
+    public function publication(
+        Song $song,
+        Request $request,
+        EntityManagerInterface $em,
+        TranslatorInterface $translator,
+    ): Response {
         $user = $this->getUser();
         $canEdit = $this->isGranted('ROLE_ADMIN') || $this->isOwnerEditor($song, $user);
 
@@ -158,12 +320,16 @@ final class CatalogController extends AbstractController
         }
 
         $action = (string) $request->request->get('action');
+
         if ($action === 'publish') {
             $song->publish();
             $this->addFlash('success', 'song.publication.published');
         } elseif ($action === 'unpublish') {
             $song->unpublish();
             $this->addFlash('success', 'song.publication.unpublished');
+        } elseif ($action === 'imported') {
+            $song->markImported();
+            $this->addFlash('success', $translator->trans('catalog_admin.reset_imported', [], 'admin_catalog'));
         } else {
             throw $this->createNotFoundException();
         }
@@ -174,6 +340,50 @@ final class CatalogController extends AbstractController
             '_locale' => $request->getLocale(),
             'id' => $song->getId(),
         ]);
+    }
+
+    /**
+     * @return list<User>
+     */
+    private function activeEditors(UserRepository $users): array
+    {
+        return $users->createQueryBuilder('u')
+            ->andWhere('u.active = :active')
+            ->andWhere('(u.roles LIKE :editor OR u.roles LIKE :admin)')
+            ->setParameter('active', true)
+            ->setParameter('editor', '%ROLE_EDITOR%')
+            ->setParameter('admin', '%ROLE_ADMIN%')
+            ->orderBy('LOWER(u.displayName)', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    private function applyStatus(Song $song, SongStatus $status): void
+    {
+        match ($status) {
+            SongStatus::Imported => $song->markImported(),
+            SongStatus::Analyzed => $song->markAnalyzed(),
+            SongStatus::Editing => $song->markEditing(),
+            SongStatus::Published => $song->publish($song->getPublishedAt()),
+        };
+    }
+
+    /** @return array<string,string|int> */
+    private function catalogReturnParams(Request $request): array
+    {
+        $params = ['_locale' => $request->getLocale()];
+
+        foreach (['q', 'sort', 'letter', 'status', 'editor', 'page'] as $key) {
+            $value = trim((string) $request->request->get('return_'.$key, ''));
+
+            if ($value === '') {
+                continue;
+            }
+
+            $params[$key] = $key === 'page' ? max(1, (int) $value) : $value;
+        }
+
+        return $params;
     }
 
     private function canViewSong(Song $song, mixed $user): bool

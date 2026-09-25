@@ -1,0 +1,26 @@
+catalog_admin:
+  eyebrow: Catalog back office
+  heading: Moderation and administration
+  lead: Search, filter, reassign, change status or delete songs without scrolling through the whole catalog.
+  count: '%count% song(s)'
+  search: Search
+  search_placeholder: Title, performer, author, composer or editor
+  all_statuses: All statuses
+  all_editors: All editors
+  no_editor: No editor
+  keep_editor: Keep editor
+  keep_no_editor: Keep without editor
+  filter: Filter
+  clear: Reset
+  apply: Apply
+  delete: Delete
+  delete_confirm: 'Permanently delete “%title%” from the catalog? Related Doctrine associations will follow their configured cascade rules.'
+  invalid_editor: The selected editor is invalid or inactive.
+  invalid_status: The selected status is invalid.
+  analyzed_pipeline_only: “Analyzed” remains reserved for the analysis pipeline.
+  updated: '“%title%” was updated in the back office.'
+  deleted: '“%title%” was deleted from the catalog.'
+  reset_imported_action: Reset to Imported
+  reset_imported_confirm: Reset this song to “Imported”? It will be considered ready to go through the analysis pipeline again.
+  reset_imported: The song is back to “Imported”.
+  pagination: Catalog pagination

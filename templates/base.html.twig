@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/assets/css/layout.css?v=20260925r13">
     {% block stylesheets %}{% endblock %}
     <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
+    <link rel="stylesheet" href="/assets/css/r21-admin.css?v=20260925r21">
 </head>
 <body>
 {% set public_catalog = not app.user and app.request.attributes.get('_route') == 'app_catalog' %}
@@ -75,14 +76,17 @@
             <a href="{{ path('app_playlists', {'_locale': app.request.locale}) }}">{{ 'nav.playlists'|trans }}</a>
             <a href="{{ path('app_groups', {'_locale': app.request.locale}) }}">{{ 'nav.groups'|trans }}</a>
             <a href="{{ path('app_events', {'_locale': app.request.locale}) }}">{{ 'event.nav'|trans({}, 'event') }}</a>
-            <a href="{{ path('app_profile', {'_locale': app.request.locale}) }}">{{ 'profile.nav'|trans({}, 'profile') }}</a>
             {% if is_granted('ROLE_ADMIN') %}
                 <div class="ez-nav-sep">{{ 'nav.administration'|trans }}</div>
                 <a href="{{ path('admin_users', {'_locale': app.request.locale}) }}">{{ 'nav.users'|trans }}</a>
             {% endif %}
         </nav>
         <div class="ez-drawer-footer">
-            <div class="ez-drawer-user"><strong>{{ app.user.displayName }}</strong><small>{{ app.user.email }}</small></div>
+            <a class="ez-drawer-user ez-drawer-profile" href="{{ path('app_profile', {'_locale': app.request.locale}) }}">
+                <strong>{{ app.user.displayName }}</strong>
+                <small>{{ app.user.email }}</small>
+                <span>{{ 'profile.nav'|trans({}, 'profile') }}</span>
+            </a>
             <a class="ez-logout" href="{{ path('app_logout', {'_locale': app.request.locale}) }}">{{ 'nav.logout'|trans }}</a>
         </div>
     </aside>

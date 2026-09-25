@@ -10,7 +10,10 @@
                     <span aria-hidden="true">♫</span>
                 {% endif %}
             </span>
-            <input type="file" name="cover" accept="image/jpeg,image/png,image/webp">
+            <input type="file"
+                   name="cover"
+                   accept="image/jpeg,image/png,image/webp"
+                   data-cover-input>
             <small>{{ mode == 'edit' ? ('song.edit.cover_help'|trans) : ('catalog.import.cover_help'|trans) }}</small>
         </label>
     {% else %}

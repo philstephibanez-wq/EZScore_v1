@@ -314,3 +314,58 @@ Commentaires :
 - [ ] aucune régression ACL
 - [ ] `doctrine:schema:validate` OK
 - [ ] `doctrine:schema:update --dump-sql` vide
+
+
+## 20. Back-office Répertoire / Profil / pochette R21
+
+### Statut des chansons
+
+- [ ] un Admin peut passer `En édition` -> `Importée`
+- [ ] un Admin peut passer `Publiée` -> `Importée`
+- [ ] un Éditeur propriétaire peut utiliser `Remettre en Importée` dans le workspace
+- [ ] la remise en Importée met `published_at` à NULL
+- [ ] `Analysée` ne peut pas être fabriqué manuellement si le morceau ne l'est pas déjà
+- [ ] un morceau déjà Analysé peut conserver ce statut
+
+### Répertoire Admin
+
+- [ ] la recherche porte sur titre
+- [ ] la recherche porte sur interprète
+- [ ] la recherche porte sur auteur
+- [ ] la recherche porte sur compositeur
+- [ ] la recherche porte sur éditeur
+- [ ] filtre statut
+- [ ] filtre éditeur
+- [ ] index A-Z conserve statut et éditeur
+- [ ] tri titre/interprète conserve statut et éditeur
+- [ ] pagination serveur 50 morceaux
+- [ ] modification conserve la page et les filtres
+- [ ] réattribution à un autre Éditeur actif
+- [ ] changement de statut inline
+- [ ] suppression Admin disponible
+- [ ] suppression demande confirmation
+- [ ] les associations Doctrine en cascade ne bloquent pas la suppression
+
+### Profil
+
+- [ ] `Profil` n'apparaît plus entre Sessions et Administration
+- [ ] la carte utilisateur en bas du menu ouvre le Profil personnel
+- [ ] comportement identique pour Reader / Editor / Admin
+- [ ] la section Administration ne contient que des fonctions administratives
+
+### Pochette
+
+- [ ] import : choisir JPEG affiche immédiatement l'aperçu
+- [ ] import : choisir PNG affiche immédiatement l'aperçu
+- [ ] import : choisir WEBP affiche immédiatement l'aperçu
+- [ ] aucun upload n'est effectué avant validation du formulaire
+- [ ] édition : nouvelle pochette remplace immédiatement l'aperçu de l'ancienne
+- [ ] annulation/rechargement ne persiste pas un aperçu non validé
+
+### Validation
+
+- [ ] `php -l` OK
+- [ ] `lint:yaml` OK
+- [ ] `lint:twig` OK
+- [ ] `doctrine:schema:validate` OK
+- [ ] `doctrine:schema:update --dump-sql` vide

@@ -1,81 +1,137 @@
-# EZScore_v1 — R20.1 Correctif Doctrine `events.type`
+# EZScore_v1 — R21 Répertoire Admin / Profil / aperçu pochette
 
-## Diagnostic
+Prérequis : R20.1 installé.
 
-Les migrations sont bien à jour :
+## Contenu
+
+R21 traite les quatre points demandés.
+
+### 1. Retour au statut Importée
+
+Le workspace propose maintenant :
 
 ```text
-Current = Version20260925220000
-Latest  = Version20260925220000
-New     = 0
+Remettre en Importée
 ```
 
-Le SQL proposé par Doctrine reconstruit uniquement la table `events`.
+pour une personne autorisée à éditer le morceau.
 
-La cause est précise :
+Le back-office Répertoire permet également à l'Admin de choisir directement `Importée`.
 
-R19.1 a créé la colonne avec :
+`markImported()` remet `published_at` à `NULL`.
 
-```sql
-type VARCHAR(32) NOT NULL DEFAULT 'session'
+Le statut `Analysée` reste réservé à la chaîne d'analyse : il peut être conservé s'il existe déjà, mais ne peut pas être créé manuellement.
+
+### 2. Profil personnel
+
+`Profil` est retiré de la navigation métier principale.
+
+La carte de l'utilisateur connecté en bas du menu devient le lien vers son propre Profil.
+
+Cela vaut pour Reader, Editor et Admin.
+
+La section `Administration` ne mélange donc plus les fonctions personnelles et les fonctions de back-office.
+
+### 3. Aperçu de pochette avant import
+
+Le sélecteur de pochette affiche immédiatement l'image sélectionnée dans la fiche du morceau.
+
+Fonctionne sur :
+
+- Import ;
+- Édition.
+
+L'aperçu est entièrement local via `URL.createObjectURL()` : aucun upload avant validation du formulaire.
+
+### 4. Répertoire Admin = back-office chansons
+
+Pour l'Admin, Répertoire ajoute :
+
+- recherche titre / interprète / auteur / compositeur / éditeur ;
+- filtre par statut ;
+- filtre par éditeur ;
+- tri titre / interprète ;
+- index A-Z ;
+- pagination serveur 50 ;
+- changement de statut inline ;
+- réattribution à un Éditeur actif ;
+- suppression avec confirmation ;
+- conservation des filtres et de la page après action.
+
+La modération s'appuie volontairement sur le workflow existant :
+
+```text
+Imported -> Analyzed -> Editing -> Published
 ```
 
-alors que le mapping Doctrine de `Event::$type` déclare une colonne `NOT NULL` sans option `DEFAULT`.
+Aucun nouvel état de modération parallèle n'est ajouté.
 
-Doctrine voit donc un écart permanent entre le schéma SQLite et le mapping, même si les valeurs sont correctes.
+## Schéma Doctrine
 
-## Correction
+Aucun changement de schéma.
 
-R20.1 reconstruit uniquement la table `events` pour obtenir :
+Aucune migration R21.
 
-```sql
-type VARCHAR(32) NOT NULL
-```
+## Cahier des charges
 
-Les valeurs `session` existantes sont intégralement conservées.
+Mis à jour :
 
-Les clés étrangères et les quatre index `events` sont recréés à l'identique.
+`docs/CAHIER_DES_CHARGES.md`
 
-Aucun changement PHP métier ou UI.
+## Recette
+
+Mis à jour :
+
+`recette.md`
+
+Recette ciblée :
+
+`docs/RECETTE_ADMIN_CATALOG_R21.md`
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R20_1_EVENT_TYPE_SCHEMA_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_ADMIN_CATALOG_COVER_PROFILE_R21.zip" -C H:\EZScore_v1
 
-php -l .\migrations\Version20260925223000.php
-php tests\event_type_schema_contract.php
+php bin\console lint:yaml config translations
+php bin\console lint:twig templates
 
-php bin\console doctrine:migrations:status
-php bin\console doctrine:migrations:migrate --no-interaction
+Get-ChildItem src,tests -Recurse -Filter *.php | ForEach-Object {
+    php -l $_.FullName
+}
 
 php bin\console cache:clear
 
 php bin\console doctrine:schema:validate
 php bin\console doctrine:schema:update --dump-sql
+
+php tests\admin_catalog_r21_contract.php
 ```
 
-Attendu après migration :
+Attendu :
 
 ```text
 [OK] The mapping files are correct.
 [OK] The database schema is in sync with the mapping files.
 ```
 
-et :
+et aucun SQL avec :
 
 ```powershell
 php bin\console doctrine:schema:update --dump-sql
 ```
 
-ne doit plus produire de SQL.
+Ne pas utiliser `doctrine:schema:update --force`.
 
-## Important
+## Recette rapide
 
-Ne pas utiliser :
-
-```text
-php bin\console doctrine:schema:update --force
-```
+1. Répertoire Admin : filtrer `En édition`.
+2. Passer un morceau à `Importée`.
+3. Réattribuer un morceau à un autre Éditeur.
+4. Tester recherche + statut + éditeur + A-Z + pagination.
+5. Supprimer un morceau de test.
+6. Workspace : tester `Remettre en Importée`.
+7. Import : sélectionner une pochette et vérifier son aperçu immédiat.
+8. Menu : vérifier que Profil n'est plus une rubrique principale et que la carte utilisateur du bas ouvre le Profil.

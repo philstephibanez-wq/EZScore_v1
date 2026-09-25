@@ -1,0 +1,26 @@
+catalog_admin:
+  eyebrow: Back-office du répertoire
+  heading: Modération et administration
+  lead: Recherchez, filtrez, réattribuez, changez le statut ou supprimez les morceaux sans parcourir tout le répertoire.
+  count: '%count% morceau(x)'
+  search: Recherche
+  search_placeholder: Titre, interprète, auteur, compositeur ou éditeur
+  all_statuses: Tous les statuts
+  all_editors: Tous les éditeurs
+  no_editor: Sans éditeur
+  keep_editor: Conserver l’éditeur
+  keep_no_editor: Conserver sans éditeur
+  filter: Filtrer
+  clear: Réinitialiser
+  apply: Appliquer
+  delete: Supprimer
+  delete_confirm: 'Supprimer définitivement « %title% » du répertoire ? Les associations Doctrine liées seront supprimées selon leurs règles de cascade.'
+  invalid_editor: L’éditeur sélectionné n’est pas valide ou n’est pas actif.
+  invalid_status: Le statut sélectionné n’est pas valide.
+  analyzed_pipeline_only: Le statut « Analysée » reste réservé à la chaîne d’analyse.
+  updated: '« %title% » a été mis à jour dans le back-office.'
+  deleted: '« %title% » a été supprimé du répertoire.'
+  reset_imported_action: Remettre en Importée
+  reset_imported_confirm: Remettre ce morceau au statut « Importée » ? Il sera considéré comme devant repasser par la chaîne d’analyse.
+  reset_imported: Le morceau est repassé au statut « Importée ».
+  pagination: Pagination du répertoire

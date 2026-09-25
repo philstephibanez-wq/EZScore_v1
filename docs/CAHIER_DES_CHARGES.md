@@ -493,3 +493,94 @@ Les requêtes de liste doivent :
 - limiter les résultats avant hydratation ;
 - éviter les listes HTML de centaines d'options ;
 - ne charger les collections associées que pour la page courante.
+
+
+## 15. Répertoire administrateur et ergonomie personnelle
+
+### 15.1 Répertoire = back-office chansons pour l'Admin
+
+Lorsqu'un Admin consulte le Répertoire, il dispose d'outils de back-office directement sur les morceaux.
+
+Fonctions obligatoires :
+
+- recherche par titre, interprète, auteur, compositeur ou éditeur ;
+- tri par titre ou interprète ;
+- index alphabétique ;
+- filtre par statut ;
+- filtre par éditeur ;
+- pagination serveur ;
+- changement de statut ;
+- réattribution à un autre Éditeur actif ;
+- suppression d'un morceau ;
+- conservation du contexte de recherche/filtres après une action.
+
+Le back-office doit permettre notamment de revenir explicitement au statut :
+
+```text
+Imported
+```
+
+depuis `Editing`, `Published` ou `Analyzed`.
+
+Le statut `Analyzed` reste réservé à la chaîne d'analyse : il peut être conservé lorsqu'il existe déjà, mais ne doit pas être fabriqué manuellement par le back-office.
+
+Une remise à `Imported` signifie fonctionnellement que le morceau doit pouvoir repasser par la chaîne d'analyse. Elle remet également `published_at` à `NULL`.
+
+### 15.2 Modération du répertoire
+
+La modération R21 s'appuie sur les états métier existants :
+
+```text
+Imported
+Analyzed
+Editing
+Published
+```
+
+et sur la responsabilité éditoriale :
+
+```text
+Song.editor
+```
+
+Aucun état de modération parallèle n'est créé à ce stade.
+
+L'Admin peut donc :
+
+- dépublier ;
+- repasser en édition ;
+- remettre en importé ;
+- publier ;
+- changer l'Éditeur responsable ;
+- supprimer.
+
+### 15.3 Suppression
+
+La suppression d'un morceau est réservée à l'Admin.
+
+Les associations Doctrine configurées en cascade, notamment notes, jobs d'analyse et éléments de playlist, suivent leurs règles de suppression.
+
+La suppression de fichiers physiques mutualisés par hash ne doit pas être faite aveuglément lors de cette action.
+
+### 15.4 Profil personnel
+
+`Profil` n'est pas une rubrique d'administration.
+
+Il représente le compte de l'utilisateur connecté, y compris pour un Admin.
+
+Dans le menu latéral :
+
+- `Profil` est retiré de la navigation métier principale ;
+- la carte d'identité de l'utilisateur dans le pied du menu devient le point d'accès à son Profil ;
+- la section `Administration` reste réservée aux fonctions de back-office.
+
+### 15.5 Aperçu de pochette
+
+Lors de l'import ou de l'édition d'un morceau, le choix d'une pochette doit produire un aperçu local immédiat avant validation.
+
+L'aperçu :
+
+- utilise le fichier sélectionné dans le navigateur ;
+- ne déclenche aucun upload avant soumission ;
+- accepte JPEG, PNG et WEBP conformément aux règles backend ;
+- remplace visuellement le placeholder ou l'ancienne pochette dans la fiche d'édition.

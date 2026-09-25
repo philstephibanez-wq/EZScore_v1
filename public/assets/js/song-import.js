@@ -1,42 +1,68 @@
-
-
-// R13.2 — local audio pre-listen before import.
+// R21 — local audio + cover preview before submit.
 (() => {
-    const input = document.querySelector('[data-audio-input]');
-    const preview = document.querySelector('[data-audio-preview]');
-    const player = document.querySelector('[data-audio-player]');
-    const name = document.querySelector('[data-audio-preview-name]');
+    const audioInput = document.querySelector('[data-audio-input]');
+    const audioPreview = document.querySelector('[data-audio-preview]');
+    const audioPlayer = document.querySelector('[data-audio-player]');
+    const audioName = document.querySelector('[data-audio-preview-name]');
 
-    if (!input || !preview || !player || !name) return;
+    let audioObjectUrl = null;
 
-    let objectUrl = null;
+    const clearAudioPreview = () => {
+        if (!audioPlayer || !audioPreview || !audioName) return;
 
-    const clearPreview = () => {
-        player.pause();
-        player.removeAttribute('src');
-        player.load();
-        preview.hidden = true;
-        name.textContent = '';
+        audioPlayer.pause();
+        audioPlayer.removeAttribute('src');
+        audioPlayer.load();
+        audioPreview.hidden = true;
+        audioName.textContent = '';
 
-        if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-            objectUrl = null;
+        if (audioObjectUrl) {
+            URL.revokeObjectURL(audioObjectUrl);
+            audioObjectUrl = null;
         }
     };
 
-    input.addEventListener('change', () => {
-        clearPreview();
+    if (audioInput && audioPreview && audioPlayer && audioName) {
+        audioInput.addEventListener('change', () => {
+            clearAudioPreview();
 
-        const file = input.files && input.files[0];
-        if (!file) return;
+            const file = audioInput.files && audioInput.files[0];
+            if (!file) return;
 
-        objectUrl = URL.createObjectURL(file);
-        player.src = objectUrl;
-        name.textContent = file.name;
-        preview.hidden = false;
-    });
+            audioObjectUrl = URL.createObjectURL(file);
+            audioPlayer.src = audioObjectUrl;
+            audioName.textContent = file.name;
+            audioPreview.hidden = false;
+        });
+    }
+
+    const coverInput = document.querySelector('[data-cover-input]');
+    const coverPreview = document.querySelector('[data-cover-preview]');
+    let coverObjectUrl = null;
+
+    if (coverInput && coverPreview) {
+        coverInput.addEventListener('change', () => {
+            if (coverObjectUrl) {
+                URL.revokeObjectURL(coverObjectUrl);
+                coverObjectUrl = null;
+            }
+
+            const file = coverInput.files && coverInput.files[0];
+            if (!file) return;
+
+            coverObjectUrl = URL.createObjectURL(file);
+
+            const image = document.createElement('img');
+            image.src = coverObjectUrl;
+            image.alt = file.name;
+            image.decoding = 'async';
+
+            coverPreview.replaceChildren(image);
+        });
+    }
 
     window.addEventListener('beforeunload', () => {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        if (audioObjectUrl) URL.revokeObjectURL(audioObjectUrl);
+        if (coverObjectUrl) URL.revokeObjectURL(coverObjectUrl);
     });
 })();

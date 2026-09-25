@@ -2,9 +2,9 @@
 {% block title %}{{ 'catalog.title'|trans }} — EZScore_v1{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r104">
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r21">
 <link rel="stylesheet" href="/assets/css/import-cta.css?v=20260925r105">
-<link rel="stylesheet" href="/assets/css/catalog-r13.css?v=20260925r13">
+<link rel="stylesheet" href="/assets/css/catalog-r13.css?v=20260925r21">
 {% endblock %}
 
 {% block body %}
@@ -14,15 +14,12 @@
         <div class="eyebrow">{{ 'catalog.public.eyebrow'|trans }}</div>
         <h1>{{ 'catalog.public.heading'|trans }}</h1>
         <p>{{ 'catalog.public.lead'|trans }}</p>
-
         <div class="catalog-hero-actions">
             <a class="catalog-cta primary-cta" href="{{ path('app_register', {'_locale': app.request.locale}) }}">{{ 'catalog.public.register'|trans }}</a>
             <a class="catalog-cta secondary-cta" href="{{ path('app_login', {'_locale': app.request.locale}) }}">{{ 'auth.login.submit'|trans }}</a>
         </div>
-
         <p class="catalog-free-note">{{ 'catalog.public.free_note'|trans }}</p>
     </div>
-
     <div class="catalog-benefits" aria-label="{{ 'catalog.public.benefits_heading'|trans }}">
         <article><span class="benefit-icon" aria-hidden="true">♪</span><div><strong>{{ 'catalog.public.benefit.karaoke.title'|trans }}</strong><span>{{ 'catalog.public.benefit.karaoke.body'|trans }}</span></div></article>
         <article><span class="benefit-icon" aria-hidden="true">▶</span><div><strong>{{ 'catalog.public.benefit.audio.title'|trans }}</strong><span>{{ 'catalog.public.benefit.audio.body'|trans }}</span></div></article>
@@ -52,21 +49,68 @@
     {% endif %}
 </header>
 
+{% if is_granted('ROLE_ADMIN') %}
+<section class="panel admin-catalog-toolbar">
+    <div class="admin-catalog-toolbar-head">
+        <div>
+            <div class="eyebrow">{{ 'catalog_admin.eyebrow'|trans({}, 'admin_catalog') }}</div>
+            <h2>{{ 'catalog_admin.heading'|trans({}, 'admin_catalog') }}</h2>
+            <p>{{ 'catalog_admin.lead'|trans({}, 'admin_catalog') }}</p>
+        </div>
+        {% if admin_pager %}
+            <span class="admin-catalog-count">{{ 'catalog_admin.count'|trans({'%count%': admin_pager.total}, 'admin_catalog') }}</span>
+        {% endif %}
+    </div>
+
+    <form method="get" action="{{ path('app_catalog', {'_locale': app.request.locale}) }}" class="admin-catalog-filter-grid">
+        <label>
+            <span>{{ 'catalog_admin.search'|trans({}, 'admin_catalog') }}</span>
+            <input type="search" name="q" value="{{ query }}" placeholder="{{ 'catalog_admin.search_placeholder'|trans({}, 'admin_catalog') }}">
+        </label>
+        <label>
+            <span>{{ 'song.status.label'|trans }}</span>
+            <select name="status">
+                <option value="">{{ 'catalog_admin.all_statuses'|trans({}, 'admin_catalog') }}</option>
+                {% for status in admin_statuses %}
+                    <option value="{{ status.value }}" {{ admin_filters.status == status.value ? 'selected' : '' }}>{{ ('song.status.' ~ status.value)|trans }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>{{ 'song.editor'|trans }}</span>
+            <select name="editor">
+                <option value="">{{ 'catalog_admin.all_editors'|trans({}, 'admin_catalog') }}</option>
+                <option value="none" {{ admin_filters.editor == 'none' ? 'selected' : '' }}>{{ 'catalog_admin.no_editor'|trans({}, 'admin_catalog') }}</option>
+                {% for editor in admin_editors %}
+                    <option value="{{ editor.id }}" {{ admin_filters.editor == editor.id ? 'selected' : '' }}>{{ editor.displayName }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <input type="hidden" name="sort" value="{{ sort }}">
+        {% if letter %}<input type="hidden" name="letter" value="{{ letter }}">{% endif %}
+        <div class="admin-catalog-filter-actions">
+            <button class="primary" type="submit">{{ 'catalog_admin.filter'|trans({}, 'admin_catalog') }}</button>
+            <a href="{{ path('app_catalog', {'_locale': app.request.locale, sort: sort}) }}">{{ 'catalog_admin.clear'|trans({}, 'admin_catalog') }}</a>
+        </div>
+    </form>
+</section>
+{% endif %}
+
 <section class="catalog-controls" aria-label="{{ 'catalog.controls.label'|trans }}">
     <div class="catalog-sort">
         <span>{{ 'catalog.controls.sort_label'|trans }}:</span>
         <a class="{{ sort == 'title' ? 'active' : '' }}"
-           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: 'title', letter: letter}) }}">{{ 'catalog.controls.sort_title'|trans }}</a>
+           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: 'title', letter: letter, status: admin_filters.status ?: null, editor: admin_filters.editor ?: null}) }}">{{ 'catalog.controls.sort_title'|trans }}</a>
         <a class="{{ sort == 'artist' ? 'active' : '' }}"
-           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: 'artist', letter: letter}) }}">{{ 'catalog.controls.sort_artist'|trans }}</a>
+           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: 'artist', letter: letter, status: admin_filters.status ?: null, editor: admin_filters.editor ?: null}) }}">{{ 'catalog.controls.sort_artist'|trans }}</a>
     </div>
 
     <nav class="catalog-alphabet" aria-label="{{ 'catalog.controls.alphabet_label'|trans }}">
         <a class="{{ letter is null ? 'active' : '' }}"
-           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: sort}) }}">{{ 'catalog.controls.all'|trans }}</a>
+           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: sort, status: admin_filters.status ?: null, editor: admin_filters.editor ?: null}) }}">{{ 'catalog.controls.all'|trans }}</a>
         {% for alpha in alphabet %}
             <a class="{{ letter == alpha ? 'active' : '' }}"
-               href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: sort, letter: alpha}) }}">{{ alpha }}</a>
+               href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: sort, letter: alpha, status: admin_filters.status ?: null, editor: admin_filters.editor ?: null}) }}">{{ alpha }}</a>
         {% endfor %}
     </nav>
 </section>
@@ -84,18 +128,95 @@
 {% if query %}
 <div class="catalog-search-context">
     {{ 'catalog.search.results_for'|trans({'%query%': query}) }}
-    <a href="{{ path('app_catalog', {'_locale': app.request.locale, sort: sort, letter: letter}) }}">{{ 'catalog.search.clear'|trans }}</a>
+    <a href="{{ path('app_catalog', {'_locale': app.request.locale, sort: sort, letter: letter, status: admin_filters.status ?: null, editor: admin_filters.editor ?: null}) }}">{{ 'catalog.search.clear'|trans }}</a>
 </div>
 {% endif %}
 
 <div class="catalog-song-grid">
     {% for song in songs %}
+        {% set rating = ratings[song.id] ?? {'average': 0, 'count': 0} %}
+
+        {% if is_granted('ROLE_ADMIN') %}
+        <article class="catalog-song-card admin-catalog-song-card">
+            <a class="admin-catalog-song-main" href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">
+                <div class="catalog-cover">{% if song.coverPath %}<img src="{{ song.coverPath }}" alt="">{% else %}<span aria-hidden="true">♫</span>{% endif %}</div>
+                <div class="catalog-song-copy">
+                    <div class="catalog-song-title-row">
+                        <strong>{{ song.title }}</strong>
+                        <span class="song-status-badge status-{{ song.status.value }}">{{ ('song.status.' ~ song.status.value)|trans }}</span>
+                    </div>
+                    <span class="catalog-artist">{{ song.artist }}</span>
+                    <small>{{ 'song.editor'|trans }} · {{ song.editor ? song.editor.displayName : ('catalog_admin.no_editor'|trans({}, 'admin_catalog')) }}</small>
+                    {% if song.comment %}<small>{{ song.comment }}</small>{% endif %}
+                    <div class="catalog-rating-summary">
+                        <span class="rating-stars-static" aria-hidden="true">{% for star in 1..5 %}<span class="{{ rating.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}</span>
+                        {% if rating.count > 0 %}<strong>{{ rating.average|number_format(1, ',', ' ') }}</strong><small>{{ 'song.rating.count'|trans({'%count%': rating.count}) }}</small>{% else %}<small>{{ 'song.rating.none'|trans }}</small>{% endif %}
+                    </div>
+                </div>
+                <span class="catalog-card-arrow" aria-hidden="true">→</span>
+            </a>
+
+            <div class="admin-catalog-moderation">
+                <form method="post" action="{{ path('admin_catalog_song_update', {'_locale': app.request.locale, id: song.id}) }}" class="admin-catalog-manage-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_catalog_song_' ~ song.id) }}">
+                    <input type="hidden" name="return_q" value="{{ query }}">
+                    <input type="hidden" name="return_sort" value="{{ sort }}">
+                    <input type="hidden" name="return_letter" value="{{ letter }}">
+                    <input type="hidden" name="return_status" value="{{ admin_filters.status }}">
+                    <input type="hidden" name="return_editor" value="{{ admin_filters.editor }}">
+                    <input type="hidden" name="return_page" value="{{ admin_pager ? admin_pager.page : 1 }}">
+
+                    <label>
+                        <span>{{ 'song.status.label'|trans }}</span>
+                        <select name="status">
+                            {% for status in admin_statuses %}
+                                <option value="{{ status.value }}"
+                                        {{ song.status.value == status.value ? 'selected' : '' }}
+                                        {{ status.value == 'analyzed' and song.status.value != 'analyzed' ? 'disabled' : '' }}>
+                                    {{ ('song.status.' ~ status.value)|trans }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <label>
+                        <span>{{ 'song.editor'|trans }}</span>
+                        <select name="editor_id">
+                            {% if song.editor %}
+                                <option value="0">{{ 'catalog_admin.keep_editor'|trans({}, 'admin_catalog') }} — {{ song.editor.displayName }}</option>
+                            {% else %}
+                                <option value="0">{{ 'catalog_admin.keep_no_editor'|trans({}, 'admin_catalog') }}</option>
+                            {% endif %}
+                            {% for editor in admin_editors %}
+                                <option value="{{ editor.id }}">{{ editor.displayName }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <button type="submit">{{ 'catalog_admin.apply'|trans({}, 'admin_catalog') }}</button>
+                </form>
+
+                <form method="post"
+                      action="{{ path('admin_catalog_song_delete', {'_locale': app.request.locale, id: song.id}) }}"
+                      onsubmit="return confirm('{{ 'catalog_admin.delete_confirm'|trans({'%title%': song.title}, 'admin_catalog')|e('js') }}');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_catalog_song_delete_' ~ song.id) }}">
+                    <input type="hidden" name="return_q" value="{{ query }}">
+                    <input type="hidden" name="return_sort" value="{{ sort }}">
+                    <input type="hidden" name="return_letter" value="{{ letter }}">
+                    <input type="hidden" name="return_status" value="{{ admin_filters.status }}">
+                    <input type="hidden" name="return_editor" value="{{ admin_filters.editor }}">
+                    <input type="hidden" name="return_page" value="{{ admin_pager ? admin_pager.page : 1 }}">
+                    <button class="danger-button" type="submit">{{ 'catalog_admin.delete'|trans({}, 'admin_catalog') }}</button>
+                </form>
+            </div>
+        </article>
+        {% else %}
         <a class="catalog-song-card" href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">
             <div class="catalog-cover">{% if song.coverPath %}<img src="{{ song.coverPath }}" alt="">{% else %}<span aria-hidden="true">♫</span>{% endif %}</div>
             <div class="catalog-song-copy">
                 <div class="catalog-song-title-row">
                     <strong>{{ song.title }}</strong>
-                    {% if app.user and (is_granted('ROLE_ADMIN') or is_granted('ROLE_EDITOR')) %}
+                    {% if app.user and is_granted('ROLE_EDITOR') %}
                         <span class="song-status-badge status-{{ song.status.value }}">{{ ('song.status.' ~ song.status.value)|trans }}</span>
                     {% elseif not app.user %}
                         <span class="preview-badge">{{ 'catalog.public.preview_badge'|trans }}</span>
@@ -104,20 +225,14 @@
                 <span class="catalog-artist">{{ song.artist }}</span>
                 {% if song.editor and app.user %}<small>{{ 'song.editor'|trans }} · {{ song.editor.displayName }}</small>{% endif %}
                 {% if song.comment and app.user %}<small>{{ song.comment }}</small>{% endif %}
-
-                {% set rating = ratings[song.id] ?? {'average': 0, 'count': 0} %}
-                <div class="catalog-rating-summary" aria-label="{{ 'song.rating.summary_aria'|trans({'%average%': rating.average, '%count%': rating.count}) }}">
+                <div class="catalog-rating-summary">
                     <span class="rating-stars-static" aria-hidden="true">{% for star in 1..5 %}<span class="{{ rating.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}</span>
-                    {% if rating.count > 0 %}
-                        <strong>{{ rating.average|number_format(1, ',', ' ') }}</strong>
-                        <small>{{ 'song.rating.count'|trans({'%count%': rating.count}) }}</small>
-                    {% else %}
-                        <small>{{ 'song.rating.none'|trans }}</small>
-                    {% endif %}
+                    {% if rating.count > 0 %}<strong>{{ rating.average|number_format(1, ',', ' ') }}</strong><small>{{ 'song.rating.count'|trans({'%count%': rating.count}) }}</small>{% else %}<small>{{ 'song.rating.none'|trans }}</small>{% endif %}
                 </div>
             </div>
             <span class="catalog-card-arrow" aria-hidden="true">→</span>
         </a>
+        {% endif %}
     {% else %}
         <div class="catalog-empty">
             <strong>{{ query ? ('catalog.search.none'|trans) : ('catalog.empty'|trans) }}</strong>
@@ -125,4 +240,17 @@
         </div>
     {% endfor %}
 </div>
+
+{% if is_granted('ROLE_ADMIN') and admin_pager and admin_pager.pages > 1 %}
+<nav class="list-pagination admin-catalog-pagination" aria-label="{{ 'catalog_admin.pagination'|trans({}, 'admin_catalog') }}">
+    {% set common = {'_locale': app.request.locale, q: query ?: null, sort: sort, letter: letter, status: admin_filters.status ?: null, editor: admin_filters.editor ?: null} %}
+    {% if admin_pager.page > 1 %}<a href="{{ path('app_catalog', common|merge({page: admin_pager.page - 1})) }}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+    {% for p in 1..admin_pager.pages %}
+        {% if p == 1 or p == admin_pager.pages or (p >= admin_pager.page - 2 and p <= admin_pager.page + 2) %}
+            <a class="{{ p == admin_pager.page ? 'current' : '' }}" href="{{ path('app_catalog', common|merge({page: p})) }}">{{ p }}</a>
+        {% elseif p == 2 or p == admin_pager.pages - 1 %}<span>…</span>{% endif %}
+    {% endfor %}
+    {% if admin_pager.page < admin_pager.pages %}<a href="{{ path('app_catalog', common|merge({page: admin_pager.page + 1})) }}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+</nav>
+{% endif %}
 {% endblock %}
