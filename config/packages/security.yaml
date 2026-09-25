@@ -1,4 +1,8 @@
 security:
+    role_hierarchy:
+        ROLE_EDITOR: ROLE_READER
+        ROLE_ADMIN: ROLE_EDITOR
+
     password_hashers:
         App\Domain\User\User: 'auto'
 

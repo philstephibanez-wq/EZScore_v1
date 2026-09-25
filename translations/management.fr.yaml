@@ -19,6 +19,33 @@ playlists:
     move_up: Monter
     move_down: Descendre
     remove_confirm: 'Retirer « %title% » de cette playlist ?'
+  invitation:
+    heading: Partage
+    received_heading: Invitations reçues
+    reader_personal_only: En tant que Lecteur, vous créez uniquement des playlists personnelles. Elles peuvent être partagées sur invitation avec un autre inscrit.
+    choose_user: Choisir un inscrit
+    invite: Inviter
+    from: 'Invitation de %name%'
+    accept: Accepter
+    decline: Refuser
+    leave: Quitter cette playlist
+    cancel: Annuler l'invitation
+    remove_share: Retirer le partage
+    shared_with_me: Playlist partagée avec moi
+    sent: 'Invitation envoyée à %name%.'
+    accepted: Invitation acceptée.
+    declined: Invitation refusée.
+    cancelled: Invitation ou partage retiré.
+    left: Vous avez quitté la playlist partagée.
+    user_invalid: Utilisateur inscrit invalide ou désactivé.
+    self: Vous ne pouvez pas vous inviter vous-même.
+    already_pending: Une invitation est déjà en attente pour cet utilisateur.
+    already_shared: Cette playlist est déjà partagée avec cet utilisateur.
+    status:
+      pending: En attente
+      accepted: Acceptée
+      declined: Refusée
+      cancelled: Annulée
 groups:
   updated: Groupe mis à jour.
   deleted: Groupe supprimé. Les playlists appartenant à ce groupe ont également été supprimées.
