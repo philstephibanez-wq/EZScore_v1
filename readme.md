@@ -1,82 +1,56 @@
-# EZScore_v1 — R10.1 correction boucle Doctrine
+# EZScore_v1 — R10.2 bouton Import propre
 
-## Cause exacte
+Correction ciblée de l'affichage du bouton Import dans le Répertoire.
 
-La sortie :
+## Cause
 
-```text
-php bin\console doctrine:schema:update --dump-sql
-```
-
-montre que Doctrine veut reconstruire uniquement la table `songs`.
-
-La différence vient de `status`.
-
-La migration R10 avait créé :
-
-```sql
-status VARCHAR(16) NOT NULL DEFAULT 'editing'
-```
-
-alors que le mapping Doctrine de `Song::$status` décrit :
+Le template R10 chargeait encore :
 
 ```text
-VARCHAR(16) NOT NULL
+/assets/css/catalog.css?v=20260925r8
 ```
 
-sans valeur par défaut SQL.
+alors que les styles du bouton avaient été ajoutés ensuite.
 
-Doctrine considère donc le schéma différent à chaque validation.
+Selon le cache navigateur/proxy, le bouton pouvait donc apparaître comme :
+
+```text
+ImporterMP3 + fiche chanson
+```
+
+sans espacement ni mise en forme.
 
 ## Correction
 
-R10.1 reconstruit `songs` exactement selon le mapping Doctrine et retire uniquement le `DEFAULT 'editing'`.
+- version CSS forcée à `20260925r102`;
+- structure du bouton rendue explicite;
+- icône `+`;
+- titre et sous-texte sur deux lignes;
+- responsive mobile.
 
-Les données sont conservées.
+Affichage attendu :
 
-Les relations existantes vers `songs`, notamment `analysis_jobs` et `song_ratings`, sont protégées pendant la reconstruction par la désactivation temporaire des foreign keys SQLite.
-
-La migration est volontairement non transactionnelle afin que :
-
-```sql
-PRAGMA foreign_keys = OFF
+```text
+[ + ]  Importer
+       MP3 + fiche chanson
 ```
-
-soit réellement appliqué par SQLite.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_DOCTRINE_STATUS_DEFAULT_FIX_R10_1.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_IMPORT_BUTTON_UI_R10_2.zip" -C H:\EZScore_v1
 
 php bin\console cache:clear
-php bin\console doctrine:migrations:migrate
 ```
 
-Puis contrôle obligatoire :
-
-```powershell
-php bin\console doctrine:schema:validate
-php bin\console doctrine:schema:update --dump-sql
-```
-
-Résultat attendu :
+Puis rechargement forcé navigateur :
 
 ```text
-[OK] The mapping files are correct.
-[OK] The database schema is in sync with the mapping files.
+Ctrl+F5
 ```
 
-et `--dump-sql` ne doit afficher aucune requête.
-
-## Important
-
-Ne pas exécuter :
-
-```text
-doctrine:schema:update --force
-```
-
-Cette livraison ne modifie aucun contrôleur, template, CSS, traduction ou donnée métier.
+Aucune migration.
+Aucun changement Doctrine.
+Aucune donnée modifiée.

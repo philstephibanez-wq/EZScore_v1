@@ -231,3 +231,59 @@
 .song-card-rating{align-self:stretch;padding-left:18px;border-left:1px solid #2d3842;display:flex;flex-direction:column;gap:10px}.rating-empty-state{display:grid;gap:7px;color:#7d8993}.rating-empty-state .rating-stars-static{font-size:21px}.compact-rating-form{display:grid!important;gap:8px!important;padding-top:10px!important}.compact-rating-form button{width:100%}
 @media(max-width:1000px){.song-card-layout{grid-template-columns:150px minmax(0,1fr)}.song-card-rating{grid-column:1/-1;padding-left:0;padding-top:14px;border-left:0;border-top:1px solid #2d3842}}
 @media(max-width:680px){.song-card-layout{grid-template-columns:1fr}.song-card-cover{max-width:180px}.song-field-grid,.song-metadata-list{grid-template-columns:1fr}.song-field-grid .full,.song-metadata-list .full{grid-column:auto}.song-card-titleline{flex-direction:column}.song-import-actions{align-items:stretch;flex-direction:column-reverse}.song-import-actions>*{width:100%;justify-content:center}}
+
+
+/* R10.2 — polished Import action */
+.catalog-heading .catalog-import-button{
+    display:inline-grid;
+    grid-template-columns:34px auto;
+    align-items:center;
+    gap:10px;
+    min-width:190px;
+    padding:9px 13px;
+    border:1px solid #3a6f6c;
+    border-radius:11px;
+    background:#123b39;
+    color:#f2fbfa;
+    box-shadow:0 6px 20px rgba(0,0,0,.18);
+    text-decoration:none;
+}
+.catalog-heading .catalog-import-button:hover{
+    background:#174845;
+    border-color:#5ca29d;
+}
+.catalog-import-icon{
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    border-radius:9px;
+    background:rgba(255,255,255,.08);
+    color:#8be0d5;
+    font-size:22px;
+    line-height:1;
+    font-weight:700;
+}
+.catalog-import-copy{
+    display:grid;
+    gap:2px;
+    min-width:0;
+}
+.catalog-import-copy strong{
+    display:block;
+    font-size:13px;
+    line-height:1.2;
+    font-weight:850;
+}
+.catalog-import-copy small{
+    display:block;
+    font-size:10px;
+    line-height:1.25;
+    color:#9bc5c1;
+}
+@media(max-width:620px){
+    .catalog-heading .catalog-import-button{
+        width:100%;
+        justify-content:start;
+    }
+}
