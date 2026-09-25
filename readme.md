@@ -1,60 +1,27 @@
-# EZScore_v1 — R10.4 bouton Import plus visible
+# EZScore_v1 — R10.5 correctif consolidé Import
 
-Cette livraison corrige uniquement la mise en valeur du bouton Import dans le Répertoire.
-
-## Objectif
-
-Le bouton devait :
-- attirer l’œil ;
-- rester propre et professionnel ;
-- afficher clairement :
-  - l’action principale ;
-  - le sous-texte fonctionnel.
-
-## Résultat
-
-Le bouton devient une vraie CTA visuelle :
-
-```text
-Nouvel import
-Importer une chanson
-MP3 + fiche chanson
-```
-
-avec :
-- fond dégradé ;
-- icône mise en avant ;
-- meilleure hiérarchie visuelle ;
-- meilleur espacement ;
-- version CSS forcée pour éviter le cache.
+Corrige réellement les deux défauts visibles :
+- Signature `Auto` absente ;
+- bouton Import rendu comme du texte collé.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
-
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_IMPORT_CTA_UI_R10_4.zip" -C H:\EZScore_v1
-
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_IMPORT_UI_AUTO_R10_5.zip" -C H:\EZScore_v1
 php bin\console cache:clear
+php bin\console lint:twig templates
 ```
 
-Puis rechargement navigateur :
+Puis `Ctrl+F5`.
 
-```text
-Ctrl+F5
+## Contrôles
+
+```powershell
+Select-String -Path .\templates\layout\song\_metadata.html.twig -Pattern 'value="auto"'
+Select-String -Path .\templates\catalog\index.html.twig -Pattern 'ez-import-cta'
 ```
 
-## Important
+Les deux doivent retourner une ligne.
 
-Cette livraison ne change :
-- ni Doctrine ;
-- ni les migrations ;
-- ni le flux d’import.
-
-Si l’import échoue avec :
-
-```text
-Le MP3 dépasse la taille maximale autorisée par PHP sur ce serveur.
-```
-
-alors le problème est la limite PHP d’upload, pas l’interface.
+Aucune migration Doctrine.

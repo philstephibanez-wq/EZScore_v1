@@ -3,6 +3,7 @@
 
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r104">
+<link rel="stylesheet" href="/assets/css/import-cta.css?v=20260925r105">
 {% endblock %}
 
 {% block body %}
@@ -67,10 +68,10 @@
     </div>
 
     {% if can_import %}
-        <a class="catalog-import-button" href="{{ path('app_song_import', {'_locale': app.request.locale}) }}">
-            <span class="catalog-import-icon" aria-hidden="true">↥</span>
-            <span class="catalog-import-copy">
-                <span class="catalog-import-kicker">{{ 'catalog.import.kicker'|trans }}</span>
+        <a class="ez-import-cta" href="{{ path('app_song_import', {'_locale': app.request.locale}) }}">
+            <span class="ez-import-cta-icon" aria-hidden="true">＋</span>
+            <span class="ez-import-cta-copy">
+                <span class="ez-import-cta-kicker">{{ 'catalog.import.kicker'|trans }}</span>
                 <strong>{{ 'catalog.import.label'|trans }}</strong>
                 <small>{{ 'catalog.import.button_help'|trans }}</small>
             </span>

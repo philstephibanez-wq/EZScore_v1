@@ -10,7 +10,9 @@
             <span>{{ 'song.editor'|trans }}</span>
             {% if is_granted('ROLE_ADMIN') %}
                 <select name="editor_id">
-                    {% for editor in editors %}<option value="{{ editor.id }}" {{ app.request.request.get('editor_id') == editor.id ? 'selected' : '' }}>{{ editor.displayName }}</option>{% endfor %}
+                    {% for editor in editors %}
+                        <option value="{{ editor.id }}" {{ app.request.request.get('editor_id') == editor.id ? 'selected' : '' }}>{{ editor.displayName }}</option>
+                    {% endfor %}
                 </select>
             {% else %}
                 <input value="{{ current_editor.displayName }}" disabled>
@@ -19,17 +21,28 @@
         <label>
             <span>{{ 'song.status.label'|trans }}</span>
             <select name="status">
-                {% for status in status_choices %}<option value="{{ status.value }}" {{ app.request.request.get('status','imported') == status.value ? 'selected' : '' }}>{{ ('song.status.' ~ status.value)|trans }}</option>{% endfor %}
+                {% for status in status_choices %}
+                    <option value="{{ status.value }}" {{ app.request.request.get('status','imported') == status.value ? 'selected' : '' }}>{{ ('song.status.' ~ status.value)|trans }}</option>
+                {% endfor %}
             </select>
             <small>{{ 'catalog.import.status_help'|trans }}</small>
         </label>
         <label>
             <span>{{ 'song.time_signature'|trans }}</span>
-            <select name="time_signature">{% for signature in ['2/4','3/4','4/4','6/8'] %}<option value="{{ signature }}" {{ app.request.request.get('time_signature','4/4') == signature ? 'selected' : '' }}>{{ signature }}</option>{% endfor %}</select>
+            <select name="time_signature">
+                <option value="auto" {{ app.request.request.get('time_signature','auto') == 'auto' ? 'selected' : '' }}>{{ 'song.time_signature_auto'|trans }}</option>
+                {% for signature in ['2/4','3/4','4/4','6/8'] %}
+                    <option value="{{ signature }}" {{ app.request.request.get('time_signature','auto') == signature ? 'selected' : '' }}>{{ signature }}</option>
+                {% endfor %}
+            </select>
         </label>
         <label>
             <span>{{ 'song.capo'|trans }}</span>
-            <select name="capo">{% for capo in 0..11 %}<option value="{{ capo }}" {{ app.request.request.get('capo','0') == capo ? 'selected' : '' }}>{{ capo }}</option>{% endfor %}</select>
+            <select name="capo">
+                {% for capo in 0..11 %}
+                    <option value="{{ capo }}" {{ app.request.request.get('capo','0') == capo ? 'selected' : '' }}>{{ capo }}</option>
+                {% endfor %}
+            </select>
         </label>
         <label><span>{{ 'song.strumming_primary'|trans }}</span><input name="strumming_primary" value="{{ app.request.request.get('strumming_primary') }}" maxlength="120"></label>
         <label><span>{{ 'song.strumming_alternate'|trans }}</span><input name="strumming_alternate" value="{{ app.request.request.get('strumming_alternate') }}" maxlength="120"></label>
@@ -41,18 +54,24 @@
     </div>
 {% else %}
     <div class="song-card-titleline">
-        <div><span class="song-card-label">{{ 'song.title'|trans }}</span><h1>{{ song.title }}</h1><p>{{ song.artist }}</p></div>
+        <div>
+            <span class="song-card-label">{{ 'song.title'|trans }}</span>
+            <h1>{{ song.title }}</h1>
+            <p>{{ song.artist }}</p>
+        </div>
         <span class="song-status-badge status-{{ song.status.value }}">{{ ('song.status.' ~ song.status.value)|trans }}</span>
     </div>
     <dl class="song-metadata-list">
         <div><dt>{{ 'song.author'|trans }}</dt><dd>{{ song.author ?: '—' }}</dd></div>
         <div><dt>{{ 'song.composer'|trans }}</dt><dd>{{ song.composer ?: '—' }}</dd></div>
         <div><dt>{{ 'song.editor'|trans }}</dt><dd>{{ song.editor ? song.editor.displayName : ('common.none'|trans) }}</dd></div>
-        <div><dt>{{ 'song.time_signature'|trans }}</dt><dd>{{ song.timeSignature }}</dd></div>
+        <div><dt>{{ 'song.time_signature'|trans }}</dt><dd>{{ song.timeSignature == 'auto' ? ('song.time_signature_auto'|trans) : song.timeSignature }}</dd></div>
         <div><dt>{{ 'song.capo'|trans }}</dt><dd>{{ song.capo }}</dd></div>
         <div><dt>{{ 'song.strumming_primary'|trans }}</dt><dd>{{ song.strummingPrimary ?: '—' }}</dd></div>
         <div><dt>{{ 'song.strumming_alternate'|trans }}</dt><dd>{{ song.strummingAlternate ?: '—' }}</dd></div>
-        {% if show_internal_comment|default(false) and song.comment %}<div class="full internal-comment"><dt>{{ 'song.internal_comment'|trans }}</dt><dd>{{ song.comment }}</dd></div>{% endif %}
+        {% if show_internal_comment|default(false) and song.comment %}
+            <div class="full internal-comment"><dt>{{ 'song.internal_comment'|trans }}</dt><dd>{{ song.comment }}</dd></div>
+        {% endif %}
     </dl>
 {% endif %}
 </div>
