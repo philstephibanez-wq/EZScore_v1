@@ -1,0 +1,71 @@
+name: EZScore CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      APP_DEBUG: '0'
+      APP_SECRET: ci-only-secret-not-for-production
+      DATABASE_URL: sqlite:///%kernel.project_dir%/data/ci.sqlite
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
+      MAILER_DSN: 'null://null'
+      MAILER_FROM: ci@example.test
+      ANALYSIS_WORKER_TOKEN: ci-worker-token
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, intl, fileinfo, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Audit dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: PHP syntax
+        run: find src migrations tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: YAML lint
+        run: php bin/console lint:yaml config translations
+
+      - name: Twig lint
+        run: php bin/console lint:twig templates
+
+      - name: Contract and domain tests
+        run: php tests/run.php
+
+      - name: Migrate clean database
+        run: |
+          rm -f data/ci.sqlite
+          php bin/console doctrine:migrations:migrate --no-interaction
+
+      - name: Validate Doctrine mapping/schema
+        run: php bin/console doctrine:schema:validate
+
+      - name: Ensure schema has no pending SQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT="$(php bin/console doctrine:schema:update --dump-sql)"
+          printf '%s\n' "$OUTPUT"
+          if printf '%s\n' "$OUTPUT" | grep -Eiq '^[[:space:]]*(CREATE|ALTER|DROP)[[:space:]]'; then
+            echo 'Doctrine reports pending schema SQL.' >&2
+            exit 1
+          fi

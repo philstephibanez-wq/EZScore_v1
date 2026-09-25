@@ -7,6 +7,10 @@ namespace App\Controller;
 use App\Domain\Group\GroupMember;
 use App\Domain\Group\UserGroup;
 use App\Domain\Playlist\Playlist;
+use App\Domain\Playlist\PlaylistItem;
+use App\Domain\Song\Song;
+use App\Domain\Song\SongRepository;
+use App\Domain\Song\SongStatus;
 use App\Domain\User\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,10 +23,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class PlaylistController extends AbstractController
 {
     #[Route('', name: 'app_playlists', methods: ['GET', 'POST'])]
-    public function index(Request $request, EntityManagerInterface $em): Response
+    public function index(Request $request, EntityManagerInterface $em, SongRepository $songs): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
+        $user = $this->requireUser();
         $editableGroups = $this->editableGroups($user, $em);
 
         if ($request->isMethod('POST')) {
@@ -67,22 +70,29 @@ final class PlaylistController extends AbstractController
         ));
 
         $editable = [];
+        $itemsByPlaylist = [];
         foreach ($visible as $playlist) {
-            $editable[(int) $playlist->getId()] = $this->canManagePlaylist($playlist, $user, $em);
+            $playlistId = (int) $playlist->getId();
+            $editable[$playlistId] = $this->canManagePlaylist($playlist, $user, $em);
+            $itemsByPlaylist[$playlistId] = $em->getRepository(PlaylistItem::class)->findBy(
+                ['playlist' => $playlist],
+                ['position' => 'ASC', 'id' => 'ASC'],
+            );
         }
 
         return $this->render('playlists/index.html.twig', [
             'playlists' => $visible,
             'groups' => $editableGroups,
             'editable_playlists' => $editable,
+            'items_by_playlist' => $itemsByPlaylist,
+            'available_songs' => $this->accessibleSongs($songs, $user),
         ]);
     }
 
     #[Route('/{id}/update', name: 'app_playlist_update', requirements: ['id' => '\\d+'], methods: ['POST'])]
     public function update(Playlist $playlist, Request $request, EntityManagerInterface $em, TranslatorInterface $translator): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
+        $user = $this->requireUser();
 
         if (!$this->canManagePlaylist($playlist, $user, $em)) {
             throw $this->createAccessDeniedException();
@@ -117,8 +127,7 @@ final class PlaylistController extends AbstractController
     #[Route('/{id}/delete', name: 'app_playlist_delete', requirements: ['id' => '\\d+'], methods: ['POST'])]
     public function delete(Playlist $playlist, Request $request, EntityManagerInterface $em, TranslatorInterface $translator): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
+        $user = $this->requireUser();
 
         if (!$this->canManagePlaylist($playlist, $user, $em)) {
             throw $this->createAccessDeniedException();
@@ -132,6 +141,111 @@ final class PlaylistController extends AbstractController
         $em->flush();
 
         $this->addFlash('success', $translator->trans('playlists.deleted', [], 'management'));
+        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
+    }
+
+    #[Route('/{id}/songs', name: 'app_playlist_song_add', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function addSong(
+        Playlist $playlist,
+        Request $request,
+        EntityManagerInterface $em,
+        SongRepository $songs,
+        TranslatorInterface $translator,
+    ): Response {
+        $user = $this->requireUser();
+        if (!$this->canManagePlaylist($playlist, $user, $em)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('playlist_song_add_'.$playlist->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $song = $songs->find((int) $request->request->get('song_id'));
+        if (!$song instanceof Song || !$this->canAccessSong($song, $user)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $itemRepo = $em->getRepository(PlaylistItem::class);
+        if ($itemRepo->findOneBy(['playlist' => $playlist, 'song' => $song]) instanceof PlaylistItem) {
+            $this->addFlash('error', $translator->trans('playlists.song.already_present', [], 'management'));
+            return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
+        }
+
+        $last = $itemRepo->findOneBy(['playlist' => $playlist], ['position' => 'DESC', 'id' => 'DESC']);
+        $position = $last instanceof PlaylistItem ? $last->getPosition() + 1 : 0;
+
+        $em->persist(new PlaylistItem($playlist, $song, $user, $position));
+        $em->flush();
+
+        $this->addFlash('success', $translator->trans('playlists.song.added', [], 'management'));
+        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
+    }
+
+    #[Route('/{playlistId}/songs/{itemId}/delete', name: 'app_playlist_song_delete', requirements: ['playlistId' => '\\d+', 'itemId' => '\\d+'], methods: ['POST'])]
+    public function removeSong(
+        int $playlistId,
+        int $itemId,
+        Request $request,
+        EntityManagerInterface $em,
+        TranslatorInterface $translator,
+    ): Response {
+        [$playlist, $item, $user] = $this->requireManagedItem($playlistId, $itemId, $em);
+
+        if (!$this->isCsrfTokenValid('playlist_song_delete_'.$item->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $em->remove($item);
+        $em->flush();
+        $this->normalisePositions($playlist, $em);
+
+        $this->addFlash('success', $translator->trans('playlists.song.removed', [], 'management'));
+        return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
+    }
+
+    #[Route('/{playlistId}/songs/{itemId}/move', name: 'app_playlist_song_move', requirements: ['playlistId' => '\\d+', 'itemId' => '\\d+'], methods: ['POST'])]
+    public function moveSong(
+        int $playlistId,
+        int $itemId,
+        Request $request,
+        EntityManagerInterface $em,
+    ): Response {
+        [$playlist, $item] = $this->requireManagedItem($playlistId, $itemId, $em);
+
+        if (!$this->isCsrfTokenValid('playlist_song_move_'.$item->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $direction = (string) $request->request->get('direction');
+        if (!in_array($direction, ['up', 'down'], true)) {
+            throw $this->createNotFoundException();
+        }
+
+        $items = $em->getRepository(PlaylistItem::class)->findBy(
+            ['playlist' => $playlist],
+            ['position' => 'ASC', 'id' => 'ASC'],
+        );
+
+        $index = null;
+        foreach ($items as $i => $candidate) {
+            if ($candidate->getId() === $item->getId()) {
+                $index = $i;
+                break;
+            }
+        }
+
+        if ($index !== null) {
+            $targetIndex = $direction === 'up' ? $index - 1 : $index + 1;
+            if (isset($items[$targetIndex])) {
+                $target = $items[$targetIndex];
+                $currentPosition = $item->getPosition();
+                $item->setPosition($target->getPosition());
+                $target->setPosition($currentPosition);
+                $em->flush();
+            }
+        }
+
         return $this->redirectToRoute('app_playlists', ['_locale' => $request->getLocale()]);
     }
 
@@ -197,6 +311,35 @@ final class PlaylistController extends AbstractController
         );
     }
 
+    /** @return list<Song> */
+    private function accessibleSongs(SongRepository $songs, User $user): array
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return $songs->findCatalog();
+        }
+
+        if ($this->isGranted('ROLE_EDITOR')) {
+            return $songs->findForEditor($user);
+        }
+
+        return $songs->findPublished();
+    }
+
+    private function canAccessSong(Song $song, User $user): bool
+    {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            return true;
+        }
+
+        if ($song->getStatus() === SongStatus::Published) {
+            return true;
+        }
+
+        return $this->isGranted('ROLE_EDITOR')
+            && $song->getEditor() instanceof User
+            && $song->getEditor()->getId() === $user->getId();
+    }
+
     /**
      * @param list<UserGroup> $editableGroups
      * @return array{0:string,1:int}
@@ -221,5 +364,47 @@ final class PlaylistController extends AbstractController
         }
 
         throw $this->createAccessDeniedException();
+    }
+
+    /** @return array{0:Playlist,1:PlaylistItem,2:User} */
+    private function requireManagedItem(int $playlistId, int $itemId, EntityManagerInterface $em): array
+    {
+        $user = $this->requireUser();
+        $playlist = $em->getRepository(Playlist::class)->find($playlistId);
+        $item = $em->getRepository(PlaylistItem::class)->find($itemId);
+
+        if (!$playlist instanceof Playlist
+            || !$item instanceof PlaylistItem
+            || $item->getPlaylist()->getId() !== $playlist->getId()) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->canManagePlaylist($playlist, $user, $em)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return [$playlist, $item, $user];
+    }
+
+    private function normalisePositions(Playlist $playlist, EntityManagerInterface $em): void
+    {
+        $items = $em->getRepository(PlaylistItem::class)->findBy(
+            ['playlist' => $playlist],
+            ['position' => 'ASC', 'id' => 'ASC'],
+        );
+
+        foreach ($items as $position => $item) {
+            $item->setPosition($position);
+        }
+        $em->flush();
+    }
+
+    private function requireUser(): User
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+        return $user;
     }
 }

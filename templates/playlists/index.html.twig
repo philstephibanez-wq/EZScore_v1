@@ -1,5 +1,8 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'playlists.title'|trans }} — EZScore_v1{% endblock %}
+{% block stylesheets %}
+    <link rel="stylesheet" href="/assets/css/playlists.css?v=20260925r14">
+{% endblock %}
 {% block body %}
 <header class="page-head">
     <div>
@@ -35,7 +38,7 @@
 
 <div class="card-grid">
 {% for playlist in playlists %}
-<section class="panel">
+<section class="panel playlist-card">
     {% if editable_playlists[playlist.id]|default(false) %}
         <form method="post" action="{{ path('app_playlist_update', {'_locale': app.request.locale, id: playlist.id}) }}" class="playlist-form" data-dirty-track>
             <input type="hidden" name="_token" value="{{ csrf_token('playlist_update_' ~ playlist.id) }}">
@@ -71,6 +74,58 @@
         <p>{{ playlist.description ?: '—' }}</p>
         <small>{{ playlist.public ? ('playlists.visibility.public'|trans) : ('playlists.visibility.private'|trans) }}</small>
     {% endif %}
+
+    <div class="playlist-song-block">
+        <h3>{{ 'playlists.song.heading'|trans({}, 'management') }}</h3>
+
+        {% set playlist_items = items_by_playlist[playlist.id]|default([]) %}
+        {% if playlist_items %}
+            <ol class="playlist-song-list">
+                {% for item in playlist_items %}
+                    <li>
+                        <span class="playlist-song-title">
+                            <strong>{{ item.song.title }}</strong>
+                            <small>{{ item.song.artist }}</small>
+                        </span>
+
+                        {% if editable_playlists[playlist.id]|default(false) %}
+                            <span class="playlist-song-actions">
+                                <form method="post" action="{{ path('app_playlist_song_move', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_move_' ~ item.id) }}">
+                                    <input type="hidden" name="direction" value="up">
+                                    <button type="submit" title="{{ 'playlists.song.move_up'|trans({}, 'management') }}" aria-label="{{ 'playlists.song.move_up'|trans({}, 'management') }}">↑</button>
+                                </form>
+                                <form method="post" action="{{ path('app_playlist_song_move', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_move_' ~ item.id) }}">
+                                    <input type="hidden" name="direction" value="down">
+                                    <button type="submit" title="{{ 'playlists.song.move_down'|trans({}, 'management') }}" aria-label="{{ 'playlists.song.move_down'|trans({}, 'management') }}">↓</button>
+                                </form>
+                                <form method="post" action="{{ path('app_playlist_song_delete', {'_locale': app.request.locale, playlistId: playlist.id, itemId: item.id}) }}" onsubmit="return confirm('{{ 'playlists.song.remove_confirm'|trans({'%title%': item.song.title}, 'management')|e('js') }}');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_delete_' ~ item.id) }}">
+                                    <button type="submit">{{ 'common.remove'|trans({}, 'management') }}</button>
+                                </form>
+                            </span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ol>
+        {% else %}
+            <p class="playlist-song-empty">{{ 'playlists.song.empty'|trans({}, 'management') }}</p>
+        {% endif %}
+
+        {% if editable_playlists[playlist.id]|default(false) and available_songs %}
+            <form method="post" action="{{ path('app_playlist_song_add', {'_locale': app.request.locale, id: playlist.id}) }}" class="playlist-song-add">
+                <input type="hidden" name="_token" value="{{ csrf_token('playlist_song_add_' ~ playlist.id) }}">
+                <select name="song_id" required>
+                    <option value="">{{ 'playlists.song.choose'|trans({}, 'management') }}</option>
+                    {% for song in available_songs %}
+                        <option value="{{ song.id }}">{{ song.artist }} — {{ song.title }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">{{ 'playlists.song.add'|trans({}, 'management') }}</button>
+            </form>
+        {% endif %}
+    </div>
 </section>
 {% else %}
     <div class="empty">{{ 'playlists.empty'|trans }}</div>

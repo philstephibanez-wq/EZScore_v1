@@ -8,7 +8,6 @@
     </div>
 </header>
 
-{% if is_granted('ROLE_ADMIN') %}
 <section class="panel">
     <h2>{{ 'groups.create.heading'|trans }}</h2>
     <form method="post" class="inline-form" data-dirty-track>
@@ -18,7 +17,6 @@
         <button class="primary" type="submit">{{ 'common.create'|trans }}</button>
     </form>
 </section>
-{% endif %}
 
 <div class="card-grid">
 {% for group in groups %}

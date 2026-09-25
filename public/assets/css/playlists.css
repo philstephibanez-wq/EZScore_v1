@@ -1,0 +1,14 @@
+.playlist-card{display:grid;gap:12px}
+.playlist-song-block{border-top:1px solid #2e3843;padding-top:10px;display:grid;gap:8px}
+.playlist-song-block h3{margin:0;font-size:13px}
+.playlist-song-list{margin:0;padding-left:22px;display:grid;gap:6px}
+.playlist-song-list li{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.playlist-song-title{min-width:0;display:grid;gap:1px}
+.playlist-song-title strong,.playlist-song-title small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.playlist-song-title small,.playlist-song-empty{opacity:.65;font-size:11px}
+.playlist-song-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto}
+.playlist-song-actions form{margin:0}
+.playlist-song-actions button{min-width:30px;padding:5px 8px}
+.playlist-song-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.playlist-song-add select{min-width:0}
+@media (max-width:720px){.playlist-song-list li{align-items:flex-start;flex-direction:column}.playlist-song-actions{width:100%}.playlist-song-add{grid-template-columns:1fr}}

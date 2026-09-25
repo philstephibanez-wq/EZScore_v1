@@ -8,6 +8,17 @@ playlists:
     label: Propriétaire
   delete:
     confirm: 'Supprimer définitivement la playlist « %name% » ?'
+  song:
+    heading: Chansons
+    empty: Aucune chanson dans cette playlist.
+    choose: Choisir une chanson
+    add: Ajouter
+    added: Chanson ajoutée à la playlist.
+    removed: Chanson retirée de la playlist.
+    already_present: Cette chanson est déjà présente dans la playlist.
+    move_up: Monter
+    move_down: Descendre
+    remove_confirm: 'Retirer « %title% » de cette playlist ?'
 groups:
   updated: Groupe mis à jour.
   deleted: Groupe supprimé. Les playlists appartenant à ce groupe ont également été supprimées.
@@ -16,3 +27,5 @@ groups:
   member:
     deleted: Membre retiré du groupe.
     delete_confirm: 'Retirer %name% de ce groupe ?'
+    last_owner: Le groupe doit conserver au moins un propriétaire.
+    invalid_role: Rôle de groupe invalide.

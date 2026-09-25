@@ -8,6 +8,17 @@ playlists:
     label: Owner
   delete:
     confirm: 'Permanently delete playlist “%name%”?'
+  song:
+    heading: Songs
+    empty: No songs in this playlist.
+    choose: Choose a song
+    add: Add
+    added: Song added to the playlist.
+    removed: Song removed from the playlist.
+    already_present: This song is already in the playlist.
+    move_up: Move up
+    move_down: Move down
+    remove_confirm: 'Remove “%title%” from this playlist?'
 groups:
   updated: Group updated.
   deleted: Group deleted. Playlists owned by this group were also deleted.
@@ -16,3 +27,5 @@ groups:
   member:
     deleted: Member removed from group.
     delete_confirm: 'Remove %name% from this group?'
+    last_owner: The group must keep at least one owner.
+    invalid_role: Invalid group role.

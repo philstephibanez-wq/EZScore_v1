@@ -22,9 +22,12 @@ final class GroupController extends AbstractController
     #[Route('', name: 'app_groups', methods: ['GET', 'POST'])]
     public function index(Request $request, EntityManagerInterface $em): Response
     {
-        if ($request->isMethod('POST')) {
-            $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        $currentUser = $this->getUser();
+        if (!$currentUser instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
 
+        if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('create_group', (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException();
             }
@@ -39,7 +42,13 @@ final class GroupController extends AbstractController
                 ->setName($name)
                 ->setDescription((string) $request->request->get('description'));
 
+            $owner = (new GroupMember())
+                ->setGroup($group)
+                ->setUser($currentUser)
+                ->setRole('owner');
+
             $em->persist($group);
+            $em->persist($owner);
             $em->flush();
 
             $this->addFlash('success', 'groups.created');
@@ -49,7 +58,7 @@ final class GroupController extends AbstractController
         if ($this->isGranted('ROLE_ADMIN')) {
             $groups = $em->getRepository(UserGroup::class)->findBy([], ['name' => 'ASC']);
         } else {
-            $memberships = $em->getRepository(GroupMember::class)->findBy(['user' => $this->getUser()]);
+            $memberships = $em->getRepository(GroupMember::class)->findBy(['user' => $currentUser]);
             $groups = array_map(static fn(GroupMember $m): UserGroup => $m->getGroup(), $memberships);
             usort($groups, static fn(UserGroup $a, UserGroup $b): int => strcasecmp($a->getName(), $b->getName()));
         }
@@ -137,6 +146,7 @@ final class GroupController extends AbstractController
         Request $request,
         UserRepository $users,
         EntityManagerInterface $em,
+        TranslatorInterface $translator,
     ): Response {
         if (!$this->canEditGroup($group, $em)) {
             throw $this->createAccessDeniedException();
@@ -154,15 +164,30 @@ final class GroupController extends AbstractController
             return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
         }
 
+        $requestedRole = (string) $request->request->get('role', 'member');
+        if (!in_array($requestedRole, ['owner', 'manager', 'member'], true)) {
+            $this->addFlash('error', $translator->trans('groups.member.invalid_role', [], 'management'));
+            return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
+        }
+
         $repo = $em->getRepository(GroupMember::class);
         $member = $repo->findOneBy(['group' => $group, 'user' => $user])
             ?? (new GroupMember())->setGroup($group)->setUser($user);
 
-        $requestedRole = (string) $request->request->get('role', 'member');
-        if (!$this->isGranted('ROLE_ADMIN')
-            && $requestedRole === 'owner'
-            && !$this->currentUserIsGroupOwner($group, $em)) {
+        $actorIsOwner = $this->currentUserIsGroupOwner($group, $em);
+        $memberIsOwner = $member->getId() !== null && $member->getRole() === 'owner';
+
+        if (($requestedRole === 'owner' || $memberIsOwner)
+            && !$this->isGranted('ROLE_ADMIN')
+            && !$actorIsOwner) {
             throw $this->createAccessDeniedException();
+        }
+
+        if ($memberIsOwner
+            && $requestedRole !== 'owner'
+            && $this->countGroupOwners($group, $em) <= 1) {
+            $this->addFlash('error', $translator->trans('groups.member.last_owner', [], 'management'));
+            return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
         }
 
         $member->setRole($requestedRole);
@@ -198,10 +223,15 @@ final class GroupController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if (!$this->isGranted('ROLE_ADMIN')
-            && $member->getRole() === 'owner'
-            && !$this->currentUserIsGroupOwner($group, $em)) {
-            throw $this->createAccessDeniedException();
+        if ($member->getRole() === 'owner') {
+            if (!$this->isGranted('ROLE_ADMIN') && !$this->currentUserIsGroupOwner($group, $em)) {
+                throw $this->createAccessDeniedException();
+            }
+
+            if ($this->countGroupOwners($group, $em) <= 1) {
+                $this->addFlash('error', $translator->trans('groups.member.last_owner', [], 'management'));
+                return $this->redirectToRoute('app_groups', ['_locale' => $request->getLocale()]);
+            }
         }
 
         $em->remove($member);
@@ -249,5 +279,13 @@ final class GroupController extends AbstractController
         ]);
 
         return $membership instanceof GroupMember && $membership->getRole() === 'owner';
+    }
+
+    private function countGroupOwners(UserGroup $group, EntityManagerInterface $em): int
+    {
+        return $em->getRepository(GroupMember::class)->count([
+            'group' => $group,
+            'role' => 'owner',
+        ]);
     }
 }
