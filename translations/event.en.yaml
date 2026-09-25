@@ -1,20 +1,20 @@
 event:
-  nav: Events
-  title: Events
+  nav: Sessions
+  title: Sessions
   eyebrow: Scheduling
-  lead: Plan rehearsals, sessions and meetings around a group and a playlist.
-  create: New event
-  create_button: Create event
-  created: Event created.
-  updated: Event updated.
-  deleted: Event deleted.
-  upcoming: My events
-  empty: No events.
+  lead: Plan rehearsal or playing sessions around a group and a playlist.
+  create: New session
+  create_button: Create session
+  created: Session created.
+  updated: Session updated.
+  deleted: Session deleted.
+  upcoming: My sessions
+  empty: No sessions.
   my_invitations: Invitations to answer
-  edit: Edit event
+  edit: Edit session
   save: Save
-  delete: Delete event
-  delete_confirm: Permanently delete this event?
+  delete: Delete session
+  delete_confirm: Permanently delete this session?
   assign_group: Assign a group
   assign_playlist: Assign a playlist
   participants: Participants
@@ -55,4 +55,4 @@ event:
     subject: 'EZScore invitation: %title%'
     heading: 'Invitation: %title%'
     hello: 'Hello %name%,'
-    open: Open event and respond
+    open: Open session and respond

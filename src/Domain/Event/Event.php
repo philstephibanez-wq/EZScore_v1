@@ -21,6 +21,9 @@ final class Event
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 32, enumType: EventType::class)]
+    private EventType $type = EventType::Session;
+
     #[ORM\Column(length: 180)]
     private string $title = '';
 
@@ -73,6 +76,8 @@ final class Event
     }
 
     public function getId(): ?int { return $this->id; }
+    public function getType(): EventType { return $this->type; }
+    public function setType(EventType $type): self { $this->type = $type; return $this->touch(); }
     public function getTitle(): string { return $this->title; }
     public function setTitle(string $title): self { $this->title = trim($title); return $this->touch(); }
     public function getDescription(): ?string { return $this->description; }

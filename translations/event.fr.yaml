@@ -1,20 +1,20 @@
 event:
-  nav: Événements
-  title: Événements
+  nav: Sessions
+  title: Sessions
   eyebrow: Organisation
-  lead: Planifiez répétitions, sessions et rendez-vous autour d’un groupe et d’une playlist.
-  create: Nouvel événement
-  create_button: Créer l’événement
-  created: Événement créé.
-  updated: Événement mis à jour.
-  deleted: Événement supprimé.
-  upcoming: Mes événements
-  empty: Aucun événement.
+  lead: Planifiez vos sessions de répétition ou de jeu autour d’un groupe et d’une playlist.
+  create: Nouvelle session
+  create_button: Créer la session
+  created: Session créée.
+  updated: Session mise à jour.
+  deleted: Session supprimée.
+  upcoming: Mes sessions
+  empty: Aucune session.
   my_invitations: Invitations à confirmer
-  edit: Modifier l’événement
+  edit: Modifier la session
   save: Enregistrer
-  delete: Supprimer l’événement
-  delete_confirm: Supprimer définitivement cet événement ?
+  delete: Supprimer la session
+  delete_confirm: Supprimer définitivement cette session ?
   assign_group: Associer un groupe
   assign_playlist: Associer une playlist
   participants: Participants
@@ -55,4 +55,4 @@ event:
     subject: 'Invitation EZScore : %title%'
     heading: 'Invitation : %title%'
     hello: 'Bonjour %name%,'
-    open: Ouvrir l’événement et répondre
+    open: Ouvrir la session et répondre
