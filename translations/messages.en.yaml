@@ -57,6 +57,7 @@ auth:
     or: or
     google: Continue with Google
     google_disabled: Google SSO is not configured
+    remember_me: Remember me
     back_catalog: Back to Catalog
   google:
     not_configured: Google SSO is not configured.
@@ -153,7 +154,7 @@ catalog:
     heading: Bring your songs to life.
     lead: Explore published songs and discover EZScore. Create your free account to enjoy full karaoke, listen to tracks, and organize your music with playlists and groups.
     register: Create a free account
-    free_note: Registration for EZScore is free.
+    free_note: Registration is currently free · no payment card required.
     benefits_heading: Benefits of registering
     benefit:
       karaoke:
@@ -187,20 +188,6 @@ song:
   time_signature: Time signature
   capo: Capo
   strumming: Strumming
-  rating:
-    eyebrow: Community
-    heading: User rating
-    yours: Your rating
-    save: Save my rating
-    remove: Remove my rating
-    none: No ratings yet
-    count: '{%count%} rating(s)'
-    star_title: '%star% star(s)'
-    summary_aria: 'Average rating %average% out of 5, %count% rating(s)'
-    login_note: Sign in to rate this song.
-    saved: Your rating has been saved.
-    removed: Your rating has been removed.
-    invalid: Rating must be between 1 and 5 stars.
   publication:
     published_badge: Published
     draft_badge: Draft
@@ -276,7 +263,7 @@ profile:
   subscription:
     eyebrow: Subscription
     heading: Your EZScore plan
-    body: Registration for EZScore is free. Subscription plans and usage quotas will be managed separately in your profile.
+    body: EZScore is currently free. Future plans will mainly cover quotas for resource-intensive import and analysis operations without limiting normal karaoke use.
     current_label: Current plan
     current_value: Free
     karaoke_label: Karaoke

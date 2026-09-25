@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'auth.login.title'|trans }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/authentication.css?v=20260924">{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/authentication.css?v=20260925r94">{% endblock %}
 {% block body %}
 <section class="auth-card">
     <div class="eyebrow">EZScore_v1</div>
@@ -10,6 +10,12 @@
         <label>{{ 'users.email'|trans }}<input type="email" name="_username" value="{{ last_username }}" required autofocus></label>
         <label>{{ 'users.password'|trans }}<input type="password" name="_password" required></label>
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+        <label class="auth-remember">
+            <input type="checkbox" name="_remember_me" value="1">
+            <span>{{ 'auth.login.remember_me'|trans }}</span>
+        </label>
+
         <button class="primary" type="submit">{{ 'auth.login.submit'|trans }}</button>
     </form>
 

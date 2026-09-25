@@ -1,1 +1,4 @@
 .auth-secondary-action{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:16px;font-size:13px;color:#9daab6}.auth-secondary-action a{color:#7dc7c2;font-weight:700}.activation-resend{margin-top:20px}
+.auth-remember{display:flex!important;grid-template-columns:none!important;align-items:center;gap:9px;margin:2px 0 0;color:#c7d2db;font-size:13px;font-weight:600!important;cursor:pointer}
+.auth-remember input[type="checkbox"]{appearance:auto!important;-webkit-appearance:checkbox!important;width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;margin:0!important;padding:0!important;border:0!important;border-radius:3px!important;background:transparent!important;accent-color:#2f77aa;cursor:pointer}
+.auth-remember span{line-height:1.2}
