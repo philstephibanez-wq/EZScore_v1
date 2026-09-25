@@ -12,6 +12,7 @@ use App\Domain\Song\SongStatus;
 use App\Domain\User\User;
 use App\Domain\User\UserRepository;
 use App\Service\ListPagination;
+use App\Service\SongPublicationQueue;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -129,6 +130,7 @@ final class CatalogController extends AbstractController
         UserRepository $users,
         EntityManagerInterface $em,
         TranslatorInterface $translator,
+        SongPublicationQueue $publicationQueue,
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
@@ -170,9 +172,18 @@ final class CatalogController extends AbstractController
             $song->setEditor($editor);
         }
 
+        $wasPublished = $song->isPublished();
         $this->applyStatus($song, $requestedStatus);
 
         $em->flush();
+
+        if (!$wasPublished && $song->isPublished()) {
+            $publicationQueue->enqueue($song);
+            $this->addFlash(
+                'success',
+                $translator->trans('publication_mail.queued', [], 'publication_mail'),
+            );
+        }
 
         $this->addFlash(
             'success',
@@ -307,6 +318,7 @@ final class CatalogController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         TranslatorInterface $translator,
+        SongPublicationQueue $publicationQueue,
     ): Response {
         $user = $this->getUser();
         $canEdit = $this->isGranted('ROLE_ADMIN') || $this->isOwnerEditor($song, $user);
@@ -320,6 +332,8 @@ final class CatalogController extends AbstractController
         }
 
         $action = (string) $request->request->get('action');
+
+        $wasPublished = $song->isPublished();
 
         if ($action === 'publish') {
             $song->publish();
@@ -335,6 +349,14 @@ final class CatalogController extends AbstractController
         }
 
         $em->flush();
+
+        if (!$wasPublished && $song->isPublished()) {
+            $publicationQueue->enqueue($song);
+            $this->addFlash(
+                'success',
+                $translator->trans('publication_mail.queued', [], 'publication_mail'),
+            );
+        }
 
         return $this->redirectToRoute('app_song_workspace', [
             '_locale' => $request->getLocale(),

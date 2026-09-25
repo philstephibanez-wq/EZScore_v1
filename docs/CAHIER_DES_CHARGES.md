@@ -584,3 +584,102 @@ L'aperçu :
 - ne déclenche aucun upload avant soumission ;
 - accepte JPEG, PNG et WEBP conformément aux règles backend ;
 - remplace visuellement le placeholder ou l'ancienne pochette dans la fiche d'édition.
+
+
+## 16. Mailing « nouvelle chanson disponible »
+
+Lorsqu'une chanson passe effectivement au statut `Published`, EZScore doit pouvoir déclencher un mailing annonçant qu'une nouvelle chanson est disponible.
+
+Le mailing doit être lié à la transition métier de publication, pas à l'affichage du Répertoire.
+
+Principes :
+
+- déclenchement lors d'une transition vers `Published` ;
+- envoi uniquement après persistance réussie de la publication ;
+- aucun envoi lors d'une simple modification d'une chanson déjà publiée ;
+- protection contre les doublons en cas de retry ou de rafraîchissement ;
+- lien direct vers la fiche publiée ;
+- titre, interprète et pochette utilisables dans le message ;
+- respect de la langue du destinataire ;
+- possibilité pour l'utilisateur de ne plus recevoir ces annonces ;
+- échec d'envoi non bloquant pour la publication elle-même.
+
+La population destinataire et les règles exactes de ré-envoi après dépublication/republication seront fixées avant implémentation.
+
+Architecture cible recommandée :
+
+```text
+Song -> transition Published
+     -> événement métier SongPublished
+     -> file de notification / traitement asynchrone
+     -> email aux destinataires éligibles
+     -> journal d'envoi anti-doublon
+```
+
+Cette fonctionnalité doit utiliser la couche mail existante et ne pas être couplée au contrôleur de publication.
+
+
+## 17. Implémentation R22 — mailing de publication
+
+R22 implémente le mailing « nouvelle chanson disponible ».
+
+Population éligible :
+
+- utilisateur actif ;
+- adresse e-mail vérifiée ;
+- préférence `notify_new_songs = true`.
+
+Déclenchement :
+
+- uniquement lors d'une transition réelle de non-publié vers `Published` ;
+- depuis le bouton Publier du workspace ;
+- depuis le back-office Répertoire Admin lorsqu'un statut passe à `Published`.
+
+Anti-doublon :
+
+```text
+song_publication_notifications
+UNIQUE(song_id, user_id)
+```
+
+Un destinataire déjà marqué `sent_at` n'est pas renvoyé.
+
+Un destinataire en échec reste journalisé avec :
+
+- `failed_at`
+- `last_error`
+
+et pourra être retenté lors d'une future transition de publication.
+
+La préférence est modifiable dans le Profil personnel.
+
+R22 utilise le Mailer Symfony existant et le transport configuré par `MAILER_DSN`.
+
+### 17.1 Envoi asynchrone R22.1
+
+L'envoi des e-mails est asynchrone.
+
+La requête HTTP de publication ne parcourt pas les destinataires et n'envoie aucun e-mail. Elle ajoute uniquement un job persistant :
+
+```text
+song_publication_mail_jobs
+```
+
+Un worker séparé traite ensuite le job :
+
+```text
+php bin/console app:mailing:worker
+```
+
+Le worker :
+
+- réclame un seul job à la fois avec un token de claim ;
+- considère un claim comme abandonné après 15 minutes ;
+- reprend un job abandonné ;
+- sélectionne les destinataires éligibles ;
+- s'appuie sur `song_publication_notifications` pour éviter les doublons ;
+- reprend uniquement les destinataires non envoyés après un incident ;
+- applique un backoff progressif après erreur ;
+- n'empêche jamais la publication du morceau.
+
+Cette première file asynchrone est implémentée directement sur Doctrine/SQLite afin de ne pas ajouter de dépendance runtime supplémentaire. Elle pourra ultérieurement être remplacée par Symfony Messenger sans modifier le contrat métier de publication.

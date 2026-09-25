@@ -8,8 +8,10 @@
 <section class="panel" style="max-width:720px">
     <h2>{{ 'profile.account.heading'|trans }}</h2>
     <p><strong>{{ app.user.displayName }}</strong><br>{{ app.user.email }}</p>
+
     <form method="post" class="row-form">
-        <input type="hidden" name="_token" value="{{ csrf_token('profile_locale') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('profile_preferences') }}">
+
         <label>
             <span>{{ 'locale.label'|trans }}</span>
             <select name="locale">
@@ -18,8 +20,16 @@
                 {% endfor %}
             </select>
         </label>
+
+        <label class="check">
+            <input type="checkbox" name="notify_new_songs" value="1" {{ app.user.wantsNewSongNotifications ? 'checked' : '' }}>
+            {{ 'profile.notifications.new_songs'|trans({}, 'profile') }}
+        </label>
+
         <button class="primary" type="submit">{{ 'common.save'|trans }}</button>
     </form>
+
+    <p class="page-note">{{ 'profile.notifications.new_songs_help'|trans({}, 'profile') }}</p>
 </section>
 
 <section class="panel" style="max-width:720px">

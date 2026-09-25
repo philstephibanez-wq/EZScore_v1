@@ -1,0 +1,10 @@
+publication_mail:
+  subject: 'Nouvelle chanson disponible : %title%'
+  heading: 'Nouvelle chanson : %title%'
+  hello: 'Bonjour %name%,'
+  body: '« %artist% » est maintenant disponible dans EZSCORE.'
+  open: Ouvrir la chanson
+  preferences: Vous recevez ce message parce que les annonces de nouvelles chansons sont activées sur votre profil.
+  profile: Modifier mes préférences
+  flash: 'Mailing publication : %sent% envoyé(s), %failed% échec(s).'
+  queued: Le mailing « nouvelle chanson » a été placé dans la file d’envoi.

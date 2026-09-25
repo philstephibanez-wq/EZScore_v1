@@ -45,6 +45,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 2)]
     private string $locale = 'fr';
 
+    #[ORM\Column(options: ['default' => true])]
+    private bool $notifyNewSongs = true;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $emailVerifiedAt = null;
 
@@ -79,6 +82,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getAvatarUrl(): ?string { return $this->avatarUrl; }
     public function setAvatarUrl(?string $url): self { $this->avatarUrl = $url; return $this; }
     public function getLocale(): string { return $this->locale; }
+    public function wantsNewSongNotifications(): bool { return $this->notifyNewSongs; }
+    public function setNotifyNewSongs(bool $enabled): self { $this->notifyNewSongs = $enabled; return $this; }
 
     public function setLocale(string $locale): self
     {

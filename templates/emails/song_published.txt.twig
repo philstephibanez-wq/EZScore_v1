@@ -1,0 +1,13 @@
+EZSCORE v1
+
+{{ 'publication_mail.heading'|trans({'%title%': song.title}, 'publication_mail', locale) }}
+
+{{ 'publication_mail.hello'|trans({'%name%': recipient.displayName}, 'publication_mail', locale) }}
+
+{{ 'publication_mail.body'|trans({'%artist%': song.artist}, 'publication_mail', locale) }}
+
+{{ 'publication_mail.open'|trans({}, 'publication_mail', locale) }}:
+{{ song_url }}
+
+{{ 'publication_mail.preferences'|trans({}, 'publication_mail', locale) }}
+{{ profile_url }}

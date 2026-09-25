@@ -6,4 +6,7 @@ profile:
   email: E-mail
   language: Langue
   save: Enregistrer
-  saved: Langue du profil enregistrée.
+  saved: Préférences du profil enregistrées.
+  notifications:
+    new_songs: Recevoir un e-mail lorsqu’une nouvelle chanson est publiée
+    new_songs_help: Ce choix peut être désactivé à tout moment. Les comptes inactifs ou non vérifiés ne reçoivent pas ces annonces.

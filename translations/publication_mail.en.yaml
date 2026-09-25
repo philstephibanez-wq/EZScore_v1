@@ -1,0 +1,10 @@
+publication_mail:
+  subject: 'New song available: %title%'
+  heading: 'New song: %title%'
+  hello: 'Hello %name%,'
+  body: '“%artist%” is now available in EZSCORE.'
+  open: Open song
+  preferences: You receive this message because new-song announcements are enabled in your profile.
+  profile: Change my preferences
+  flash: 'Publication mailing: %sent% sent, %failed% failed.'
+  queued: The new-song mailing was queued for asynchronous delivery.

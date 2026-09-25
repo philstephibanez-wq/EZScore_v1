@@ -6,4 +6,7 @@ profile:
   email: Email
   language: Language
   save: Save
-  saved: Profile language saved.
+  saved: Profile preferences saved.
+  notifications:
+    new_songs: Email me when a new song is published
+    new_songs_help: You can disable this at any time. Inactive or unverified accounts do not receive these announcements.

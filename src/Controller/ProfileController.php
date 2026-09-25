@@ -22,7 +22,7 @@ final class ProfileController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            if (!$this->isCsrfTokenValid('profile_locale', (string) $request->request->get('_token'))) {
+            if (!$this->isCsrfTokenValid('profile_preferences', (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException();
             }
 
@@ -31,12 +31,15 @@ final class ProfileController extends AbstractController
                 throw new \InvalidArgumentException(sprintf('Unsupported locale "%s".', $locale));
             }
 
-            $user->setLocale($locale);
+            $user
+                ->setLocale($locale)
+                ->setNotifyNewSongs($request->request->getBoolean('notify_new_songs'));
+
             $request->getSession()->set('_locale', $locale);
             $em->flush();
 
             $this->addFlash('success', 'profile.saved');
-            return $this->redirectToRoute('app_profile');
+            return $this->redirectToRoute('app_profile', ['_locale' => $locale]);
         }
 
         return $this->render('profile/index.html.twig', [

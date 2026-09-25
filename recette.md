@@ -369,3 +369,69 @@ Commentaires :
 - [ ] `lint:twig` OK
 - [ ] `doctrine:schema:validate` OK
 - [ ] `doctrine:schema:update --dump-sql` vide
+
+
+## 21. Mailing nouvelle chanson publiée — à implémenter
+
+- [ ] publication d'une nouvelle chanson crée un événement de notification
+- [ ] aucune notification n'est envoyée avant la validation de la publication
+- [ ] une modification d'une chanson déjà publiée ne renvoie pas le mailing
+- [ ] un retry technique ne produit pas de doublon
+- [ ] l'email contient titre, interprète et lien vers la chanson
+- [ ] la locale du destinataire est respectée
+- [ ] le désabonnement aux annonces de nouvelles chansons est respecté
+- [ ] un échec mail ne remet pas la chanson en non-publiée
+- [ ] comportement de dépublication/republication validé explicitement avant mise en production
+
+
+## 22. Mailing nouvelle chanson publiée — R22
+
+### Préférences
+
+- [ ] profil : option nouvelles chansons cochée par défaut
+- [ ] désactiver l'option persiste après reconnexion
+- [ ] utilisateur inactif non destinataire
+- [ ] e-mail non vérifié non destinataire
+
+### Publication
+
+- [ ] passage `Editing` -> `Published` déclenche le mailing
+- [ ] passage `Imported` -> `Published` via Admin déclenche le mailing
+- [ ] simple modification d'un morceau déjà publié ne déclenche rien
+- [ ] dépublication seule ne déclenche rien
+- [ ] un destinataire ayant déjà `sent_at` n'est pas envoyé deux fois
+- [ ] erreur mail n'annule pas le statut Published
+- [ ] erreur mail écrit `failed_at`
+- [ ] erreur mail écrit `last_error`
+- [ ] le message contient titre
+- [ ] le message contient interprète
+- [ ] le message contient lien absolu vers la chanson
+- [ ] le message contient lien vers les préférences Profil
+- [ ] locale FR respectée
+- [ ] locale EN respectée
+
+### Doctrine
+
+- [ ] migration `Version20260925230000` exécutée
+- [ ] colonne `users.notify_new_songs` présente
+- [ ] table `song_publication_notifications` présente
+- [ ] contrainte unique `(song_id, user_id)` présente
+- [ ] `doctrine:schema:validate` OK
+- [ ] `doctrine:schema:update --dump-sql` vide
+
+
+## 23. Mailing asynchrone R22.1
+
+- [ ] Publier une chanson répond immédiatement sans attendre les e-mails
+- [ ] la publication crée une ligne `song_publication_mail_jobs`
+- [ ] aucun e-mail n'est envoyé tant que le worker n'est pas lancé
+- [ ] `php bin\console app:mailing:worker --once` traite un job
+- [ ] le job terminé reçoit `completed_at`
+- [ ] un worker continu traite automatiquement les jobs suivants
+- [ ] deux workers ne peuvent pas réclamer simultanément le même job
+- [ ] un claim abandonné depuis plus de 15 minutes peut être repris
+- [ ] un échec libère le job avec `last_error`
+- [ ] un échec planifie `next_attempt_at`
+- [ ] le backoff évite une boucle de retry immédiate
+- [ ] les destinataires déjà `sent_at` ne sont pas renvoyés lors d'un retry
+- [ ] la publication reste `Published` même si le worker ou SMTP échoue
