@@ -39,6 +39,7 @@ final class Version20260925150000 extends AbstractMigration
         $this->addSql('CREATE UNIQUE INDEX uniq_playlist_invited_user ON playlist_invitations (playlist_id, invited_user_id)');
         $this->addSql('CREATE INDEX IDX_PLAYLIST_INVITATION_PLAYLIST ON playlist_invitations (playlist_id)');
         $this->addSql('CREATE INDEX IDX_PLAYLIST_INVITATION_USER ON playlist_invitations (invited_user_id)');
+        $this->addSql('CREATE INDEX IDX_PLAYLIST_INVITATION_BY ON playlist_invitations (invited_by_user_id)');
         $this->addSql('CREATE INDEX IDX_PLAYLIST_INVITATION_STATUS ON playlist_invitations (status)');
     }
 

@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'uniq_playlist_invited_user', columns: ['playlist_id', 'invited_user_id'])]
 #[ORM\Index(name: 'IDX_PLAYLIST_INVITATION_PLAYLIST', columns: ['playlist_id'])]
 #[ORM\Index(name: 'IDX_PLAYLIST_INVITATION_USER', columns: ['invited_user_id'])]
+#[ORM\Index(name: 'IDX_PLAYLIST_INVITATION_BY', columns: ['invited_by_user_id'])]
 #[ORM\Index(name: 'IDX_PLAYLIST_INVITATION_STATUS', columns: ['status'])]
 final class PlaylistInvitation
 {
