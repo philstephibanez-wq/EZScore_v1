@@ -1,36 +1,45 @@
-# EZScore_v1 — R24.8 Launcher visuel
+# EZScore_v1 — R24.9 Launcher rapide et visible
 
-R24.6 supprimait les fenêtres PowerShell parasites, mais rendait le launcher trop silencieux.
+R24.8 avait deux défauts observés en réel :
 
-R24.8 garde les consoles cachées et ajoute une vraie petite fenêtre Windows de démarrage.
+1. une exception WinForms/.NET `Impossible d'appeler une méthode dans une expression Null` ;
+2. un délai trop long avant l'apparition de `EZScore Analysis Worker`.
 
-Elle affiche en temps réel :
+## Cause de l'exception
+
+Le timer de fermeture automatique était capturé dans une portée locale puis réutilisé depuis le callback WinForms. Dans certaines exécutions, le callback retrouvait une variable nulle.
+
+R24.9 utilise une variable `$script:closeTimer` et teste explicitement toutes les références avant d'appeler `Stop()`, `Dispose()` ou `Close()`.
+
+## Démarrage plus rapide
+
+Le launcher ne relance plus `prepare_analysis_runtime.ps1` à chaque démarrage.
+
+Cette opération est une préparation/installation du runtime et non une étape nécessaire à chaque lancement.
+
+Ordre R24.9 :
 
 ```text
-Arrêt de l'ancien worker
-Vérification du token
-Vérification Python / RoFormer / CUDA
-Démarrage du serveur PHP 127.0.0.1:8501
-Attente du serveur web
-Démarrage de EZScore Analysis Worker
-Ouverture du navigateur
-EZScore est prêt
+Launcher visible immédiatement
+→ désactivation ancien worker
+→ token
+→ serveur PHP 127.0.0.1:8501
+→ attente serveur
+→ ouverture immédiate du Worker desktop
+→ le Worker vérifie lui-même Python / RoFormer / CUDA
+→ navigateur
 ```
 
-avec une barre de progression et un journal de démarrage.
-
-En cas d'erreur, la fenêtre reste ouverte et affiche le message au lieu de disparaître silencieusement.
-
-En cas de succès, elle se ferme automatiquement environ 1,6 seconde après `EZScore est prêt`.
+La fenêtre Worker doit donc apparaître beaucoup plus tôt.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_8_LAUNCHER_PROGRESS_UI.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_9_LAUNCHER_FAST_VISIBLE_FIX.zip" -C H:\EZScore_v1
 
-php tests\launcher_ui_r24_8_contract.php
+php tests\launcher_ui_r24_9_contract.php
 ```
 
 Puis :
@@ -38,9 +47,6 @@ Puis :
 ```powershell
 .\EZScore-Launcher.cmd
 ```
-
-La console PowerShell ne doit pas rester ouverte.
-Une fenêtre `EZScore Launcher` doit apparaître et montrer chaque étape.
 
 Aucune migration Doctrine.
 Aucun changement du moteur STEMS.
