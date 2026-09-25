@@ -4,7 +4,7 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2">
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2">
-<link rel="stylesheet" href="/assets/css/stems.css?v=20260925r23_4_4">
+<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r24_7">
 {% endblock %}
 
 {% block body %}
@@ -87,7 +87,7 @@
 
         <form method="post"
               action="{{ path('app_song_stems_generate', {'_locale': app.request.locale, id: song.id}) }}"
-              onsubmit="return confirm('{{ 'stems.reanalyze_confirm'|trans({}, 'stems')|e('js') }}');">
+              data-stem-reanalyze-form>
             <input type="hidden" name="_token" value="{{ csrf_token('song_stems_generate_' ~ song.id) }}">
             <input type="hidden" name="force" value="1">
             <button type="submit">{{ 'stems.reanalyze'|trans({}, 'stems') }}</button>
@@ -109,6 +109,25 @@
     {% endif %}
 </section>
 
+{% if stems_complete %}
+<div class="stem-modal-backdrop" data-stem-reanalyze-modal hidden>
+    <section class="stem-modal" role="dialog" aria-modal="true" aria-labelledby="stem-reanalyze-title" aria-describedby="stem-reanalyze-description">
+        <div class="stem-modal-icon" aria-hidden="true">↻</div>
+        <div class="stem-modal-content">
+            <div class="eyebrow">Nouvelle extraction</div>
+            <h2 id="stem-reanalyze-title">Réanalyser les STEMS ?</h2>
+            <p id="stem-reanalyze-description">
+                Les STEMS existants restent disponibles jusqu'à la fin de la nouvelle extraction.
+                Le nouveau résultat les remplacera uniquement si l'analyse se termine correctement.
+            </p>
+        </div>
+        <div class="stem-modal-actions">
+            <button type="button" class="stem-modal-cancel" data-stem-reanalyze-cancel>Annuler</button>
+            <button type="button" class="primary" data-stem-reanalyze-confirm>Réanalyser</button>
+        </div>
+    </section>
+</div>
+{% endif %}
 
 <section class="panel stem-console-panel">
     <div class="stems-section-head">
@@ -171,5 +190,5 @@
 {% endblock %}
 
 {% block javascripts %}
-<script src="/assets/js/stems-console.js?v=20260925r23_4"></script>
+<script src="/assets/js/stems-console.js?v=20260926r24_7"></script>
 {% endblock %}

@@ -1,11 +1,11 @@
 Option Explicit
 
-Dim shell, fso, root, ps1, cmd
+Dim shell, fso, root, scriptPath, cmd
 Set shell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 
 root = fso.GetParentFolderName(WScript.ScriptFullName)
-ps1 = fso.BuildPath(root, "scripts\launch_ezscore.ps1")
+scriptPath = fso.BuildPath(root, "scripts\launch_ezscore_ui.ps1")
 
-cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & ps1 & """ -Port 8501"
+cmd = "powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File """ & scriptPath & """ -Port 8501"
 shell.Run cmd, 0, False

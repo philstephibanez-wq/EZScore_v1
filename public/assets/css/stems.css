@@ -42,3 +42,14 @@
 .stem-console-status{font-size:12px;color:#8ca1ad}
 .stem-console{margin:0;min-height:260px;max-height:520px;overflow:auto;padding:14px;border:1px solid #2f3b44;border-radius:9px;background:#070b0f;color:#c8f7d2;font:12px/1.45 Consolas,"Courier New",monospace;white-space:pre-wrap;word-break:break-word}
 .stem-console.is-error{color:#ffb5b5}
+
+.stem-modal-backdrop[hidden]{display:none}
+.stem-modal-backdrop{position:fixed;inset:0;z-index:5000;display:grid;place-items:center;padding:24px;background:rgba(3,8,12,.76);backdrop-filter:blur(4px)}
+.stem-modal{width:min(560px,100%);display:grid;grid-template-columns:auto 1fr;gap:18px;padding:22px;border:1px solid #37515d;border-radius:16px;background:#111a21;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.stem-modal-icon{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#15343a;color:#9fe5d8;font-size:26px;font-weight:800}
+.stem-modal-content h2{margin:.2rem 0 .65rem}
+.stem-modal-content p{margin:0;color:#9aadb8;line-height:1.55}
+.stem-modal-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;padding-top:4px}
+.stem-modal-actions button{min-width:110px}
+.stem-modal-cancel{background:#17222a}
+body.stem-modal-open{overflow:hidden}
