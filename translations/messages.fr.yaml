@@ -180,12 +180,22 @@ catalog:
     source_heading: Source audio
     audio_label: Fichier MP3
     audio_help: MP3 uniquement. Le fichier est conservé dans le stockage privé EZScore.
+    php_limit_note: Si le fichier dépasse la limite PHP du serveur, EZScore affiche maintenant une erreur explicite.
     cover_help: JPEG, PNG ou WEBP.
     status_help: Le statut « Analysée » est attribué par la chaîne d’analyse, pas manuellement à l’import.
     submit: Importer le morceau
     created: Chanson importée.
     validation:
       audio_required: Le fichier MP3 est obligatoire.
+      audio_too_large: Le MP3 dépasse la taille maximale autorisée par PHP sur ce serveur.
+      audio_partial: Le MP3 n’a été reçu que partiellement. Réessayez l’import.
+      audio_upload: Le MP3 n’a pas pu être téléversé correctement.
+      audio_format: Le fichier sélectionné n’est pas reconnu comme un MP3 valide.
+      audio_empty: Le fichier MP3 est vide.
+      cover_too_large: La pochette dépasse la taille maximale autorisée par PHP.
+      cover_partial: La pochette n’a été reçue que partiellement.
+      cover_upload: La pochette n’a pas pu être téléversée correctement.
+      cover_format: La pochette doit être au format JPEG, PNG ou WEBP.
       required: Le titre et l’interprète sont obligatoires.
       editor: L’éditeur sélectionné n’est pas valide.
       status: Le statut initial sélectionné n’est pas valide.
@@ -208,6 +218,7 @@ song:
   cover: Pochette
   cover_alt: 'Pochette de %title%'
   time_signature: Signature
+  time_signature_auto: Auto
   capo: Capo
   strumming: Strumming
   strumming_primary: Strumming principal

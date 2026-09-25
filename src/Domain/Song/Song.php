@@ -37,7 +37,7 @@ class Song
     private SongStatus $status = SongStatus::Imported;
 
     #[ORM\Column(length: 8)]
-    private string $timeSignature = '4/4';
+    private string $timeSignature = 'auto';
 
     #[ORM\Column]
     private int $capo = 0;
@@ -126,7 +126,7 @@ class Song
 
     public function setTimeSignature(string $timeSignature): self
     {
-        $allowed = ['2/4', '3/4', '4/4', '6/8'];
+        $allowed = ['auto', '2/4', '3/4', '4/4', '6/8'];
         if (!in_array($timeSignature, $allowed, true)) {
             throw new \InvalidArgumentException(sprintf('Unsupported time signature "%s".', $timeSignature));
         }

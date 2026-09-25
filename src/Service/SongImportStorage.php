@@ -9,7 +9,15 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class SongImportStorage
 {
-    private const AUDIO_MIME_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/x-mpeg'];
+    private const AUDIO_MIME_TYPES = [
+        'audio/mpeg',
+        'audio/mp3',
+        'audio/x-mpeg',
+        'audio/x-mp3',
+        'audio/mpeg3',
+        'audio/x-mpeg-3',
+        'application/octet-stream',
+    ];
     private const COVER_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
     public function __construct(
@@ -22,19 +30,26 @@ final class SongImportStorage
     public function storeMp3(UploadedFile $file): array
     {
         if (!$file->isValid()) {
-            throw new \InvalidArgumentException('Invalid MP3 upload.');
+            throw new \InvalidArgumentException('catalog.import.validation.audio_upload');
         }
 
-        $mimeType = (string) ($file->getMimeType() ?: $file->getClientMimeType());
+        $mimeType = (string) ($file->getMimeType() ?: $file->getClientMimeType() ?: 'application/octet-stream');
         $extension = mb_strtolower((string) $file->getClientOriginalExtension());
 
-        if ($extension !== 'mp3' || !in_array($mimeType, self::AUDIO_MIME_TYPES, true)) {
-            throw new \InvalidArgumentException('Only MP3 audio files are accepted.');
+        if ($extension !== 'mp3') {
+            throw new \InvalidArgumentException('catalog.import.validation.audio_format');
+        }
+
+        // Some Windows/PHP stacks report valid MP3 files as application/octet-stream.
+        // MP3s are stored outside public/ and are never executed; allow the common fallback
+        // while still rejecting clearly incompatible MIME types.
+        if ($mimeType !== '' && !in_array($mimeType, self::AUDIO_MIME_TYPES, true)) {
+            throw new \InvalidArgumentException('catalog.import.validation.audio_format');
         }
 
         $size = (int) $file->getSize();
         if ($size < 1) {
-            throw new \InvalidArgumentException('The MP3 file is empty.');
+            throw new \InvalidArgumentException('catalog.import.validation.audio_empty');
         }
 
         $sha256 = hash_file('sha256', $file->getPathname());
@@ -66,12 +81,12 @@ final class SongImportStorage
             return null;
         }
         if (!$file->isValid()) {
-            throw new \InvalidArgumentException('Invalid cover upload.');
+            throw new \InvalidArgumentException('catalog.import.validation.cover_upload');
         }
 
         $mimeType = (string) ($file->getMimeType() ?: $file->getClientMimeType());
         if (!in_array($mimeType, self::COVER_MIME_TYPES, true)) {
-            throw new \InvalidArgumentException('Cover must be JPEG, PNG or WEBP.');
+            throw new \InvalidArgumentException('catalog.import.validation.cover_format');
         }
 
         $extension = match ($mimeType) {

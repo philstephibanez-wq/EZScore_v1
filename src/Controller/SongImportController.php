@@ -56,6 +56,15 @@ final class SongImportController extends AbstractController
                     throw new \InvalidArgumentException('catalog.import.validation.audio_required');
                 }
 
+                if (!$audio->isValid()) {
+                    $errorKey = match ($audio->getError()) {
+                        UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'catalog.import.validation.audio_too_large',
+                        UPLOAD_ERR_PARTIAL => 'catalog.import.validation.audio_partial',
+                        default => 'catalog.import.validation.audio_upload',
+                    };
+                    throw new \InvalidArgumentException($errorKey);
+                }
+
                 $audioData = $storage->storeMp3($audio);
                 $song->setImportedAudio(
                     $audioData['original_name'],
@@ -66,6 +75,15 @@ final class SongImportController extends AbstractController
                 );
 
                 $cover = $request->files->get('cover');
+                if ($cover instanceof UploadedFile && !$cover->isValid()) {
+                    $errorKey = match ($cover->getError()) {
+                        UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'catalog.import.validation.cover_too_large',
+                        UPLOAD_ERR_PARTIAL => 'catalog.import.validation.cover_partial',
+                        default => 'catalog.import.validation.cover_upload',
+                    };
+                    throw new \InvalidArgumentException($errorKey);
+                }
+
                 $song->setCoverPath($storage->storeCover($cover instanceof UploadedFile ? $cover : null));
 
                 $em->persist($song);
@@ -106,7 +124,7 @@ final class SongImportController extends AbstractController
             ->setArtist($artist)
             ->setAuthor((string) $request->request->get('author'))
             ->setComposer((string) $request->request->get('composer'))
-            ->setTimeSignature((string) $request->request->get('time_signature', '4/4'))
+            ->setTimeSignature((string) $request->request->get('time_signature', 'auto'))
             ->setCapo((int) $request->request->get('capo', 0))
             ->setStrummingPrimary((string) $request->request->get('strumming_primary'))
             ->setStrummingAlternate((string) $request->request->get('strumming_alternate'))
