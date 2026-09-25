@@ -26,18 +26,27 @@ final class CatalogController extends AbstractController
         $user = $this->getUser();
         $query = trim((string) $request->query->get('q', ''));
 
+        $sort = (string) $request->query->get('sort', 'title');
+        $sort = in_array($sort, ['title', 'artist'], true) ? $sort : 'title';
+
+        $letter = mb_strtoupper(trim((string) $request->query->get('letter', '')));
+        $letter = preg_match('/^[A-Z]$/', $letter) ? $letter : null;
+
         if ($this->isGranted('ROLE_ADMIN')) {
-            $visibleSongs = $songs->findCatalog($query);
+            $visibleSongs = $songs->findCatalog($query, $sort, $letter);
         } elseif ($user instanceof User && $this->isGranted('ROLE_EDITOR')) {
-            $visibleSongs = $songs->findForEditor($user, $query);
+            $visibleSongs = $songs->findForEditor($user, $query, $sort, $letter);
         } else {
-            $visibleSongs = $songs->findPublished($query);
+            $visibleSongs = $songs->findPublished($query, $sort, $letter);
         }
 
         return $this->render('catalog/index.html.twig', [
             'songs' => $visibleSongs,
             'ratings' => $ratings->summariesForSongs($visibleSongs),
             'query' => $query,
+            'sort' => $sort,
+            'letter' => $letter,
+            'alphabet' => range('A', 'Z'),
             'can_import' => $this->isGranted('ROLE_ADMIN') || $this->isGranted('ROLE_EDITOR'),
             'is_public_catalog' => !$user instanceof User,
         ]);

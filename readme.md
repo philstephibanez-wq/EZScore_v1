@@ -1,41 +1,50 @@
-# EZScore_v1 — R12.2 correction YAML validée
+# EZScore_v1 — R13.2 tri simplifié + pré-écoute audio
 
-Cette livraison corrige uniquement les deux traductions YAML invalides réintroduites dans R12.
+## Tri
 
-## Cause
-
-Les valeurs suivantes contiennent `: ` :
+Affichage simplifié :
 
 ```text
-catalog.import.audio_help
-catalog.import.validation.audio_format
+Trier par:  Titre  Interprète
 ```
 
-Elles doivent être entourées de quotes YAML.
+Le choix actif est seulement souligné / coloré, sans bouton massif.
 
-## Validation
+La barre alphabétique reste en dessous.
 
-Les deux fichiers complets FR/EN ont été parsés avant création du ZIP.
+## Pré-écoute audio avant import
+
+Après sélection d'un fichier audio dans la page Import, un lecteur HTML5 apparaît.
+
+Formats concernés :
+
+```text
+MP3
+WAV
+FLAC
+M4A
+OGG
+AAC
+```
+
+La pré-écoute utilise `URL.createObjectURL()` dans le navigateur :
+
+- aucune analyse Python ;
+- aucun envoi serveur supplémentaire ;
+- le fichier n'est réellement importé que lorsque l'utilisateur clique sur le bouton d'import.
 
 ## Installation
-
-Télécharger d'abord le ZIP, puis :
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R12_2_YAML_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_SORT_AUDIO_PREVIEW_R13_2.zip" -C H:\EZScore_v1
 
 php bin\console lint:yaml translations
 php bin\console cache:clear
 php bin\console lint:twig templates
-php bin\console debug:router
 ```
 
-Résultat attendu :
-
-```text
-[OK] All YAML files contain valid syntax.
-```
+Puis `Ctrl+F5`.
 
 Aucune migration Doctrine.

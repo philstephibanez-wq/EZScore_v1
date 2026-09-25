@@ -5,25 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{% block title %}EZSCORE v1{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/base.css?v=20260924">
-    <link rel="stylesheet" href="/assets/css/layout.css?v=20260925r12">
+    <link rel="stylesheet" href="/assets/css/layout.css?v=20260925r13">
     {% block stylesheets %}{% endblock %}
     <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
 </head>
 <body>
 {% set public_catalog = not app.user and app.request.attributes.get('_route') == 'app_catalog' %}
 
+{% macro flag(locale) %}
+    {% if locale == 'fr' %}
+        <svg class="ez-flag" viewBox="0 0 3 2" aria-hidden="true" focusable="false">
+            <rect width="1" height="2" x="0" fill="#0055A4"/>
+            <rect width="1" height="2" x="1" fill="#FFFFFF"/>
+            <rect width="1" height="2" x="2" fill="#EF4135"/>
+        </svg>
+    {% else %}
+        <svg class="ez-flag" viewBox="0 0 60 36" aria-hidden="true" focusable="false">
+            <rect width="60" height="36" fill="#012169"/>
+            <path d="M0 0 60 36M60 0 0 36" stroke="#fff" stroke-width="8"/>
+            <path d="M0 0 60 36M60 0 0 36" stroke="#C8102E" stroke-width="4"/>
+            <path d="M30 0v36M0 18h60" stroke="#fff" stroke-width="12"/>
+            <path d="M30 0v36M0 18h60" stroke="#C8102E" stroke-width="7"/>
+        </svg>
+    {% endif %}
+{% endmacro %}
+
 {% macro language_select() %}
+    {% import _self as self %}
     <form class="ez-language-form" method="post" action="{{ path('app_locale', {locale: app.request.locale}) }}" data-language-form>
         <input type="hidden" name="_token" value="{{ csrf_token('locale') }}">
-        <label class="sr-only" for="ez-language-select-{{ app.user ? 'member' : 'public' }}">{{ 'locale.label'|trans }}</label>
-        <select id="ez-language-select-{{ app.user ? 'member' : 'public' }}"
-                class="ez-language-select"
-                aria-label="{{ 'locale.label'|trans }}"
-                data-language-select>
-            <option value="fr" {{ app.request.locale == 'fr' ? 'selected' : '' }}>🇫🇷 {{ 'locale.fr_name'|trans }}</option>
-            <option value="en" {{ app.request.locale == 'en' ? 'selected' : '' }}>🇬🇧 {{ 'locale.en_name'|trans }}</option>
-        </select>
-        <noscript><button type="submit">{{ 'locale.change'|trans }}</button></noscript>
+        <div class="ez-language-listbox" data-language-listbox>
+            <button type="button" class="ez-language-trigger" aria-haspopup="listbox" aria-expanded="false" data-language-trigger>
+                {{ self.flag(app.request.locale) }}
+                <span>{{ app.request.locale == 'fr' ? ('locale.fr_name'|trans) : ('locale.en_name'|trans) }}</span>
+                <span class="ez-language-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div class="ez-language-menu" role="listbox" aria-label="{{ 'locale.label'|trans }}" data-language-menu hidden>
+                <button type="button"
+                        class="ez-language-option {{ app.request.locale == 'fr' ? 'active' : '' }}"
+                        role="option"
+                        aria-selected="{{ app.request.locale == 'fr' ? 'true' : 'false' }}"
+                        data-language-option="fr">
+                    {{ self.flag('fr') }}
+                    <span>{{ 'locale.fr_name'|trans }}</span>
+                </button>
+                <button type="button"
+                        class="ez-language-option {{ app.request.locale == 'en' ? 'active' : '' }}"
+                        role="option"
+                        aria-selected="{{ app.request.locale == 'en' ? 'true' : 'false' }}"
+                        data-language-option="en">
+                    {{ self.flag('en') }}
+                    <span>{{ 'locale.en_name'|trans }}</span>
+                </button>
+            </div>
+        </div>
     </form>
 {% endmacro %}
 
@@ -115,12 +150,40 @@
 <script src="/assets/js/dirty-tracker.js?v=20260924"></script>
 <script>
 (() => {
-    document.querySelectorAll('[data-language-select]').forEach((select) => {
-        select.addEventListener('change', () => {
-            const form = select.closest('[data-language-form]');
-            if (!form) return;
-            form.action = '/locale/' + encodeURIComponent(select.value);
-            form.submit();
+    document.querySelectorAll('[data-language-listbox]').forEach((listbox) => {
+        const form = listbox.closest('[data-language-form]');
+        const trigger = listbox.querySelector('[data-language-trigger]');
+        const menu = listbox.querySelector('[data-language-menu]');
+        if (!form || !trigger || !menu) return;
+
+        const close = () => {
+            menu.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        };
+
+        trigger.addEventListener('click', () => {
+            const open = menu.hidden;
+            document.querySelectorAll('[data-language-menu]').forEach((other) => {
+                if (other !== menu) other.hidden = true;
+            });
+            menu.hidden = !open;
+            trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        menu.querySelectorAll('[data-language-option]').forEach((option) => {
+            option.addEventListener('click', () => {
+                const locale = option.dataset.languageOption;
+                form.action = '/locale/' + encodeURIComponent(locale);
+                form.submit();
+            });
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!listbox.contains(event.target)) close();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') close();
         });
     });
 })();

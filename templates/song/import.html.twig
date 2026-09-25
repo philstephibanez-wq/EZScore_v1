@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'catalog.import.heading'|trans }} — EZScore_v1{% endblock %}
-{% block stylesheets %}<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r10">{% endblock %}
+{% block stylesheets %}<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r10"><link rel="stylesheet" href="/assets/css/song-import-preview.css?v=20260925r132">{% endblock %}
 {% block body %}
 <header class="page-head">
     <div>
@@ -17,10 +17,24 @@
         <h2>{{ 'catalog.import.source_heading'|trans }}</h2>
         <label class="audio-import-field">
             <span>{{ 'catalog.import.audio_label'|trans }}</span>
-            <input type="file" name="audio" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*" required>
+            <input id="song-audio-input"
+                   type="file"
+                   name="audio"
+                   accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
+                   required
+                   data-audio-input>
             <small>{{ 'catalog.import.audio_help'|trans }}</small>
             <small class="upload-limit-note">{{ 'catalog.import.php_limit_note'|trans }}</small>
         </label>
+
+        <div class="audio-preview" data-audio-preview hidden>
+            <div class="audio-preview-head">
+                <strong>{{ 'catalog.import.preview.heading'|trans }}</strong>
+                <span data-audio-preview-name></span>
+            </div>
+            <audio controls preload="metadata" data-audio-player></audio>
+            <small>{{ 'catalog.import.preview.help'|trans }}</small>
+        </div>
     </section>
 
     {% include 'layout/song/_card.html.twig' with {
@@ -36,4 +50,4 @@
     </div>
 </form>
 {% endblock %}
-{% block javascripts %}<script src="/assets/js/song-import.js?v=20260925r10"></script>{% endblock %}
+{% block javascripts %}<script src="/assets/js/song-import.js?v=20260925r132"></script>{% endblock %}

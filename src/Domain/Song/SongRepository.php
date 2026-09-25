@@ -17,31 +17,42 @@ final class SongRepository extends ServiceEntityRepository
     }
 
     /** @return list<Song> */
-    public function findCatalog(?string $query = null): array
+    public function findCatalog(?string $query = null, string $sort = 'title', ?string $letter = null): array
     {
         $qb = $this->baseCatalogQuery();
         $this->applySearch($qb, $query);
+        $this->applyLetter($qb, $letter, $sort);
+        $this->applySort($qb, $sort);
+
         return $qb->getQuery()->getResult();
     }
 
     /** @return list<Song> */
-    public function findPublished(?string $query = null): array
+    public function findPublished(?string $query = null, string $sort = 'title', ?string $letter = null): array
     {
         $qb = $this->baseCatalogQuery()
             ->andWhere('s.status = :status')
             ->setParameter('status', SongStatus::Published->value);
+
         $this->applySearch($qb, $query);
+        $this->applyLetter($qb, $letter, $sort);
+        $this->applySort($qb, $sort);
+
         return $qb->getQuery()->getResult();
     }
 
     /** @return list<Song> */
-    public function findForEditor(User $editor, ?string $query = null): array
+    public function findForEditor(User $editor, ?string $query = null, string $sort = 'title', ?string $letter = null): array
     {
         $qb = $this->baseCatalogQuery()
             ->andWhere('(s.status = :published OR s.editor = :editor)')
             ->setParameter('published', SongStatus::Published->value)
             ->setParameter('editor', $editor);
+
         $this->applySearch($qb, $query);
+        $this->applyLetter($qb, $letter, $sort);
+        $this->applySort($qb, $sort);
+
         return $qb->getQuery()->getResult();
     }
 
@@ -49,9 +60,31 @@ final class SongRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('s')
             ->leftJoin('s.editor', 'e')
-            ->addSelect('e')
-            ->orderBy('s.title', 'ASC')
-            ->addOrderBy('s.artist', 'ASC');
+            ->addSelect('e');
+    }
+
+    private function applySort(QueryBuilder $qb, string $sort): void
+    {
+        if ($sort === 'artist') {
+            $qb->orderBy('LOWER(s.artist)', 'ASC')
+                ->addOrderBy('LOWER(s.title)', 'ASC');
+            return;
+        }
+
+        $qb->orderBy('LOWER(s.title)', 'ASC')
+            ->addOrderBy('LOWER(s.artist)', 'ASC');
+    }
+
+    private function applyLetter(QueryBuilder $qb, ?string $letter, string $sort): void
+    {
+        $letter = mb_strtoupper(trim((string) $letter));
+        if (!preg_match('/^[A-Z]$/', $letter)) {
+            return;
+        }
+
+        $field = $sort === 'artist' ? 's.artist' : 's.title';
+        $qb->andWhere(sprintf('UPPER(SUBSTRING(%s, 1, 1)) = :letter', $field))
+            ->setParameter('letter', $letter);
     }
 
     private function applySearch(QueryBuilder $qb, ?string $query): void

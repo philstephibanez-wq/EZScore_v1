@@ -4,6 +4,7 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r104">
 <link rel="stylesheet" href="/assets/css/import-cta.css?v=20260925r105">
+<link rel="stylesheet" href="/assets/css/catalog-r13.css?v=20260925r13">
 {% endblock %}
 
 {% block body %}
@@ -15,43 +16,18 @@
         <p>{{ 'catalog.public.lead'|trans }}</p>
 
         <div class="catalog-hero-actions">
-            <a class="catalog-cta primary-cta" href="{{ path('app_register', {'_locale': app.request.locale}) }}">
-                {{ 'catalog.public.register'|trans }}
-            </a>
-            <a class="catalog-cta secondary-cta" href="{{ path('app_login', {'_locale': app.request.locale}) }}">
-                {{ 'auth.login.submit'|trans }}
-            </a>
+            <a class="catalog-cta primary-cta" href="{{ path('app_register', {'_locale': app.request.locale}) }}">{{ 'catalog.public.register'|trans }}</a>
+            <a class="catalog-cta secondary-cta" href="{{ path('app_login', {'_locale': app.request.locale}) }}">{{ 'auth.login.submit'|trans }}</a>
         </div>
 
         <p class="catalog-free-note">{{ 'catalog.public.free_note'|trans }}</p>
     </div>
 
     <div class="catalog-benefits" aria-label="{{ 'catalog.public.benefits_heading'|trans }}">
-        <article>
-            <span class="benefit-icon" aria-hidden="true">♪</span>
-            <div>
-                <strong>{{ 'catalog.public.benefit.karaoke.title'|trans }}</strong>
-                <span>{{ 'catalog.public.benefit.karaoke.body'|trans }}</span>
-            </div>
-        </article>
-        <article>
-            <span class="benefit-icon" aria-hidden="true">▶</span>
-            <div>
-                <strong>{{ 'catalog.public.benefit.audio.title'|trans }}</strong>
-                <span>{{ 'catalog.public.benefit.audio.body'|trans }}</span>
-            </div>
-        </article>
-        <article>
-            <span class="benefit-icon" aria-hidden="true">≡</span>
-            <div>
-                <strong>{{ 'catalog.public.benefit.organise.title'|trans }}</strong>
-                <span>{{ 'catalog.public.benefit.organise.body'|trans }}</span>
-            </div>
-        </article>
-        <div class="catalog-coming-soon">
-            <span>{{ 'catalog.public.future_label'|trans }}</span>
-            <strong>{{ 'catalog.public.future_value'|trans }}</strong>
-        </div>
+        <article><span class="benefit-icon" aria-hidden="true">♪</span><div><strong>{{ 'catalog.public.benefit.karaoke.title'|trans }}</strong><span>{{ 'catalog.public.benefit.karaoke.body'|trans }}</span></div></article>
+        <article><span class="benefit-icon" aria-hidden="true">▶</span><div><strong>{{ 'catalog.public.benefit.audio.title'|trans }}</strong><span>{{ 'catalog.public.benefit.audio.body'|trans }}</span></div></article>
+        <article><span class="benefit-icon" aria-hidden="true">≡</span><div><strong>{{ 'catalog.public.benefit.organise.title'|trans }}</strong><span>{{ 'catalog.public.benefit.organise.body'|trans }}</span></div></article>
+        <div class="catalog-coming-soon"><span>{{ 'catalog.public.future_label'|trans }}</span><strong>{{ 'catalog.public.future_value'|trans }}</strong></div>
     </div>
 </section>
 {% endif %}
@@ -60,74 +36,45 @@
     <div>
         <div class="eyebrow">{{ 'catalog.eyebrow'|trans }}</div>
         <h1>{{ 'catalog.title'|trans }}</h1>
-        {% if app.user %}
-            <p>{{ 'catalog.member_lead'|trans }}</p>
-        {% else %}
-            <p>{{ 'catalog.public.catalog_lead'|trans }}</p>
-        {% endif %}
+        {% if app.user %}<p>{{ 'catalog.member_lead'|trans }}</p>{% else %}<p>{{ 'catalog.public.catalog_lead'|trans }}</p>{% endif %}
     </div>
 
     {% if can_import %}
         <a href="{{ path('app_song_import', {'_locale': app.request.locale}) }}"
-           style="
-               display:grid;
-               grid-template-columns:56px minmax(0,1fr);
-               align-items:center;
-               gap:14px;
-               min-width:310px;
-               padding:14px 18px;
-               border:2px solid #6fe1d7;
-               border-radius:16px;
-               background:linear-gradient(135deg,#0f5d57 0%,#1d7d74 58%,#124c47 100%);
-               color:#ffffff;
-               text-decoration:none;
-               box-shadow:0 12px 30px rgba(0,0,0,.38);
-           ">
-            <span aria-hidden="true"
-                  style="
-                      width:56px;
-                      height:56px;
-                      display:grid;
-                      place-items:center;
-                      border-radius:14px;
-                      background:rgba(255,255,255,.15);
-                      color:#d9fff9;
-                      font-size:32px;
-                      font-weight:900;
-                      line-height:1;
-                  ">＋</span>
-
+           style="display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:14px;min-width:310px;padding:14px 18px;border:2px solid #6fe1d7;border-radius:16px;background:linear-gradient(135deg,#0f5d57 0%,#1d7d74 58%,#124c47 100%);color:#ffffff;text-decoration:none;box-shadow:0 12px 30px rgba(0,0,0,.38);">
+            <span aria-hidden="true" style="width:56px;height:56px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.15);color:#d9fff9;font-size:32px;font-weight:900;line-height:1;">＋</span>
             <span style="display:grid;gap:3px;text-align:left;min-width:0">
-                <span style="
-                    display:block;
-                    font-size:10px;
-                    text-transform:uppercase;
-                    letter-spacing:.13em;
-                    color:#c6f1ed;
-                    font-weight:800;
-                ">{{ 'catalog.import.kicker'|trans }}</span>
-
-                <strong style="
-                    display:block;
-                    font-size:19px;
-                    line-height:1.15;
-                    font-weight:900;
-                    color:#ffffff;
-                ">{{ 'catalog.import.label'|trans }}</strong>
-
-                <small style="
-                    display:block;
-                    font-size:12px;
-                    line-height:1.3;
-                    color:#dcf5f2;
-                ">{{ 'catalog.import.button_help'|trans }}</small>
+                <span style="display:block;font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:#c6f1ed;font-weight:800;">{{ 'catalog.import.kicker'|trans }}</span>
+                <strong style="display:block;font-size:19px;line-height:1.15;font-weight:900;color:#ffffff;">{{ 'catalog.import.label'|trans }}</strong>
+                <small style="display:block;font-size:12px;line-height:1.3;color:#dcf5f2;">{{ 'catalog.import.button_help'|trans }}</small>
             </span>
         </a>
     {% endif %}
 </header>
 
+<section class="catalog-controls" aria-label="{{ 'catalog.controls.label'|trans }}">
+    <div class="catalog-sort">
+        <span>{{ 'catalog.controls.sort_label'|trans }}:</span>
+        <a class="{{ sort == 'title' ? 'active' : '' }}"
+           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: 'title', letter: letter}) }}">{{ 'catalog.controls.sort_title'|trans }}</a>
+        <a class="{{ sort == 'artist' ? 'active' : '' }}"
+           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: 'artist', letter: letter}) }}">{{ 'catalog.controls.sort_artist'|trans }}</a>
+    </div>
+
+    <nav class="catalog-alphabet" aria-label="{{ 'catalog.controls.alphabet_label'|trans }}">
+        <a class="{{ letter is null ? 'active' : '' }}"
+           href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: sort}) }}">{{ 'catalog.controls.all'|trans }}</a>
+        {% for alpha in alphabet %}
+            <a class="{{ letter == alpha ? 'active' : '' }}"
+               href="{{ path('app_catalog', {'_locale': app.request.locale, q: query ?: null, sort: sort, letter: alpha}) }}">{{ alpha }}</a>
+        {% endfor %}
+    </nav>
+</section>
+
 {% if not app.user %}
 <form class="public-catalog-search" method="get" action="{{ path('app_catalog', {'_locale': app.request.locale}) }}" role="search">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    {% if letter %}<input type="hidden" name="letter" value="{{ letter }}">{% endif %}
     <label class="sr-only" for="public-catalog-search">{{ 'layout.search.label'|trans }}</label>
     <input id="public-catalog-search" type="search" name="q" value="{{ query }}" placeholder="{{ 'layout.search.placeholder'|trans }}" autocomplete="off">
     <button type="submit">{{ 'layout.search.submit'|trans }}</button>
@@ -137,7 +84,7 @@
 {% if query %}
 <div class="catalog-search-context">
     {{ 'catalog.search.results_for'|trans({'%query%': query}) }}
-    <a href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'catalog.search.clear'|trans }}</a>
+    <a href="{{ path('app_catalog', {'_locale': app.request.locale, sort: sort, letter: letter}) }}">{{ 'catalog.search.clear'|trans }}</a>
 </div>
 {% endif %}
 
@@ -155,18 +102,12 @@
                     {% endif %}
                 </div>
                 <span class="catalog-artist">{{ song.artist }}</span>
-                {% if song.editor and app.user %}
-                    <small>{{ 'song.editor'|trans }} · {{ song.editor.displayName }}</small>
-                {% endif %}
-                {% if song.comment and app.user %}
-                    <small>{{ song.comment }}</small>
-                {% endif %}
+                {% if song.editor and app.user %}<small>{{ 'song.editor'|trans }} · {{ song.editor.displayName }}</small>{% endif %}
+                {% if song.comment and app.user %}<small>{{ song.comment }}</small>{% endif %}
 
                 {% set rating = ratings[song.id] ?? {'average': 0, 'count': 0} %}
                 <div class="catalog-rating-summary" aria-label="{{ 'song.rating.summary_aria'|trans({'%average%': rating.average, '%count%': rating.count}) }}">
-                    <span class="rating-stars-static" aria-hidden="true">
-                        {% for star in 1..5 %}<span class="{{ rating.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}
-                    </span>
+                    <span class="rating-stars-static" aria-hidden="true">{% for star in 1..5 %}<span class="{{ rating.average >= star - 0.5 ? 'filled' : '' }}">★</span>{% endfor %}</span>
                     {% if rating.count > 0 %}
                         <strong>{{ rating.average|number_format(1, ',', ' ') }}</strong>
                         <small>{{ 'song.rating.count'|trans({'%count%': rating.count}) }}</small>
@@ -180,9 +121,7 @@
     {% else %}
         <div class="catalog-empty">
             <strong>{{ query ? ('catalog.search.none'|trans) : ('catalog.empty'|trans) }}</strong>
-            {% if is_public_catalog %}
-                <span>{{ 'catalog.public.empty_hint'|trans }}</span>
-            {% endif %}
+            {% if is_public_catalog %}<span>{{ 'catalog.public.empty_hint'|trans }}</span>{% endif %}
         </div>
     {% endfor %}
 </div>

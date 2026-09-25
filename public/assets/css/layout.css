@@ -30,3 +30,35 @@
 @media(max-width:720px){:root{--ez-header-h:58px}.ez-topbar{grid-template-columns:auto 1fr auto!important;padding-inline:8px!important;gap:7px}.ez-brand strong{font-size:18px}.ez-brand small{font-size:8px}.ez-menu-button{width:38px!important;height:38px!important;min-width:38px!important}.ez-search-form{height:38px;grid-template-columns:minmax(0,1fr) 42px;border-radius:8px}.ez-search-form input,.ez-search-form button{height:36px}.ez-search-form input{padding-inline:10px;font-size:13px}.ez-language-select{min-width:52px;max-width:52px;padding:0 7px;color:transparent;text-shadow:0 0 0 #fff}.ez-user-badge img,.ez-user-avatar{width:32px;height:32px;flex-basis:32px}.ez-main{padding:12px!important;padding-bottom:max(36px,env(safe-area-inset-bottom))!important}.dashboard-grid,.card-grid{grid-template-columns:minmax(0,1fr)!important}.song-create-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:520px){.ez-brand small{display:none}.ez-search-slot{justify-content:stretch}.ez-search-form{width:100%}.ez-user-badge{display:none}}
 @media(prefers-reduced-motion:reduce){.ez-drawer,.ez-drawer-backdrop{transition:none}}
+
+
+/* R13 — true flag language listbox */
+.ez-language-form{margin:0}
+.ez-language-listbox{position:relative;min-width:146px}
+.ez-language-trigger,.ez-language-option{
+    width:100%;display:grid;grid-template-columns:22px minmax(0,1fr) auto;
+    align-items:center;gap:8px;text-align:left
+}
+.ez-language-trigger{
+    min-height:38px;padding:6px 9px;border:1px solid #ffffff55;border-radius:10px;
+    background:#0b514e;color:#fff;font-size:12px;font-weight:850;cursor:pointer
+}
+.ez-language-trigger:hover,.ez-language-trigger:focus-visible{border-color:#ffffff99;background:#0d5a56;outline:none}
+.ez-language-chevron{font-size:13px;opacity:.8}
+.ez-flag{width:22px;height:14px;display:block;border-radius:2px;box-shadow:0 0 0 1px #0005;overflow:hidden}
+.ez-language-menu{
+    position:absolute;z-index:1200;top:calc(100% + 5px);right:0;width:100%;
+    overflow:hidden;border:1px solid #4d5e69;border-radius:9px;background:#111920;
+    box-shadow:0 14px 30px #0009
+}
+.ez-language-option{
+    grid-template-columns:22px minmax(0,1fr);min-height:36px;padding:7px 10px;
+    border:0;border-radius:0;background:#111920;color:#fff;font-size:12px;font-weight:750;cursor:pointer
+}
+.ez-language-option:hover,.ez-language-option.active{background:#1e6c66}
+@media(max-width:720px){
+    .ez-language-listbox{min-width:48px}
+    .ez-language-trigger{grid-template-columns:22px auto;padding-inline:8px}
+    .ez-language-trigger>span:not(.ez-language-chevron){display:none}
+    .ez-language-menu{min-width:150px}
+}
