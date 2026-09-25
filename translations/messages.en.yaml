@@ -177,22 +177,22 @@ catalog:
     kicker: New import
     eyebrow: Library
     heading: Import a song
-    lead: Import the MP3 and complete its song sheet. No Python analysis is started at this stage.
+    lead: Import the audio file and complete its song sheet. No Python analysis is started at this stage.
     source_heading: Audio source
-    audio_label: MP3 file
-    audio_help: MP3 only. The file is stored in EZScore private storage.
+    audio_label: Audio file
+    audio_help: 'MP3 recommended. Accepted formats: MP3, WAV, FLAC, M4A, OGG, AAC. The file is stored in EZScore private storage.'
     php_limit_note: If the file exceeds the server PHP upload limit, EZScore now displays an explicit error.
     cover_help: JPEG, PNG or WEBP.
     status_help: “Analyzed” is assigned by the analysis pipeline, not manually during import.
     submit: Import song
     created: Song imported.
     validation:
-      audio_required: The MP3 file is required.
-      audio_too_large: The MP3 exceeds the maximum PHP upload size configured on this server.
-      audio_partial: The MP3 was only partially uploaded. Please try again.
-      audio_upload: The MP3 could not be uploaded correctly.
-      audio_format: The selected file is not recognized as a valid MP3.
-      audio_empty: The MP3 file is empty.
+      audio_required: An audio file is required.
+      audio_too_large: The audio file exceeds the maximum PHP upload size configured on this server.
+      audio_partial: The audio file was only partially uploaded. Please try again.
+      audio_upload: The audio file could not be uploaded correctly.
+      audio_format: 'Unsupported audio format. Use MP3, WAV, FLAC, M4A, OGG or AAC.'
+      audio_empty: The audio file is empty.
       cover_too_large: The cover exceeds the maximum PHP upload size.
       cover_partial: The cover was only partially uploaded.
       cover_upload: The cover could not be uploaded correctly.

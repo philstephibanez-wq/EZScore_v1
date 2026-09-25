@@ -2,15 +2,38 @@
 {% block title %}{{ 'catalog.import.heading'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r10">{% endblock %}
 {% block body %}
-<header class="page-head"><div><div class="eyebrow">{{ 'catalog.import.eyebrow'|trans }}</div><h1>{{ 'catalog.import.heading'|trans }}</h1><p class="page-note">{{ 'catalog.import.lead'|trans }}</p></div></header>
+<header class="page-head">
+    <div>
+        <div class="eyebrow">{{ 'catalog.import.eyebrow'|trans }}</div>
+        <h1>{{ 'catalog.import.heading'|trans }}</h1>
+        <p class="page-note">{{ 'catalog.import.lead'|trans }}</p>
+    </div>
+</header>
+
 <form method="post" enctype="multipart/form-data" class="song-import-form">
     <input type="hidden" name="_token" value="{{ csrf_token('song_import') }}">
+
     <section class="panel import-source-panel">
         <h2>{{ 'catalog.import.source_heading'|trans }}</h2>
-        <label class="audio-import-field"><span>{{ 'catalog.import.audio_label'|trans }}</span><input type="file" name="audio" accept="audio/mpeg,.mp3" required><small>{{ 'catalog.import.audio_help'|trans }}</small></label>
+        <label class="audio-import-field">
+            <span>{{ 'catalog.import.audio_label'|trans }}</span>
+            <input type="file" name="audio" accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*" required>
+            <small>{{ 'catalog.import.audio_help'|trans }}</small>
+            <small class="upload-limit-note">{{ 'catalog.import.php_limit_note'|trans }}</small>
+        </label>
     </section>
-    {% include 'layout/song/_card.html.twig' with {mode:'import', editors:editors, current_editor:current_editor, status_choices:status_choices} %}
-    <div class="song-import-actions"><a class="ez-back-link" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'common.cancel'|trans }}</a><button class="primary" type="submit">{{ 'catalog.import.submit'|trans }}</button></div>
+
+    {% include 'layout/song/_card.html.twig' with {
+        mode: 'import',
+        editors: editors,
+        current_editor: current_editor,
+        status_choices: status_choices
+    } %}
+
+    <div class="song-import-actions">
+        <a class="ez-back-link" href="{{ path('app_catalog', {'_locale': app.request.locale}) }}">{{ 'common.cancel'|trans }}</a>
+        <button class="primary" type="submit">{{ 'catalog.import.submit'|trans }}</button>
+    </div>
 </form>
 {% endblock %}
 {% block javascripts %}<script src="/assets/js/song-import.js?v=20260925r10"></script>{% endblock %}

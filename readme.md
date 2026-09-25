@@ -1,53 +1,33 @@
-# EZScore_v1 — R10.6 bouton Import forcé visuellement
+# EZScore_v1 — R11.1a correction YAML traductions
 
-Cette correction ne dépend plus du chargement d'une nouvelle feuille CSS pour le bouton Import.
+Correction ciblée du YAML invalide introduit par R11.1.
 
-Le style critique du bouton est directement porté par le composant Twig afin d'éviter le rendu observé :
+## Cause
 
-```text
-Importer une chansonMP3 + fiche chanson
-```
-
-Affichage attendu :
+Ces traductions contiennent `: ` dans leur valeur :
 
 ```text
-NOUVEL IMPORT
-Importer une chanson
-MP3 + fiche chanson
+audio_help
+audio_format
 ```
 
-avec :
-- gros bouton vert/bleu ;
-- bordure claire ;
-- icône `+` ;
-- trois niveaux de texte séparés ;
-- espacement visible.
+En YAML, une valeur scalaire contenant `: ` doit être quotée.
+
+## Correction
+
+Les valeurs FR/EN concernées sont maintenant entourées de quotes simples YAML.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_IMPORT_CTA_INLINE_R10_6.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_YAML_TRANSLATIONS_FIX_R11_1a.zip" -C H:\EZScore_v1
 
+php bin\console lint:yaml translations
 php bin\console cache:clear
 php bin\console lint:twig templates
 ```
 
-Puis :
-
-```text
-Ctrl+F5
-```
-
-## Vérification
-
-```powershell
-Select-String -Path .\templates\catalog\index.html.twig -Pattern "grid-template-columns:56px"
-```
-
-La commande doit retourner une ligne.
-
 Aucune migration Doctrine.
-Aucun changement sur l'import MP3.
-Aucun changement de données.
+Aucun changement fonctionnel hors correction syntaxique YAML.

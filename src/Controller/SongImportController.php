@@ -10,6 +10,8 @@ use App\Domain\User\User;
 use App\Domain\User\UserRepository;
 use App\Service\SongImportStorage;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,6 +26,9 @@ final class SongImportController extends AbstractController
         UserRepository $users,
         SongImportStorage $storage,
         EntityManagerInterface $em,
+        LoggerInterface $logger,
+        #[Autowire('%kernel.environment%')]
+        string $environment,
     ): Response {
         $user = $this->getUser();
         if (!$user instanceof User || (!$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_EDITOR'))) {
@@ -65,7 +70,7 @@ final class SongImportController extends AbstractController
                     throw new \InvalidArgumentException($errorKey);
                 }
 
-                $audioData = $storage->storeMp3($audio);
+                $audioData = $storage->storeAudio($audio);
                 $song->setImportedAudio(
                     $audioData['original_name'],
                     $audioData['storage_path'],
@@ -98,8 +103,36 @@ final class SongImportController extends AbstractController
             } catch (\InvalidArgumentException $e) {
                 $message = $e->getMessage();
                 $this->addFlash('error', str_starts_with($message, 'catalog.') ? $message : 'catalog.import.validation.invalid');
-            } catch (\Throwable) {
-                $this->addFlash('error', 'catalog.import.validation.failed');
+            } catch (\Throwable $e) {
+                $logger->error('Song import failed', [
+                    'exception_class' => $e::class,
+                    'exception_message' => $e->getMessage(),
+                    'exception_file' => $e->getFile(),
+                    'exception_line' => $e->getLine(),
+                    'song_title' => (string) $request->request->get('title', ''),
+                    'song_artist' => (string) $request->request->get('artist', ''),
+                    'audio_original_name' => $request->files->get('audio') instanceof UploadedFile
+                        ? $request->files->get('audio')->getClientOriginalName()
+                        : null,
+                    'user_id' => $user->getId(),
+                    'user_email' => $user->getUserIdentifier(),
+                    'exception' => $e,
+                ]);
+
+                if ($environment === 'dev') {
+                    $this->addFlash(
+                        'error',
+                        sprintf(
+                            'Import DEV: %s — %s (%s:%d)',
+                            $e::class,
+                            $e->getMessage(),
+                            basename($e->getFile()),
+                            $e->getLine(),
+                        ),
+                    );
+                } else {
+                    $this->addFlash('error', 'catalog.import.validation.failed');
+                }
             }
         }
 
