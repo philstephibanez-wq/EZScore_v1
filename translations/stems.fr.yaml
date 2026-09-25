@@ -1,0 +1,43 @@
+stems:
+  eyebrow: Séparation audio
+  title: 'STEMS — %title%'
+  scope: Cette étape effectue uniquement la séparation audio. Aucune parole, aucun accord, aucun tempo, aucune structure, aucun MIDI et aucun karaoké ne sont analysés.
+  back: Retour au morceau
+  workspace:
+    heading: Étape 1 — STEMS
+    body: Séparer et persister les sources audio avant toute autre analyse.
+    open: Ouvrir la séparation STEMS
+  generate: Séparer les STEMS
+  reanalyze: Réanalyser les STEMS
+  reanalyze_confirm: Relancer complètement la séparation des STEMS ? La nouvelle version remplacera la version courante après réussite.
+  not_generated: Aucun STEM persistant n’a encore été généré pour cet audio.
+  queued: La séparation STEMS a été placée dans la file de traitement.
+  already_running: Une séparation STEMS est déjà en cours pour ce morceau.
+  processing: Séparation en cours…
+  auto_refresh: Cette page se rafraîchit automatiquement pendant le traitement.
+  ready: STEMS disponibles
+  duration: 'Temps de calcul : %seconds% s'
+  failed: La dernière séparation a échoué.
+  error:
+    no_audio: Aucun audio source exploitable n’est associé à ce morceau.
+  outputs_eyebrow: Résultat persistant
+  outputs: Écoute des STEMS
+  technical: Informations techniques
+  engine_instruments: Séparation instruments
+  engine_vocals: Séparation chant / chœurs
+  timebase: Référence temporelle
+  job:
+    queued: En attente
+    running: En cours
+    completed: Terminé
+    failed: Échec
+    cancelled: Annulé
+  name:
+    vocals: Voix — global
+    lead_vocals: Chant principal
+    backing_vocals: Chœurs / backing vocals
+    drums: Batterie
+    bass: Basse
+    guitar: Guitare
+    piano: Piano / claviers
+    other: Autres instruments

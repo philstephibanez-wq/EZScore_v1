@@ -33,6 +33,13 @@ localized_song_edit:
         fr: /fr
         en: /en
 
+localized_song_stems:
+    resource: ../src/Controller/SongStemController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
 localized_groups:
     resource: ../src/Controller/GroupController.php
     type: attribute
@@ -53,7 +60,6 @@ localized_picker:
     prefix:
         fr: /fr
         en: /en
-
 
 localized_events:
     resource: ../src/Controller/EventController.php

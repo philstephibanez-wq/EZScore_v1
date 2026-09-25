@@ -1,0 +1,32 @@
+.stems-head{align-items:flex-start}
+.stems-source{display:flex;justify-content:space-between;gap:20px;align-items:center}
+.stems-source>div:first-child{display:grid;gap:3px}
+.stems-source span,.stems-source small{color:#8798a5}
+.stem-source-meta{display:grid;gap:4px;text-align:right}
+.stem-source-meta span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#7f909c}
+.stem-source-meta code{font-size:11px}
+.stems-action-panel{display:grid;gap:14px}
+.stem-job-state{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stem-job-badge{display:inline-flex;padding:5px 9px;border:1px solid #3c4a55;border-radius:999px;font-size:10px;font-weight:850;text-transform:uppercase}
+.state-running,.state-queued{border-color:#2d8179;color:#9ce4dc}
+.state-completed{border-color:#397b4c;color:#a6e7b4}
+.state-failed{border-color:#843c3c;color:#f2a4a4}
+.stem-progress{display:grid;gap:7px}
+.stem-progress-head{display:flex;justify-content:space-between;gap:15px}
+.stem-progress progress{width:100%;height:14px}
+.stem-ready{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.stem-ready strong{color:#9fe5b0}
+.stem-error{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;border:1px solid #713d3d;border-radius:9px;background:#251919}
+.stems-section-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.stems-section-head h2{margin:.2rem 0 0}
+.stem-device{padding:4px 8px;border:1px solid #36515d;border-radius:999px;color:#9dd7d2;font-size:10px}
+.stem-list{display:grid;gap:8px;margin-top:14px}
+.stem-row{display:grid;grid-template-columns:minmax(160px,.45fr) minmax(280px,1fr);gap:15px;align-items:center;padding:10px 12px;border:1px solid #2c3942;border-radius:10px;background:#10171d}
+.stem-label{display:grid;gap:3px}
+.stem-label small{color:#84939d}
+.stem-row audio{width:100%;height:38px}
+.stem-tech-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.stem-tech-grid>div{display:grid;gap:3px;padding:10px;border:1px solid #2d3942;border-radius:9px}
+.stem-tech-grid span{font-size:9px;text-transform:uppercase;letter-spacing:.055em;color:#7e8f9b}
+.stem-tech-grid small{color:#7f909b;overflow-wrap:anywhere}
+@media(max-width:750px){.stems-source{align-items:flex-start;flex-direction:column}.stem-source-meta{text-align:left}.stem-row{grid-template-columns:1fr}.stem-tech-grid{grid-template-columns:1fr}}

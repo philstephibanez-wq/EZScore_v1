@@ -2,15 +2,16 @@
 {% block title %}{{ song.title }} — EZScore_v1{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r21">
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23">
 {% endblock %}
 
 {% block body %}
 <div class="workspace" data-can-edit="{{ can_edit ? '1' : '0' }}">
+    {% if can_edit %}
     <nav class="workflow-tabs">
-        <button class="workflow-tab active" data-step="1">1 · STEMS</button>
-        <button class="workflow-tab" data-step="2">2 · {{ 'workspace.lyrics'|trans }}</button>
+        <a class="workflow-tab active" href="{{ path('app_song_stems', {'_locale': app.request.locale, id: song.id}) }}">1 · STEMS</a>
     </nav>
+    {% endif %}
 
     {% include 'layout/song/_card.html.twig' with {mode:'display', song:song, rating_summary:rating_summary, user_rating:user_rating, show_internal_comment:can_edit} %}
 
@@ -72,9 +73,12 @@
         </section>
     {% endif %}
 
+    {% if can_edit %}
     <section class="panel source-truth-panel">
-        <h2>{{ 'workspace.no_analysis.heading'|trans }}</h2>
-        <p>{{ 'workspace.no_analysis.body'|trans }}</p>
+        <h2>{{ 'stems.workspace.heading'|trans({}, 'stems') }}</h2>
+        <p>{{ 'stems.workspace.body'|trans({}, 'stems') }}</p>
+        <a class="primary" href="{{ path('app_song_stems', {'_locale': app.request.locale, id: song.id}) }}">{{ 'stems.workspace.open'|trans({}, 'stems') }}</a>
     </section>
+    {% endif %}
 </div>
 {% endblock %}

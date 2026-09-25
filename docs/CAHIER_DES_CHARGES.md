@@ -683,3 +683,150 @@ Le worker :
 - n'empêche jamais la publication du morceau.
 
 Cette première file asynchrone est implémentée directement sur Doctrine/SQLite afin de ne pas ajouter de dépendance runtime supplémentaire. Elle pourra ultérieurement être remplacée par Symfony Messenger sans modifier le contrat métier de publication.
+
+
+## 18. Pipeline musical — Étape 1 uniquement : STEMS
+
+R23 ouvre le nouveau pipeline musical avec un périmètre volontairement strict.
+
+### 18.1 Entrée
+
+La source est exclusivement l'audio original persistant du morceau.
+
+Formats importés déjà supportés par EZScore :
+
+```text
+MP3
+WAV
+FLAC
+M4A
+OGG
+AAC
+```
+
+La normalisation technique en WAV est autorisée uniquement pour alimenter les moteurs de séparation. L'audio original reste la référence temporelle.
+
+### 18.2 Sorties persistées
+
+R23 utilise la stratégie qualité de l'ancienne version EZScore :
+
+```text
+BS-RoFormer
+├─ vocals
+├─ drums
+├─ bass
+├─ guitar
+├─ piano
+└─ other
+
+vocals
+└─ MelBand-RoFormer karaoke
+   ├─ lead_vocals
+   └─ backing_vocals
+```
+
+Les STEMS persistés sont donc :
+
+```text
+vocals
+lead_vocals
+backing_vocals
+drums
+bass
+guitar
+piano
+other
+```
+
+`vocals` est volontairement conservé en plus de `lead_vocals` et `backing_vocals` afin de préserver la sortie brute de première séparation.
+
+### 18.3 Périmètre interdit à R23
+
+R23 NE DOIT PAS lancer :
+
+- Whisper ;
+- paroles ;
+- phonèmes ;
+- accords ;
+- tempo ;
+- beats ;
+- mesures ;
+- structure / blocs ;
+- MIDI ;
+- conducteur ;
+- karaoké.
+
+Le manifeste R23 porte explicitement `scope = stems_only`.
+
+### 18.4 Persistance / réanalyse
+
+Les STEMS sont stockés hors de la base, sous :
+
+```text
+var/storage/stems/song-{id}/{audio_sha256}/
+```
+
+Chaque exécution réussie produit un run immuable.
+
+Un pointeur `current.json` désigne le run courant.
+
+Une réanalyse :
+
+- produit d'abord un nouveau run complet ;
+- ne remplace le pointeur courant qu'après réussite ;
+- conserve au maximum les deux derniers runs ;
+- ne détruit donc jamais la version courante en cas d'échec.
+
+### 18.5 Worker asynchrone
+
+La séparation n'est jamais exécutée dans la requête HTTP.
+
+Le bouton STEMS crée un `AnalysisJob` de type :
+
+```text
+kind = stems
+```
+
+Le worker dédié est :
+
+```text
+php bin/console app:stems:worker
+```
+
+Le claim est conditionnel en base afin d'éviter qu'un même job soit pris simultanément par deux workers.
+
+### 18.6 Vérification à l'oreille
+
+La page STEMS permet d'écouter séparément chaque fichier persistant :
+
+- voix globale ;
+- chant principal ;
+- chœurs ;
+- batterie ;
+- basse ;
+- guitare ;
+- piano / claviers ;
+- autres instruments.
+
+Il ne s'agit PAS encore de la future table de mixage.
+
+### 18.7 Suppression / changement d'audio
+
+La suppression d'une chanson supprime également son répertoire physique de STEMS.
+
+Un remplacement de l'audio source change son SHA-256 : les anciens STEMS ne peuvent donc plus être considérés comme courants pour le nouvel audio.
+
+### 18.8 Étapes futures déjà décidées mais non implémentées en R23
+
+Le futur lecteur utilisera les STEMS avec :
+
+```text
+mix par défaut de Playlist
++ surcharge persistante par User
+```
+
+Mute / activation / volume seront modifiables en temps réel.
+
+Ce mixer n'est PAS implémenté en R23.
+
+De même, le verrou empêchant un utilisateur non Admin de publier un morceau tant que le workflow n'est pas terminé jusqu'au karaoké reste une exigence future. Il sera activé lorsque les critères de complétude des étapes suivantes auront été définis.

@@ -435,3 +435,65 @@ Commentaires :
 - [ ] le backoff évite une boucle de retry immédiate
 - [ ] les destinataires déjà `sent_at` ne sont pas renvoyés lors d'un retry
 - [ ] la publication reste `Published` même si le worker ou SMTP échoue
+
+
+## 24. STEMS ONLY — R23
+
+### Périmètre
+
+- [ ] aucune parole produite
+- [ ] aucun phonème produit
+- [ ] aucun accord produit
+- [ ] aucun beat / tempo produit
+- [ ] aucune mesure produite
+- [ ] aucun bloc / structure produit
+- [ ] aucun MIDI produit
+- [ ] aucun karaoké produit
+
+### Génération
+
+- [ ] bouton STEMS crée un job `kind=stems`
+- [ ] la requête HTTP revient immédiatement
+- [ ] worker `app:stems:worker` traite le job
+- [ ] progression visible
+- [ ] `vocals.wav` présent
+- [ ] `lead_vocals.wav` présent
+- [ ] `backing_vocals.wav` présent
+- [ ] `drums.wav` présent
+- [ ] `bass.wav` présent
+- [ ] `guitar.wav` présent
+- [ ] `piano.wav` présent
+- [ ] `other.wav` présent
+- [ ] manifeste `scope=stems_only`
+- [ ] aucun changement automatique de `Song.status`
+
+### Persistance
+
+- [ ] rechargement de page conserve les STEMS
+- [ ] redémarrage Symfony conserve les STEMS
+- [ ] réanalyse produit un nouveau run
+- [ ] version courante remplacée uniquement après réussite
+- [ ] échec de réanalyse conserve l'ancienne version écoutable
+- [ ] au maximum deux runs sont conservés
+
+### Audio / sécurité
+
+- [ ] lecteur individuel fonctionne pour chaque STEM
+- [ ] routes STEM refusées aux Readers et visiteurs
+- [ ] Éditeur propriétaire autorisé
+- [ ] Admin autorisé
+- [ ] autre Éditeur refusé
+
+### Suppression
+
+- [ ] suppression chanson supprime ses lignes Doctrine par cascade
+- [ ] suppression chanson supprime aussi `var/storage/stems/song-{id}`
+- [ ] changement de source audio n'utilise jamais les STEMS de l'ancien SHA-256
+
+### Runtime
+
+- [ ] FFmpeg disponible
+- [ ] `bs-roformer-infer` disponible dans le Python STEM
+- [ ] `melband-roformer-infer` disponible dans le Python STEM
+- [ ] `BS_ROFORMER_MODELS_PATH` hors C:
+- [ ] device CUDA configuré

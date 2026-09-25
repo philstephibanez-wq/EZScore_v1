@@ -1,0 +1,125 @@
+{% extends 'base.html.twig' %}
+{% block title %}STEMS — {{ song.title }} — EZScore_v1{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23">
+<link rel="stylesheet" href="/assets/css/stems.css?v=20260925r23">
+{% endblock %}
+
+{% block body %}
+{% if job_active %}
+<meta http-equiv="refresh" content="3">
+{% endif %}
+
+<header class="page-head stems-head">
+    <div>
+        <div class="eyebrow">{{ 'stems.eyebrow'|trans({}, 'stems') }}</div>
+        <h1>{{ 'stems.title'|trans({'%title%': song.title}, 'stems') }}</h1>
+        <p class="page-note">{{ 'stems.scope'|trans({}, 'stems') }}</p>
+    </div>
+    <a href="{{ path('app_song_workspace', {'_locale': app.request.locale, id: song.id}) }}">{{ 'stems.back'|trans({}, 'stems') }}</a>
+</header>
+
+<section class="panel stems-source">
+    <div>
+        <strong>{{ song.title }}</strong>
+        <span>{{ song.artist }}</span>
+        <small>{{ song.audioOriginalName ?: '—' }}</small>
+    </div>
+    <div class="stem-source-meta">
+        <span>SHA-256</span>
+        <code>{{ song.audioSha256 ? song.audioSha256|slice(0, 16) ~ '…' : '—' }}</code>
+    </div>
+</section>
+
+<section class="panel stems-action-panel">
+    {% if latest_job %}
+        <div class="stem-job-state">
+            <span class="stem-job-badge state-{{ latest_job.status.value }}">{{ ('stems.job.' ~ latest_job.status.value)|trans({}, 'stems') }}</span>
+            <small>#{{ latest_job.id }} · {{ latest_job.updatedAt|date('d/m/Y H:i:s') }}</small>
+        </div>
+    {% endif %}
+
+    {% if job_active %}
+        {% set pct = progress.percent|default(latest_job ? latest_job.progress : 0) %}
+        <div class="stem-progress">
+            <div class="stem-progress-head">
+                <strong>{{ progress.message|default('stems.processing'|trans({}, 'stems')) }}</strong>
+                <span>{{ pct }} %</span>
+            </div>
+            <progress max="100" value="{{ pct }}"></progress>
+            {% if progress.stage|default(null) %}<small>{{ progress.stage }}</small>{% endif %}
+        </div>
+        <p class="page-note">{{ 'stems.auto_refresh'|trans({}, 'stems') }}</p>
+    {% elseif stems_complete %}
+        <div class="stem-ready">
+            <strong>{{ 'stems.ready'|trans({}, 'stems') }}</strong>
+            {% if manifest.generated_at|default(null) %}
+                <span>{{ manifest.generated_at|date('d/m/Y H:i:s') }}</span>
+            {% endif %}
+            {% if manifest.duration_seconds|default(null) %}
+                <small>{{ 'stems.duration'|trans({'%seconds%': manifest.duration_seconds}, 'stems') }}</small>
+            {% endif %}
+        </div>
+
+        <form method="post"
+              action="{{ path('app_song_stems_generate', {'_locale': app.request.locale, id: song.id}) }}"
+              onsubmit="return confirm('{{ 'stems.reanalyze_confirm'|trans({}, 'stems')|e('js') }}');">
+            <input type="hidden" name="_token" value="{{ csrf_token('song_stems_generate_' ~ song.id) }}">
+            <input type="hidden" name="force" value="1">
+            <button type="submit">{{ 'stems.reanalyze'|trans({}, 'stems') }}</button>
+        </form>
+    {% else %}
+        <p>{{ 'stems.not_generated'|trans({}, 'stems') }}</p>
+
+        {% if latest_job and latest_job.status.value == 'failed' %}
+            <div class="stem-error">
+                <strong>{{ 'stems.failed'|trans({}, 'stems') }}</strong>
+                <code>{{ latest_job.errorCode }}</code>
+            </div>
+        {% endif %}
+
+        <form method="post" action="{{ path('app_song_stems_generate', {'_locale': app.request.locale, id: song.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('song_stems_generate_' ~ song.id) }}">
+            <button class="primary" type="submit">{{ 'stems.generate'|trans({}, 'stems') }}</button>
+        </form>
+    {% endif %}
+</section>
+
+{% if stems_complete %}
+<section class="panel">
+    <div class="stems-section-head">
+        <div>
+            <div class="eyebrow">{{ 'stems.outputs_eyebrow'|trans({}, 'stems') }}</div>
+            <h2>{{ 'stems.outputs'|trans({}, 'stems') }}</h2>
+        </div>
+        {% if manifest.device|default(null) %}<span class="stem-device">{{ manifest.device }}</span>{% endif %}
+    </div>
+
+    <div class="stem-list">
+        {% for stem in stem_names %}
+            <article class="stem-row">
+                <div class="stem-label">
+                    <strong>{{ ('stems.name.' ~ stem)|trans({}, 'stems') }}</strong>
+                    {% set meta = manifest.stems[stem]|default(null) %}
+                    {% if meta and meta.bytes|default(null) %}
+                        <small>{{ (meta.bytes / 1048576)|number_format(1, ',', ' ') }} MB</small>
+                    {% endif %}
+                </div>
+                <audio controls preload="metadata"
+                       src="{{ path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name: stem}) }}"></audio>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel stem-technical">
+    <div class="eyebrow">{{ 'stems.technical'|trans({}, 'stems') }}</div>
+    <div class="stem-tech-grid">
+        <div><span>{{ 'stems.engine_instruments'|trans({}, 'stems') }}</span><strong>{{ manifest.engines.instrumental.engine|default('—') }}</strong><small>{{ manifest.engines.instrumental.model|default('') }}</small></div>
+        <div><span>{{ 'stems.engine_vocals'|trans({}, 'stems') }}</span><strong>{{ manifest.engines.vocal_split.engine|default('—') }}</strong><small>{{ manifest.engines.vocal_split.model|default('') }}</small></div>
+        <div><span>{{ 'stems.timebase'|trans({}, 'stems') }}</span><strong>{{ manifest.timebase|default('—') }}</strong></div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,4 @@
+# R23 STEMS ONLY
+# Use the same quality-first engines as the previous EZScore generation.
+bs-roformer-infer
+melband-roformer-infer

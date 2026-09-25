@@ -1,0 +1,416 @@
+#!/usr/bin/env python3
+"""EZScore_v1 R23 — stem separation only.
+
+Scope is deliberately limited to source separation:
+- BS-RoFormer: vocals, drums, bass, guitar, piano, other
+- MelBand-RoFormer karaoke model: lead vocal + backing vocals from the vocals stem
+
+No lyrics, chords, beats, tempo, MIDI, structure or karaoke analysis is executed.
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+BS_MODEL = "roformer-model-bs-roformer-sw-by-jarredou"
+KARAOKE_MODEL = "roformer-model-melband-roformer-karaoke-by-becruily"
+RAW_STEMS = ("vocals", "drums", "bass", "guitar", "piano", "other")
+FINAL_STEMS = (
+    "vocals",
+    "lead_vocals",
+    "backing_vocals",
+    "drums",
+    "bass",
+    "guitar",
+    "piano",
+    "other",
+)
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _progress(path: Path, percent: int, stage: str, message: str) -> None:
+    _write_json(path, {
+        "percent": int(percent),
+        "stage": stage,
+        "message": message,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+def _run(command: list[str], *, label: str, timeout: int, log_path: Path) -> None:
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    with log_path.open("a", encoding="utf-8", errors="replace") as log:
+        log.write(f"\n[{datetime.now(timezone.utc).isoformat()}] {label}\n")
+        log.write("COMMAND: " + " ".join(command) + "\n")
+        log.flush()
+
+        proc = subprocess.run(
+            command,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            timeout=timeout,
+            check=False,
+        )
+
+    if proc.returncode != 0:
+        raise RuntimeError(f"{label} failed with exit code {proc.returncode}; see {log_path}")
+
+
+def _which_ffmpeg() -> str:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("FFmpeg is required and was not found in PATH.")
+    return ffmpeg
+
+
+def _module_required(module_name: str, package_label: str) -> None:
+    if importlib.util.find_spec(module_name) is None:
+        raise RuntimeError(
+            f"{package_label} is not installed in this Python environment "
+            f"(missing module {module_name!r})."
+        )
+
+
+def _model_root(env_name: str, fallback: Path | None = None) -> Path:
+    value = str(os.getenv(env_name, "") or "").strip()
+    root = Path(value).expanduser() if value else fallback
+    if root is None:
+        raise RuntimeError(f"{env_name} must be configured.")
+    if root.drive and root.drive.upper() == "C:":
+        raise RuntimeError(f"{env_name} must not point to C:.")
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _runtime_tmp(bs_root: Path) -> Path:
+    value = str(os.getenv("EZSCORE_RUNTIME_TMP", "") or "").strip()
+    root = Path(value).expanduser() if value else bs_root.parent / "tmp"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _pick_wav(output_dir: Path, target: str, source_stem: str | None = None) -> Path:
+    target_low = target.casefold()
+    source_low = (source_stem or "").casefold()
+    candidates: list[tuple[int, int, Path]] = []
+
+    for path in output_dir.rglob("*.wav"):
+        name = path.stem.casefold()
+        score = 0
+        if name == target_low:
+            score += 20
+        if name.endswith("_" + target_low) or name.endswith("-" + target_low):
+            score += 12
+        if name.startswith(target_low + "_") or name.startswith(target_low + "-"):
+            score += 8
+        if target_low in name:
+            score += 4
+        if source_low and source_low in name:
+            score += 2
+        if score > 0:
+            candidates.append((score, path.stat().st_size, path))
+
+    if not candidates:
+        produced = ", ".join(sorted(p.name for p in output_dir.rglob("*.wav")))
+        raise RuntimeError(
+            f"Stem {target!r} not found in {output_dir}. Produced WAV: {produced or 'none'}"
+        )
+
+    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return candidates[0][2]
+
+
+def _pick_karaoke_output(output_dir: Path, output_id: str) -> Path:
+    wanted = output_id.casefold()
+    candidates = sorted(
+        p for p in output_dir.rglob("*.wav")
+        if p.stem.casefold().endswith("_" + wanted)
+        or p.stem.casefold() == wanted
+    )
+    if len(candidates) != 1:
+        produced = ", ".join(sorted(p.name for p in output_dir.rglob("*.wav")))
+        raise RuntimeError(
+            f"Karaoke output {output_id!r} is missing/ambiguous. Produced WAV: {produced or 'none'}"
+        )
+    return candidates[0]
+
+
+def _prepare_bs_model(model_root: Path, timeout: int, log_path: Path) -> tuple[str, Path, Path]:
+    from bs_roformer import MODEL_REGISTRY
+
+    try:
+        entry = MODEL_REGISTRY.get(BS_MODEL)
+    except KeyError as exc:
+        raise RuntimeError(f"Unknown BS-RoFormer model: {BS_MODEL}") from exc
+
+    model_dir = model_root / entry.slug
+    config_path = model_dir / entry.config
+    checkpoint_path = model_dir / entry.checkpoint
+
+    if not config_path.is_file() or not checkpoint_path.is_file():
+        _run(
+            [
+                sys.executable, "-m", "bs_roformer.download",
+                "--model", entry.slug,
+                "--output-dir", str(model_root),
+            ],
+            label="BS-RoFormer model download",
+            timeout=max(timeout, 1800),
+            log_path=log_path,
+        )
+
+    if not config_path.is_file() or not checkpoint_path.is_file():
+        raise RuntimeError("BS-RoFormer model files are still missing after download.")
+
+    return entry.slug, config_path, checkpoint_path
+
+
+def _prepare_karaoke_model(model_root: Path, timeout: int, log_path: Path) -> str:
+    from mel_band_roformer import MODEL_REGISTRY
+
+    try:
+        entry = MODEL_REGISTRY.get(KARAOKE_MODEL)
+    except KeyError as exc:
+        available = []
+        try:
+            available = [item.slug for item in MODEL_REGISTRY.list("karaoke")]
+        except Exception:
+            pass
+        raise RuntimeError(
+            f"Unknown MelBand karaoke model: {KARAOKE_MODEL}. "
+            f"Available: {', '.join(available) or 'unknown'}"
+        ) from exc
+
+    # The inference package downloads missing weights itself in most versions.
+    # Explicitly use its downloader if the model directory does not exist.
+    expected_dir = model_root / entry.slug
+    if not expected_dir.exists():
+        _run(
+            [
+                sys.executable, "-m", "mel_band_roformer.download",
+                "--model", entry.slug,
+                "--output-dir", str(model_root),
+            ],
+            label="MelBand-RoFormer model download",
+            timeout=max(timeout, 1800),
+            log_path=log_path,
+        )
+
+    return entry.slug
+
+
+def _cleanup_old_runs(runs_dir: Path, keep: int = 2) -> None:
+    runs = sorted(
+        (p for p in runs_dir.iterdir() if p.is_dir() and p.name.startswith("run-")),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    for old in runs[keep:]:
+        shutil.rmtree(old, ignore_errors=True)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source", required=True)
+    parser.add_argument("--audio-hash", required=True)
+    parser.add_argument("--storage-root", required=True)
+    parser.add_argument("--progress-file", required=True)
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--timeout", type=int, default=7200)
+    args = parser.parse_args()
+
+    source = Path(args.source).resolve()
+    storage_root = Path(args.storage_root).resolve()
+    progress_file = Path(args.progress_file).resolve()
+    timeout = max(1800, int(args.timeout))
+
+    if not source.is_file() or source.stat().st_size <= 0:
+        raise RuntimeError(f"Invalid source audio: {source}")
+
+    _module_required("bs_roformer", "bs-roformer-infer")
+    _module_required("mel_band_roformer", "melband-roformer-infer")
+
+    bs_root = _model_root("BS_ROFORMER_MODELS_PATH")
+    karaoke_root = _model_root(
+        "MELBAND_ROFORMER_MODELS_PATH",
+        fallback=bs_root.parent / "melband-roformer",
+    )
+    runtime_tmp = _runtime_tmp(bs_root)
+    device = str(os.getenv("EZSCORE_STEM_DEVICE", "cuda:0") or "cuda:0").strip()
+
+    storage_root.mkdir(parents=True, exist_ok=True)
+    runs_dir = storage_root / "runs"
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    current_pointer = storage_root / "current.json"
+    log_path = storage_root / "worker.log"
+
+    if current_pointer.is_file() and not args.force:
+        _progress(progress_file, 100, "cached", "Stems already available.")
+        return 0
+
+    run_name = "run-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    final_run = runs_dir / run_name
+    staging = Path(tempfile.mkdtemp(prefix="ezscore-stems-", dir=str(runtime_tmp)))
+
+    started = time.monotonic()
+
+    try:
+        _progress(progress_file, 3, "prepare", "Preparing audio source.")
+
+        input_dir = staging / "input"
+        bs_output = staging / "bs_output"
+        karaoke_input = staging / "karaoke_input"
+        karaoke_output = staging / "karaoke_output"
+        payload = staging / "payload"
+
+        for directory in (input_dir, bs_output, karaoke_input, karaoke_output, payload):
+            directory.mkdir(parents=True, exist_ok=True)
+
+        source_wav = input_dir / "source.wav"
+        _run(
+            [
+                _which_ffmpeg(),
+                "-hide_banner", "-loglevel", "error", "-y",
+                "-i", str(source),
+                "-vn",
+                "-acodec", "pcm_f32le",
+                str(source_wav),
+            ],
+            label="FFmpeg normalization",
+            timeout=min(timeout, 900),
+            log_path=log_path,
+        )
+
+        _progress(progress_file, 10, "models", "Checking separation models.")
+        bs_slug, bs_config, bs_checkpoint = _prepare_bs_model(bs_root, timeout, log_path)
+
+        _progress(progress_file, 18, "separation", "Separating instrumental stems.")
+        _run(
+            [
+                sys.executable, "-m", "bs_roformer.inference",
+                "--config_path", str(bs_config),
+                "--model_path", str(bs_checkpoint),
+                "--input_folder", str(input_dir),
+                "--store_dir", str(bs_output),
+                "--device", device,
+            ],
+            label="BS-RoFormer 6-stem separation",
+            timeout=timeout,
+            log_path=log_path,
+        )
+
+        located: dict[str, Path] = {
+            name: _pick_wav(bs_output, name, source_wav.stem)
+            for name in RAW_STEMS
+        }
+
+        _progress(progress_file, 72, "vocals", "Separating lead vocal and backing vocals.")
+
+        karaoke_slug = _prepare_karaoke_model(karaoke_root, timeout, log_path)
+        shutil.copy2(located["vocals"], karaoke_input / "vocals.wav")
+
+        _run(
+            [
+                sys.executable, "-m", "mel_band_roformer.inference",
+                "--model", karaoke_slug,
+                "--models_dir", str(karaoke_root),
+                "--input_folder", str(karaoke_input),
+                "--store_dir", str(karaoke_output),
+                "--device", device,
+            ],
+            label="MelBand-RoFormer lead/backing separation",
+            timeout=timeout,
+            log_path=log_path,
+        )
+
+        lead = _pick_karaoke_output(karaoke_output, "vocals")
+        backing = _pick_karaoke_output(karaoke_output, "instrumental")
+
+        _progress(progress_file, 90, "persist", "Persisting stems.")
+
+        # Persist exhaustive stems. "vocals" is retained as the unsplit vocal stem.
+        for name in RAW_STEMS:
+            shutil.copy2(located[name], payload / f"{name}.wav")
+        shutil.copy2(lead, payload / "lead_vocals.wav")
+        shutil.copy2(backing, payload / "backing_vocals.wav")
+
+        for name in FINAL_STEMS:
+            target = payload / f"{name}.wav"
+            if not target.is_file() or target.stat().st_size <= 0:
+                raise RuntimeError(f"Invalid final stem: {name}")
+
+        manifest = {
+            "schema_version": 1,
+            "scope": "stems_only",
+            "audio_hash": str(args.audio_hash),
+            "timebase": "original_audio_seconds",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "duration_seconds": round(time.monotonic() - started, 3),
+            "device": device,
+            "engines": {
+                "instrumental": {
+                    "engine": "bs-roformer",
+                    "model": bs_slug,
+                },
+                "vocal_split": {
+                    "engine": "melband-roformer",
+                    "model": karaoke_slug,
+                },
+            },
+            "stems": {
+                name: {
+                    "file": f"{name}.wav",
+                    "bytes": (payload / f"{name}.wav").stat().st_size,
+                }
+                for name in FINAL_STEMS
+            },
+            "excluded_analysis": [
+                "lyrics", "phonemes", "chords", "tempo", "beats",
+                "measures", "sections", "midi", "karaoke",
+            ],
+        }
+        _write_json(payload / "manifest.json", manifest)
+
+        # Atomic-ish publish: run directory is immutable once published.
+        payload.replace(final_run)
+        _write_json(current_pointer, {"run": run_name})
+        _cleanup_old_runs(runs_dir, keep=2)
+
+        _progress(progress_file, 100, "complete", "Stem separation completed.")
+        return 0
+
+    except Exception as exc:
+        _progress(progress_file, 100, "error", str(exc))
+        with log_path.open("a", encoding="utf-8", errors="replace") as log:
+            log.write(f"\nERROR: {exc!r}\n")
+        raise
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,43 @@
+stems:
+  eyebrow: Audio separation
+  title: 'STEMS — %title%'
+  scope: This step performs audio source separation only. No lyrics, chords, tempo, structure, MIDI or karaoke analysis is run.
+  back: Back to song
+  workspace:
+    heading: Step 1 — STEMS
+    body: Separate and persist the audio sources before any other analysis.
+    open: Open STEM separation
+  generate: Separate STEMS
+  reanalyze: Re-analyze STEMS
+  reanalyze_confirm: Run the complete STEM separation again? The new version becomes current only after a successful run.
+  not_generated: No persistent STEM has been generated for this audio yet.
+  queued: STEM separation was queued.
+  already_running: A STEM separation job is already active for this song.
+  processing: Separation in progress…
+  auto_refresh: This page refreshes automatically while the job is running.
+  ready: STEMS available
+  duration: 'Processing time: %seconds% s'
+  failed: The last separation failed.
+  error:
+    no_audio: No usable source audio is associated with this song.
+  outputs_eyebrow: Persistent result
+  outputs: STEM playback
+  technical: Technical information
+  engine_instruments: Instrument separation
+  engine_vocals: Lead / backing separation
+  timebase: Time reference
+  job:
+    queued: Queued
+    running: Running
+    completed: Completed
+    failed: Failed
+    cancelled: Cancelled
+  name:
+    vocals: Vocals — combined
+    lead_vocals: Lead vocal
+    backing_vocals: Backing vocals
+    drums: Drums
+    bass: Bass
+    guitar: Guitar
+    piano: Piano / keys
+    other: Other instruments
