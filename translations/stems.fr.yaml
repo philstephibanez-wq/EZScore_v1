@@ -10,6 +10,12 @@ stems:
   generate: Séparer les STEMS
   reanalyze: Réanalyser les STEMS
   reanalyze_confirm: Relancer complètement la séparation des STEMS ? La nouvelle version remplacera la version courante après réussite.
+  reanalyze_modal:
+    eyebrow: Nouvelle extraction
+    title: Réanalyser les STEMS ?
+    body: Les STEMS existants restent disponibles jusqu'à la fin de la nouvelle extraction. Le nouveau résultat les remplacera uniquement si l'analyse se termine correctement.
+    cancel: Annuler
+    confirm: Réanalyser
   not_generated: Aucun STEM persistant n’a encore été généré pour cet audio.
   queued: La séparation STEMS a été placée dans la file de traitement.
   already_running: Une séparation STEMS est déjà en cours pour ce morceau.
@@ -18,6 +24,12 @@ stems:
   ready: STEMS disponibles
   duration: 'Temps de calcul : %seconds% s'
   failed: La dernière séparation a échoué.
+  progress:
+    queued: En attente du worker STEM…
+    running_note: 'Analyse en cours. Vous pouvez quitter cette page : le traitement continue en arrière-plan.'
+    engine: 'Moteur : %percent% %%'
+    step_time: 'Temps étape : %seconds% s'
+    activity: 'Activité : %time%'
   error:
     no_audio: Aucun audio source exploitable n’est associé à ce morceau.
     worker_offline: Le moteur d’analyse est hors ligne. Démarrez EZScore Analysis Worker avant de lancer une analyse.
@@ -36,9 +48,41 @@ stems:
   name:
     vocals: Voix — global
     lead_vocals: Chant principal
-    backing_vocals: Chœurs / backing vocals
+    backing_vocals: Chœurs
     drums: Batterie
     bass: Basse
     guitar: Guitare
     piano: Piano / claviers
     other: Autres instruments
+  mixer:
+    eyebrow: Lecture synchronisée
+    title: STEMS + table de mixage
+    description: Lecture synchronisée, sélection des pistes, volume et égalisation en temps réel. Le mixage est mémorisé automatiquement pour ce morceau et cet utilisateur.
+    loading: Chargement audio…
+    track: Piste
+    enabled: ON
+    active: Actif
+    volume: Volume
+    low: Graves
+    mid: Médiums
+    high: Aigus
+    original: Original
+    reset_eq: Reset EQ
+    master: Master
+    saved: Mixage mémorisé
+    modified: Modifié
+    saving: Enregistrement…
+    save_failed: Sauvegarde impossible
+    web_audio_unavailable: Web Audio indisponible
+    loading_progress: 'Chargement %done%/%total%'
+    loaded_partial: '%done%/%total% pistes chargées'
+    ready: Prêt
+    playing: Lecture
+    paused: Pause
+    finished: Terminé
+    audio_error: 'Erreur audio : %error%'
+    play: '▶ Lecture'
+    pause: 'Ⅱ Pause'
+    stop: '■ Stop'
+    speed: Vitesse
+    position: Position

@@ -1,3 +1,369 @@
+locale:
+  label: Langue
+  fr: FR
+  en: EN
+  fr_name: Français
+  en_name: English
+  change: Changer
+nav:
+  dashboard: Tableau de bord
+  catalog: Répertoire
+  playlists: Playlists
+  groups: Groupes
+  administration: Administration
+  users: Utilisateurs
+  logout: Déconnexion
+common:
+  create: Créer
+  save: Enregistrer
+  none: Aucun
+  cancel: Annuler
+layout:
+  sidebar:
+    toggle: Ouvrir le menu
+    navigation: Navigation principale
+  search:
+    label: Rechercher
+    placeholder: Rechercher un morceau…
+    submit: Rechercher
+role:
+  ROLE_ADMIN: Admin
+  ROLE_EDITOR: Éditeur
+  ROLE_READER: Lecteur
+group_role:
+  owner: Propriétaire
+  manager: Gestionnaire
+  member: Membre
+auth:
+  first_run:
+    title: Initialisation
+    eyebrow: Premier démarrage
+    heading: Création de l’administrateur
+    description: Ce compte devient l’administrateur initial d’EZScore_v1.
+    create: Créer l’administrateur
+    created: Administrateur créé. Connecte-toi.
+    error:
+      session: Session expirée. Recharge la page.
+      name: Nom affiché obligatoire.
+      email: Adresse e-mail invalide.
+      password_length: Le mot de passe doit contenir au moins 10 caractères.
+      password_match: Les mots de passe ne correspondent pas.
+  login:
+    title: Connexion
+    heading: Connexion
+    submit: Se connecter
+    or: ou
+    google: Continuer avec Google
+    google_disabled: Google SSO non configuré
+    back_catalog: Retour au Répertoire
+  google:
+    not_configured: Google SSO n’est pas configuré.
+dashboard:
+  title: Tableau de bord
+  catalog: Morceaux enregistrés dans les données EZScore.
+  playlists: Playlists personnelles et de groupe.
+  groups: Membres et rôles de groupe.
+  users: Comptes, rôles et accès.
+users:
+  title: Utilisateurs
+  note: Comptes locaux et comptes autorisés à utiliser Google SSO.
+  create:
+    heading: Créer un utilisateur
+  display_name: Nom affiché
+  email: E-mail
+  email_login: E-mail / login local
+  password: Mot de passe
+  password_confirm: Confirmation
+  local_password: Mot de passe local
+  password_optional: Optionnel si Google uniquement
+  password_unchanged: Laisser inchangé
+  new_password: Nouveau mot de passe
+  role: Rôle
+  active: Actif
+  account: Compte
+  actions: Actions
+  google_linked: Lié
+  empty: Aucun utilisateur.
+  rules: Un compte sans mot de passe local peut être utilisé via Google si son adresse e-mail correspond à un compte autorisé.
+    Le dernier administrateur actif ne peut pas être désactivé, rétrogradé ni supprimé.
+  created: Utilisateur créé.
+  updated: Utilisateur mis à jour.
+  deleted: Utilisateur supprimé.
+  delete:
+    button: Supprimer
+    confirm: Supprimer définitivement %name% ?
+  error:
+    email_used: Cette adresse e-mail est déjà utilisée.
+    password_length: Le mot de passe doit contenir au moins 10 caractères.
+    password_length_new: Le nouveau mot de passe doit contenir au moins 10 caractères.
+    last_admin: Impossible de désactiver ou rétrograder le dernier administrateur actif.
+    name: Nom affiché obligatoire.
+    email: Adresse e-mail invalide.
+    delete_self: Vous ne pouvez pas supprimer votre propre compte administrateur.
+    delete_last_admin: Impossible de supprimer le dernier administrateur actif.
+    delete_analysis_history: Cet utilisateur possède un historique d’analyse. Pour préserver la traçabilité, désactivez son
+      compte au lieu de le supprimer.
+groups:
+  title: Groupes
+  eyebrow: Collaboration
+  create:
+    heading: Nouveau groupe
+  name: Nom
+  description: Description
+  no_members: Aucun membre.
+  empty: Aucun groupe.
+  validation:
+    name: Le nom du groupe est obligatoire.
+  created: Groupe créé.
+  member:
+    email: E-mail du membre
+    save: Ajouter / modifier
+    not_found: Utilisateur introuvable.
+    saved: Membre enregistré.
+playlists:
+  title: Playlists
+  eyebrow: Bibliothèque
+  create:
+    heading: Nouvelle playlist
+  name: Nom
+  description: Description
+  public: Publique
+  empty: Aucune playlist.
+  owner:
+    personal: Personnelle
+    group: Groupe
+  visibility:
+    public: Publique
+    private: Privée
+  validation:
+    name: Le nom de la playlist est obligatoire.
+  created: Playlist créée.
+catalog:
+  title: Répertoire
+  eyebrow: Musique
+  empty: Aucun morceau disponible pour le moment.
+  member_lead: Votre bibliothèque EZScore selon vos droits d’accès.
+  public:
+    eyebrow: Jouez. Chantez. Partagez.
+    heading: Vos chansons prennent vie.
+    lead: Explorez les morceaux publiés et découvrez EZScore. Créez gratuitement votre compte pour profiter du karaoké complet,
+      écouter les morceaux et organiser votre musique avec vos playlists et vos groupes.
+    register: Créer un compte gratuitement
+    free_note: L’inscription à EZScore est gratuite.
+    benefits_heading: Avantages de l’inscription
+    benefit:
+      karaoke:
+        title: Karaoké complet et illimité
+        body: Paroles, accords et synchronisation sur toute la chanson.
+      audio:
+        title: Écoute MP3 complète
+        body: Retrouvez et écoutez les morceaux publiés depuis votre compte.
+      organise:
+        title: Playlists et groupes
+        body: Organisez vos chansons, créez vos playlists et rejoignez vos groupes.
+    future_label: Offres et quotas avancés
+    future_value: Prochainement
+    catalog_lead: Parcourez les chansons publiées. La démo karaoké publique est limitée à 20 secondes.
+    preview_badge: Démo 20 s
+    empty_hint: Les chansons apparaîtront ici dès leur publication.
+  import:
+    label: Importer une chanson
+    button_help: MP3 + fiche chanson
+    kicker: Nouvel import
+    eyebrow: Bibliothèque
+    heading: Importer une chanson
+    lead: Importez le fichier audio et renseignez sa fiche. Aucune analyse Python n’est lancée à cette étape.
+    source_heading: Source audio
+    audio_label: Fichier audio
+    audio_help: 'MP3 recommandé. Formats acceptés : MP3, WAV, FLAC, M4A, OGG, AAC. Le fichier est conservé dans le stockage
+      privé EZScore.'
+    php_limit_note: Si le fichier dépasse la limite PHP du serveur, EZScore affiche maintenant une erreur explicite.
+    cover_help: JPEG, PNG ou WEBP.
+    status_help: Le statut « Analysée » est attribué par la chaîne d’analyse, pas manuellement à l’import.
+    submit: Importer le morceau
+    created: Chanson importée.
+    validation:
+      audio_required: Un fichier audio est obligatoire.
+      audio_too_large: Le fichier audio dépasse la taille maximale autorisée par PHP sur ce serveur.
+      audio_partial: Le fichier audio n’a été reçu que partiellement. Réessayez l’import.
+      audio_upload: Le fichier audio n’a pas pu être téléversé correctement.
+      audio_format: Format audio non pris en charge. Utilisez MP3, WAV, FLAC, M4A, OGG ou AAC.
+      audio_empty: Le fichier audio est vide.
+      cover_too_large: La pochette dépasse la taille maximale autorisée par PHP.
+      cover_partial: La pochette n’a été reçue que partiellement.
+      cover_upload: La pochette n’a pas pu être téléversée correctement.
+      cover_format: La pochette doit être au format JPEG, PNG ou WEBP.
+      required: Le titre et l’interprète sont obligatoires.
+      editor: L’éditeur sélectionné n’est pas valide.
+      status: Le statut initial sélectionné n’est pas valide.
+      invalid: Le fichier ou les informations d’import sont invalides.
+      failed: L’import n’a pas pu être terminé.
+    preview:
+      heading: Pré-écoute
+      help: Lecture locale du fichier sélectionné avant import. Aucun fichier n’est envoyé tant que vous n’avez pas validé
+        l’import.
+  search:
+    results_for: Résultats pour « %query% »
+    clear: Effacer
+    none: Aucun morceau ne correspond à cette recherche.
+  controls:
+    label: Options du répertoire
+    sort_label: Trier par
+    sort_title: Titre
+    sort_artist: Interprète
+    alphabet_label: Filtre alphabétique
+    all: Tous
+song:
+  title: Titre
+  artist: Interprète
+  author: Auteur / Parolier
+  composer: Compositeur
+  editor: Éditeur
+  comment: Commentaire
+  internal_comment: Commentaire interne éditeur
+  internal_comment_help: Visible uniquement par les personnes autorisées à éditer la chanson.
+  cover: Pochette
+  cover_alt: Pochette de %title%
+  time_signature: Signature
+  time_signature_auto: Auto
+  capo: Capo
+  strumming: Strumming
+  strumming_primary: Strumming principal
+  strumming_alternate: Strumming alternatif
+  status:
+    label: Statut
+    imported: Importée
+    analyzed: Analysée
+    editing: En édition
+    published: Publiée
+  edit:
+    button: Modifier
+    eyebrow: Édition
+    heading: Modifier la chanson
+    lead: Modifiez les métadonnées, la pochette et les paramètres musicaux sans réimporter le fichier audio.
+    back_workspace: Retour au morceau
+    save: Enregistrer les modifications
+    saved: Modifications enregistrées.
+    cover_help: Laissez vide pour conserver la pochette actuelle.
+    status_help: Le statut « Analysée » reste réservé à la chaîne d’analyse.
+    rating_readonly: La note des utilisateurs est indépendante de l’édition de la chanson.
+    validation:
+      required: Le titre et l’interprète sont obligatoires.
+      editor: L’éditeur sélectionné n’est pas valide.
+      status: Le statut sélectionné n’est pas valide.
+      analyzed: Le statut « Analysée » ne peut être attribué que par la chaîne d’analyse.
+      invalid: Les paramètres de la chanson sont invalides.
+    audio:
+      eyebrow: Source audio
+      heading: Remplacer le fichier audio
+      body: Le remplacement conserve la même chanson, mais repasse son statut à « Importée » car les analyses précédentes
+        ne correspondent plus forcément à la nouvelle source.
+      current: Fichier actuel
+      replace: Remplacer l’audio
+      confirm: Remplacer la source audio ? La chanson repassera au statut Importée.
+      required: Sélectionnez un nouveau fichier audio.
+      replaced: Source audio remplacée. La chanson est repassée au statut Importée.
+      failed: Le remplacement du fichier audio a échoué.
+  rating:
+    eyebrow: Communauté
+    heading: Note des utilisateurs
+    yours: Votre note
+    save: Enregistrer ma note
+    remove: Retirer ma note
+    none: Pas encore de note
+    count: '{%count%} note(s)'
+    star_title: '%star% étoile(s)'
+    summary_aria: Note moyenne %average% sur 5, %count% note(s)
+    login_note: Connectez-vous pour noter cette chanson.
+    saved: Votre note a été enregistrée.
+    removed: Votre note a été retirée.
+    invalid: La note doit être comprise entre 1 et 5 étoiles.
+    available_after_import: La notation sera disponible après l’import.
+  publication:
+    published_badge: Publié
+    draft_badge: Brouillon
+    publish: Publier
+    unpublish: Dépublier
+    published: Morceau publié.
+    unpublished: Morceau retiré du catalogue public.
+workspace:
+  lyrics: PAROLES
+  access:
+    preview: Démo karaoké · %seconds% s
+    karaoke_full: Karaoké complet
+    audio_full: MP3 complet
+  public_gate:
+    eyebrow: Aperçu public
+    heading: Découvrez le karaoké EZScore
+    body: Vous pouvez découvrir %seconds% secondes de karaoké. Créez gratuitement votre compte pour accéder au karaoké complet
+      et à l’écoute MP3.
+  no_analysis:
+    heading: Aucune donnée d’analyse
+    body: Le workspace n’invente aucun résultat. Les STEMS, accords, paroles, blocs et événements temporels apparaîtront uniquement
+      lorsqu’ils existeront dans les données persistées.
+  edit:
+    heading: Édition du morceau
+    body: L’édition musicale sera raccordée aux données persistées ; aucun état mock ou fallback n’est utilisé.
+analysis:
+  status:
+    queued: En attente
+    running: En cours
+    completed: Terminé
+    failed: Échec
+    cancelled: Annulé
+registration:
+  title: Inscription
+  heading: Créer votre compte
+  description: Votre adresse e-mail devra être validée avant la première connexion.
+  submit: Créer mon compte
+  login_prompt: Pas encore de compte ?
+  register_link: S’inscrire
+  already_registered: Déjà inscrit ?
+  activation_sent: Le compte a été créé. Un e-mail d’activation a été envoyé.
+  activation_delivery_failed: Le compte a été créé mais l’e-mail d’activation n’a pas pu être envoyé. Vérifiez la configuration
+    SMTP puis utilisez le renvoi d’activation.
+  activated: Votre adresse e-mail est validée. Vous pouvez vous connecter.
+  activation_invalid: Ce lien d’activation est invalide ou expiré.
+  resend_generic: Si ce compte existe, n’est pas encore validé et peut recevoir un nouveau lien, un e-mail d’activation a
+    été envoyé.
+  email_already_used: Cette adresse e-mail est déjà utilisée.
+  error:
+    name: Nom affiché obligatoire.
+    email: Adresse e-mail invalide.
+    email_used: Cette adresse e-mail est déjà utilisée.
+    password_length: Le mot de passe doit contenir au moins 10 caractères.
+    password_match: Les mots de passe ne correspondent pas.
+  pending:
+    title: Activation du compte
+    heading: Vérifiez votre e-mail
+    body: L’accès à EZSCORE reste bloqué tant que l’adresse e-mail n’a pas été validée. Le lien d’activation est valable 24
+      heures.
+    resend: Renvoyer le mail d’activation
+    back_login: Retour à la connexion
+  email:
+    subject: Activez votre compte EZSCORE
+    heading: Activation de votre compte
+    hello: Bonjour %name%,
+    body: Confirmez votre adresse e-mail pour activer votre compte EZSCORE.
+    button: Activer mon compte
+    expiry: Ce lien est valable pendant 24 heures.
+    ignore: Si vous n’êtes pas à l’origine de cette inscription, ignorez ce message.
+profile:
+  title: Profil
+  account:
+    heading: Compte et préférences
+  subscription:
+    eyebrow: Abonnement
+    heading: Votre offre EZScore
+    body: L’inscription à EZScore est gratuite. Les offres d’abonnement et les quotas d’usage seront gérés séparément dans
+      votre profil.
+    current_label: Offre actuelle
+    current_value: Gratuit
+    karaoke_label: Karaoké
+    karaoke_value: Illimité selon vos droits
+    future_label: Offres et quotas
+    future_value: Prochainement
+
 analysis_worker:
   offline:
     title: Moteur d’analyse hors ligne

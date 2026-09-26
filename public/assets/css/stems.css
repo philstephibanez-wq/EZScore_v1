@@ -25,11 +25,6 @@
 .stems-section-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .stems-section-head h2{margin:.2rem 0 0}
 .stem-device{padding:4px 8px;border:1px solid #36515d;border-radius:999px;color:#9dd7d2;font-size:10px}
-.stem-list{display:grid;gap:8px;margin-top:14px}
-.stem-row{display:grid;grid-template-columns:minmax(160px,.45fr) minmax(280px,1fr);gap:15px;align-items:center;padding:10px 12px;border:1px solid #2c3942;border-radius:10px;background:#10171d}
-.stem-label{display:grid;gap:3px}
-.stem-label small{color:#84939d}
-.stem-row audio{width:100%;height:38px}
 .stem-tech-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
 .stem-tech-grid>div{display:grid;gap:3px;padding:10px;border:1px solid #2d3942;border-radius:9px}
 .stem-tech-grid span{font-size:9px;text-transform:uppercase;letter-spacing:.055em;color:#7e8f9b}
@@ -46,9 +41,78 @@
 .stem-modal-cancel{background:#17222a}
 body.stem-modal-open{overflow:hidden}
 
+/* R25 realtime mixer */
+.stem-mixer-panel{display:grid;gap:16px;overflow:hidden}
+.stem-mixer-state,.stem-mix-save-state{font-size:11px;color:#8eb4c2}
+.stem-mixer-grid{
+    display:grid;
+    grid-template-columns:minmax(145px,1.1fr) 88px minmax(180px,1.25fr) minmax(170px,1fr) minmax(170px,1fr) minmax(170px,1fr) 88px;
+    gap:12px;
+    align-items:center;
+}
+.stem-mixer-head{
+    padding:0 0 8px;
+    color:#8b9ba5;
+    font-size:11px;
+    font-weight:800;
+    border-bottom:1px solid #2b3740;
+}
+.stem-mixer-row{
+    min-height:58px;
+    padding:9px 0;
+    border-bottom:1px solid #25313a;
+}
+.stem-mixer-row strong{font-size:14px}
+.stem-mixer-toggle{display:flex;gap:7px;align-items:center;font-size:12px}
+.stem-mixer-slider{display:grid;grid-template-columns:minmax(105px,1fr) 52px;gap:8px;align-items:center}
+.stem-mixer-slider input[type=range],.stem-master-slider input[type=range],.stem-seek{width:100%}
+.stem-mixer-slider output,.stem-master-slider output{font-size:11px;color:#b6c2c9;text-align:right}
+.stem-mixer-row button{min-height:38px}
+.stem-master-row{
+    display:grid;
+    grid-template-columns:145px minmax(250px,1fr) 140px;
+    gap:14px;
+    align-items:center;
+    padding-top:2px;
+}
+.stem-master-slider{display:grid;grid-template-columns:minmax(180px,1fr) 56px;gap:8px;align-items:center}
+.stem-transport{display:grid;gap:10px;padding:14px;border:1px solid #2d3942;border-radius:10px;background:#10171d}
+.stem-transport-controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.stem-speed-control{display:flex;gap:8px;align-items:center;margin-left:8px;font-size:12px}
+.stem-speed-control select{min-height:38px}
+.stem-time{margin-left:auto;font-variant-numeric:tabular-nums}
+@media(max-width:1200px){
+    .stem-mixer-panel{overflow-x:auto}
+    .stem-mixer-grid{min-width:1100px}
+}
 @media(max-width:750px){
     .stems-source{align-items:flex-start;flex-direction:column}
     .stem-source-meta{text-align:left}
-    .stem-row{grid-template-columns:1fr}
     .stem-tech-grid{grid-template-columns:1fr}
+    .stem-master-row{grid-template-columns:1fr}
+    .stem-time{margin-left:0}
+}
+
+/* R25.4 — keep the global left navigation above every STEMS page layer. */
+.ez-shell.ez-drawer-open .ez-drawer-backdrop{
+    z-index:6000!important;
+}
+.ez-shell.ez-drawer-open .ez-drawer{
+    z-index:6002!important;
+    pointer-events:auto!important;
+    isolation:isolate;
+}
+.ez-shell.ez-drawer-open .ez-topbar{
+    z-index:6010!important;
+}
+.ez-shell.ez-drawer-open .ez-drawer-nav,
+.ez-shell.ez-drawer-open .ez-drawer-footer,
+.ez-shell.ez-drawer-open .ez-drawer-nav a,
+.ez-shell.ez-drawer-open .ez-drawer-footer a{
+    position:relative;
+    z-index:1;
+    pointer-events:auto!important;
+}
+.ez-shell.ez-drawer-open .ez-main{
+    pointer-events:none;
 }

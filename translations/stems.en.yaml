@@ -10,6 +10,12 @@ stems:
   generate: Separate STEMS
   reanalyze: Re-analyze STEMS
   reanalyze_confirm: Run the complete STEM separation again? The new version becomes current only after a successful run.
+  reanalyze_modal:
+    eyebrow: New extraction
+    title: Re-analyze STEMS?
+    body: Existing STEMS remain available until the new extraction finishes. The new result replaces them only if analysis completes successfully.
+    cancel: Cancel
+    confirm: Re-analyze
   not_generated: No persistent STEM has been generated for this audio yet.
   queued: STEM separation was queued.
   already_running: A STEM separation job is already active for this song.
@@ -18,6 +24,12 @@ stems:
   ready: STEMS available
   duration: 'Processing time: %seconds% s'
   failed: The last separation failed.
+  progress:
+    queued: Waiting for STEM worker…
+    running_note: 'Analysis is running. You can leave this page: processing continues in the background.'
+    engine: 'Engine: %percent% %%'
+    step_time: 'Step time: %seconds% s'
+    activity: 'Activity: %time%'
   error:
     no_audio: No usable source audio is associated with this song.
     worker_offline: The analysis engine is offline. Start EZScore Analysis Worker before launching an analysis.
@@ -42,3 +54,35 @@ stems:
     guitar: Guitar
     piano: Piano / keys
     other: Other instruments
+  mixer:
+    eyebrow: Synchronized playback
+    title: STEMS + mixer
+    description: Synchronized playback, track selection, volume and real-time equalization. The mix is saved automatically for this song and user.
+    loading: Loading audio…
+    track: Track
+    enabled: ON
+    active: Active
+    volume: Volume
+    low: Bass
+    mid: Mids
+    high: Treble
+    original: Original
+    reset_eq: Reset EQ
+    master: Master
+    saved: Mix saved
+    modified: Modified
+    saving: Saving…
+    save_failed: Save failed
+    web_audio_unavailable: Web Audio unavailable
+    loading_progress: 'Loading %done%/%total%'
+    loaded_partial: '%done%/%total% tracks loaded'
+    ready: Ready
+    playing: Playing
+    paused: Paused
+    finished: Finished
+    audio_error: 'Audio error: %error%'
+    play: '▶ Play'
+    pause: 'Ⅱ Pause'
+    stop: '■ Stop'
+    speed: Speed
+    position: Position

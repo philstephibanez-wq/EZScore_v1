@@ -1,55 +1,80 @@
-# EZScore_v1 — R24.18 État du serveur dans Analysis Worker
+# EZScore_v1 — R25.4 Original audio + navigation STEMS
 
-Le Worker affiche maintenant en permanence l'état du serveur local EZScore.
+Deux corrections cumulatives.
 
-## Affichage
+## 1. Piste Original inaudible
 
-Dans `Connexion / Runtime` :
+Le mixer chargeait 8 pistes sur 9 : la piste manquante était `Original`.
 
-```text
-API EZScore       http://127.0.0.1:8501
-Python STEM       H:\EZScore_v1\.venv-py313\Scripts\python.exe
-CUDA / GPU        NVIDIA GeForce RTX 2060
-Serveur local     ACTIF · 127.0.0.1:8501 · PID 16228
-Canal             RX/TX OK
-```
+Cause :
 
-Si le serveur est arrêté :
+`SongImportStorage` persiste `audioStoragePath` sous forme relative :
 
 ```text
-Serveur local     ARRÊTÉ · 127.0.0.1:8501
+var/storage/audio/<sha256>.<ext>
 ```
 
-Le contrôle est refait automatiquement toutes les 2 secondes.
+La route `/stems/original` utilisait directement cette valeur avec `is_file()` puis `BinaryFileResponse`.
 
-Le test ne se contente pas du fichier PID : il vérifie aussi que le serveur HTTP répond réellement sur :
+R25.4 résout explicitement ce chemin depuis :
 
 ```text
-http://127.0.0.1:8501/fr/login
+%kernel.project_dir%
 ```
 
-## Bouton Ouvrir EZScore
-
-Le bouton ouvre désormais l'URL utilisateur correcte :
+donc, sur cette installation :
 
 ```text
-https://ezscore.logandplay.com/fr/catalog
+H:\EZScore_v1\var\storage\audio\<sha256>.<ext>
 ```
 
-L'API locale et l'URL navigateur sont donc clairement séparées.
+La réponse conserve le MIME original et reste protégée par les droits Editor/Admin du morceau.
+
+## 2. Navigation latérale depuis STEMS
+
+Le correctif de couche du panneau gauche est inclus également :
+
+```text
+contenu STEMS
+< backdrop
+< drawer
+< topbar
+```
+
+Ainsi les liens Répertoire / Playlists / Groupes / Sessions restent cliquables depuis STEMS.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_18_WORKER_SERVER_STATUS.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R25_4_STEMS_ORIGINAL_DRAWER_FIX.zip" -C H:\EZScore_v1
 
-python -m py_compile .\worker_app\ezscore_analysis_worker.pyw
-php tests\worker_server_status_r24_18_contract.php
+php -l .\src\Controller\SongStemController.php
+php .\tests\stems_original_drawer_r25_4_contract.php
+
+php bin\console cache:clear
 ```
 
-Fermer puis relancer `EZScore Analysis Worker` pour charger cette version.
+Puis dans Chrome :
+
+```text
+Ctrl + F5
+```
+
+Sur la page STEMS, le mixer doit passer de :
+
+```text
+8/9 pistes chargées
+```
+
+à :
+
+```text
+9/9 pistes chargées
+```
+
+et `Original` doit devenir audible.
 
 Aucune migration Doctrine.
-Aucun changement du moteur STEMS.
+Aucun changement du moteur de séparation STEMS.

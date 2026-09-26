@@ -4,7 +4,7 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2">
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2">
-<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r24_10">
+<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r25">
 {% endblock %}
 
 {% block body %}
@@ -49,7 +49,7 @@
             <div class="stem-progress-head">
                 <strong data-stem-progress-message>
                     {% if is_queued %}
-                        En attente du worker STEM…
+                        {{ 'stems.progress.queued'|trans({}, 'stems') }}
                     {% else %}
                         {{ progress.message|default('stems.processing'|trans({}, 'stems')) }}
                     {% endif %}
@@ -82,7 +82,7 @@
         </div>
 
         <p class="page-note" data-stem-progress-note>
-            Analyse en cours. Vous pouvez quitter cette page : le traitement continue en arrière-plan.
+            {{ 'stems.progress.running_note'|trans({}, 'stems') }}
         </p>
     {% elseif stems_complete %}
         <div class="stem-ready">
@@ -124,45 +124,125 @@
     <section class="stem-modal" role="dialog" aria-modal="true" aria-labelledby="stem-reanalyze-title" aria-describedby="stem-reanalyze-description">
         <div class="stem-modal-icon" aria-hidden="true">↻</div>
         <div class="stem-modal-content">
-            <div class="eyebrow">Nouvelle extraction</div>
-            <h2 id="stem-reanalyze-title">Réanalyser les STEMS ?</h2>
+            <div class="eyebrow">{{ 'stems.reanalyze_modal.eyebrow'|trans({}, 'stems') }}</div>
+            <h2 id="stem-reanalyze-title">{{ 'stems.reanalyze_modal.title'|trans({}, 'stems') }}</h2>
             <p id="stem-reanalyze-description">
-                Les STEMS existants restent disponibles jusqu'à la fin de la nouvelle extraction.
-                Le nouveau résultat les remplacera uniquement si l'analyse se termine correctement.
+                {{ 'stems.reanalyze_modal.body'|trans({}, 'stems') }}
             </p>
         </div>
         <div class="stem-modal-actions">
-            <button type="button" class="stem-modal-cancel" data-stem-reanalyze-cancel>Annuler</button>
-            <button type="button" class="primary" data-stem-reanalyze-confirm>Réanalyser</button>
+            <button type="button" class="stem-modal-cancel" data-stem-reanalyze-cancel>{{ 'stems.reanalyze_modal.cancel'|trans({}, 'stems') }}</button>
+            <button type="button" class="primary" data-stem-reanalyze-confirm>{{ 'stems.reanalyze_modal.confirm'|trans({}, 'stems') }}</button>
         </div>
     </section>
 </div>
-{% endif %}
 
-{% if stems_complete %}
-<section class="panel">
+<section class="panel stem-mixer-panel"
+         data-stem-mixer
+         data-mix-save-url="{{ path('app_song_stems_mix', {'_locale': app.request.locale, id: song.id}) }}"
+         data-mix-token="{{ csrf_token('song_stems_mix_' ~ song.id) }}"
+         data-mix-settings="{{ stem_mix_settings|json_encode|e('html_attr') }}"
+         data-i18n-saved="{{ 'stems.mixer.saved'|trans({}, 'stems') }}"
+         data-i18n-modified="{{ 'stems.mixer.modified'|trans({}, 'stems') }}"
+         data-i18n-saving="{{ 'stems.mixer.saving'|trans({}, 'stems') }}"
+         data-i18n-save-failed="{{ 'stems.mixer.save_failed'|trans({}, 'stems') }}"
+         data-i18n-web-audio-unavailable="{{ 'stems.mixer.web_audio_unavailable'|trans({}, 'stems') }}"
+         data-i18n-ready="{{ 'stems.mixer.ready'|trans({}, 'stems') }}"
+         data-i18n-playing="{{ 'stems.mixer.playing'|trans({}, 'stems') }}"
+         data-i18n-paused="{{ 'stems.mixer.paused'|trans({}, 'stems') }}"
+         data-i18n-finished="{{ 'stems.mixer.finished'|trans({}, 'stems') }}"
+         data-i18n-loading-template="{{ 'stems.mixer.loading_progress'|trans({'%done%':'__DONE__','%total%':'__TOTAL__'}, 'stems') }}"
+         data-i18n-loaded-partial-template="{{ 'stems.mixer.loaded_partial'|trans({'%done%':'__DONE__','%total%':'__TOTAL__'}, 'stems') }}"
+         data-i18n-audio-error-template="{{ 'stems.mixer.audio_error'|trans({'%error%':'__ERROR__'}, 'stems') }}">
     <div class="stems-section-head">
         <div>
-            <div class="eyebrow">{{ 'stems.outputs_eyebrow'|trans({}, 'stems') }}</div>
-            <h2>{{ 'stems.outputs'|trans({}, 'stems') }}</h2>
+            <div class="eyebrow">{{ 'stems.mixer.eyebrow'|trans({}, 'stems') }}</div>
+            <h2>{{ 'stems.mixer.title'|trans({}, 'stems') }}</h2>
+            <p class="page-note">
+                {{ 'stems.mixer.description'|trans({}, 'stems') }}
+            </p>
         </div>
-        {% if manifest.device|default(null) %}<span class="stem-device">{{ manifest.device }}</span>{% endif %}
+        <span class="stem-mixer-state" data-mixer-state>{{ 'stems.mixer.loading'|trans({}, 'stems') }}</span>
     </div>
 
-    <div class="stem-list">
-        {% for stem in stem_names %}
-            <article class="stem-row">
-                <div class="stem-label">
-                    <strong>{{ ('stems.name.' ~ stem)|trans({}, 'stems') }}</strong>
-                    {% set meta = manifest.stems[stem]|default(null) %}
-                    {% if meta and meta.bytes|default(null) %}
-                        <small>{{ (meta.bytes / 1048576)|number_format(1, ',', ' ') }} MB</small>
-                    {% endif %}
-                </div>
-                <audio controls preload="metadata"
-                       src="{{ path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name: stem}) }}"></audio>
-            </article>
+    <div class="stem-mixer-grid stem-mixer-head" aria-hidden="true">
+        <span>{{ 'stems.mixer.track'|trans({}, 'stems') }}</span><span>{{ 'stems.mixer.enabled'|trans({}, 'stems') }}</span><span>{{ 'stems.mixer.volume'|trans({}, 'stems') }}</span>
+        <span>{{ 'stems.mixer.low'|trans({}, 'stems') }}</span><span>{{ 'stems.mixer.mid'|trans({}, 'stems') }}</span><span>{{ 'stems.mixer.high'|trans({}, 'stems') }}</span><span></span>
+    </div>
+
+    <div class="stem-mixer-tracks">
+        {% set mix_tracks = [
+            {'key':'original', 'label':('stems.mixer.original'|trans({}, 'stems')), 'url': path('app_song_stems_original_audio', {'_locale': app.request.locale, id: song.id}), 'enabled':1, 'volume':1.00},
+            {'key':'vocals', 'label':('stems.name.vocals'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'vocals'}), 'enabled':0, 'volume':0.82},
+            {'key':'lead_vocals', 'label':('stems.name.lead_vocals'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'lead_vocals'}), 'enabled':0, 'volume':0.82},
+            {'key':'backing_vocals', 'label':('stems.name.backing_vocals'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'backing_vocals'}), 'enabled':0, 'volume':0.72},
+            {'key':'drums', 'label':('stems.name.drums'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'drums'}), 'enabled':0, 'volume':0.72},
+            {'key':'bass', 'label':('stems.name.bass'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'bass'}), 'enabled':0, 'volume':0.72},
+            {'key':'guitar', 'label':('stems.name.guitar'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'guitar'}), 'enabled':0, 'volume':0.72},
+            {'key':'piano', 'label':('stems.name.piano'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'piano'}), 'enabled':0, 'volume':0.72},
+            {'key':'other', 'label':('stems.name.other'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'other'}), 'enabled':0, 'volume':0.72}
+        ] %}
+
+        {% for track in mix_tracks %}
+            <div class="stem-mixer-grid stem-mixer-row"
+                 data-mixer-track
+                 data-track-key="{{ track.key }}"
+                 data-track-url="{{ track.url }}"
+                 data-default-enabled="{{ track.enabled }}"
+                 data-default-volume="{{ track.volume }}">
+                <strong>{{ track.label }}</strong>
+                <label class="stem-mixer-toggle">
+                    <input type="checkbox" data-track-enabled {{ track.enabled ? 'checked' : '' }}>
+                    <span>{{ 'stems.mixer.active'|trans({}, 'stems') }}</span>
+                </label>
+                <label class="stem-mixer-slider">
+                    <input type="range" min="0" max="1.25" step="0.01" value="{{ track.volume }}" data-track-volume>
+                    <output data-track-volume-output>{{ (track.volume * 100)|round }}%</output>
+                </label>
+                <label class="stem-mixer-slider">
+                    <input type="range" min="-12" max="12" step="0.5" value="0" data-track-low>
+                    <output data-track-low-output>0 dB</output>
+                </label>
+                <label class="stem-mixer-slider">
+                    <input type="range" min="-12" max="12" step="0.5" value="0" data-track-mid>
+                    <output data-track-mid-output>0 dB</output>
+                </label>
+                <label class="stem-mixer-slider">
+                    <input type="range" min="-12" max="12" step="0.5" value="0" data-track-high>
+                    <output data-track-high-output>0 dB</output>
+                </label>
+                <button type="button" data-track-reset>{{ 'stems.mixer.reset_eq'|trans({}, 'stems') }}</button>
+            </div>
         {% endfor %}
+    </div>
+
+    <div class="stem-master-row">
+        <strong>{{ 'stems.mixer.master'|trans({}, 'stems') }}</strong>
+        <label class="stem-master-slider">
+            <input type="range" min="0" max="1.25" step="0.01" value="1" data-master-volume>
+            <output data-master-volume-output>100%</output>
+        </label>
+        <span class="stem-mix-save-state" data-mix-save-state>{{ 'stems.mixer.saved'|trans({}, 'stems') }}</span>
+    </div>
+
+    <div class="stem-transport">
+        <input class="stem-seek" type="range" min="0" max="1000" value="0" step="1" data-mixer-seek aria-label="{{ 'stems.mixer.position'|trans({}, 'stems') }}">
+        <div class="stem-transport-controls">
+            <button type="button" data-mixer-play>{{ 'stems.mixer.play'|trans({}, 'stems') }}</button>
+            <button type="button" data-mixer-pause>{{ 'stems.mixer.pause'|trans({}, 'stems') }}</button>
+            <button type="button" data-mixer-stop>{{ 'stems.mixer.stop'|trans({}, 'stems') }}</button>
+            <label class="stem-speed-control">
+                <span>{{ 'stems.mixer.speed'|trans({}, 'stems') }}</span>
+                <select data-mixer-rate>
+                    <option value="0.75">0,75×</option>
+                    <option value="0.9">0,90×</option>
+                    <option value="1" selected>1,00×</option>
+                    <option value="1.1">1,10×</option>
+                    <option value="1.25">1,25×</option>
+                </select>
+            </label>
+            <span class="stem-time" data-mixer-time>0:00 / 0:00</span>
+        </div>
     </div>
 </section>
 
@@ -179,4 +259,7 @@
 
 {% block javascripts %}
 <script src="/assets/js/stems-progress.js?v=20260926r24_10"></script>
+{% if stems_complete %}
+<script src="/assets/js/stems-mixer.js?v=20260926r25"></script>
+{% endif %}
 {% endblock %}

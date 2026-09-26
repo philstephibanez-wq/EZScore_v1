@@ -6,10 +6,13 @@ namespace App\Controller;
 
 use App\Domain\Analysis\AnalysisJobStatus;
 use App\Domain\Song\Song;
+use App\Domain\Song\UserSongStemMix;
+use App\Domain\Song\UserSongStemMixRepository;
 use App\Domain\User\User;
 use App\Service\AnalysisDesktopStateStore;
 use App\Service\SongStemJobService;
 use App\Service\SongStemStorage;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,6 +20,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 #[Route('/song/{id}/stems', requirements: ['id' => '\d+'])]
 final class SongStemController extends AbstractController
@@ -27,13 +31,15 @@ final class SongStemController extends AbstractController
         SongStemJobService $jobs,
         SongStemStorage $storage,
         AnalysisDesktopStateStore $workerState,
+        UserSongStemMixRepository $mixes,
     ): Response {
-        $this->requireEditor($song);
+        $user = $this->requireEditor($song);
 
         $latest = $jobs->latest($song);
         $progress = $storage->progress($song);
         $manifest = $storage->manifest($song);
         $complete = $storage->hasCompleteStems($song);
+        $mix = $mixes->findForUserAndSong($user, $song);
 
         $isActive = $latest !== null && in_array(
             $latest->getStatus(),
@@ -50,6 +56,7 @@ final class SongStemController extends AbstractController
             'stem_names' => SongStemStorage::STEMS,
             'job_active' => $isActive,
             'analysis_worker_online' => $workerState->isOnline(),
+            'stem_mix_settings' => $mix?->getSettings() ?? [],
         ]);
     }
 
@@ -103,6 +110,43 @@ final class SongStemController extends AbstractController
         ]);
     }
 
+    #[Route('/mix', name: 'app_song_stems_mix', methods: ['POST'])]
+    public function saveMix(
+        Song $song,
+        Request $request,
+        UserSongStemMixRepository $mixes,
+        EntityManagerInterface $em,
+    ): JsonResponse {
+        $user = $this->requireEditor($song);
+        $payload = $request->toArray();
+
+        if (!$this->isCsrfTokenValid(
+            'song_stems_mix_'.$song->getId(),
+            (string) ($payload['_token'] ?? ''),
+        )) {
+            return $this->json(['error' => 'invalid_csrf'], Response::HTTP_FORBIDDEN);
+        }
+
+        $settings = $payload['settings'] ?? null;
+        if (!is_array($settings)) {
+            return $this->json(['error' => 'invalid_settings'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $sanitized = $this->sanitizeMixSettings($settings);
+
+        $mix = $mixes->findForUserAndSong($user, $song) ?? new UserSongStemMix($user, $song);
+        $mix->setSettings($sanitized);
+
+        $em->persist($mix);
+        $em->flush();
+
+        return $this->json([
+            'ok' => true,
+            'settings' => $mix->getSettings(),
+            'updated_at' => $mix->getUpdatedAt()->format(DATE_ATOM),
+        ]);
+    }
+
     #[Route('/log', name: 'app_song_stems_log', methods: ['GET'])]
     public function log(
         Song $song,
@@ -146,6 +190,56 @@ final class SongStemController extends AbstractController
         return $response;
     }
 
+    #[Route('/original', name: 'app_song_stems_original_audio', methods: ['GET'])]
+    public function originalAudio(
+        Song $song,
+        #[Autowire('%kernel.project_dir%')]
+        string $projectDir,
+    ): Response {
+        $this->requireEditor($song);
+
+        $storagePath = trim((string) $song->getAudioStoragePath());
+        if ($storagePath === '') {
+            throw $this->createNotFoundException();
+        }
+
+        // SongImportStorage persists a project-relative path:
+        // var/storage/audio/<sha256>.<ext>
+        $relativePath = str_replace(
+            ['/', '\\'],
+            DIRECTORY_SEPARATOR,
+            ltrim($storagePath, '/\\'),
+        );
+
+        $path = $projectDir.DIRECTORY_SEPARATOR.$relativePath;
+
+        if (!is_file($path)) {
+            throw $this->createNotFoundException();
+        }
+
+        $realProject = realpath($projectDir);
+        $realPath = realpath($path);
+
+        if ($realProject === false || $realPath === false) {
+            throw $this->createNotFoundException();
+        }
+
+        $projectPrefix = rtrim($realProject, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+        if (!str_starts_with($realPath, $projectPrefix)) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $response = new BinaryFileResponse($realPath);
+        $response->headers->set('Content-Type', $song->getAudioMimeType() ?: 'application/octet-stream');
+        $response->headers->set('Cache-Control', 'private, max-age=3600');
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_INLINE,
+            $song->getAudioOriginalName() ?: 'original-audio',
+        );
+
+        return $response;
+    }
+
     #[Route('/audio/{name}', name: 'app_song_stem_audio', methods: ['GET'])]
     public function audio(
         Song $song,
@@ -168,6 +262,54 @@ final class SongStemController extends AbstractController
         );
 
         return $response;
+    }
+
+    /**
+     * @param array<string,mixed> $settings
+     * @return array<string,mixed>
+     */
+    private function sanitizeMixSettings(array $settings): array
+    {
+        $allowedTracks = [
+            'original',
+            'vocals',
+            'lead_vocals',
+            'backing_vocals',
+            'drums',
+            'bass',
+            'guitar',
+            'piano',
+            'other',
+        ];
+
+        $tracks = [];
+        $rawTracks = is_array($settings['tracks'] ?? null) ? $settings['tracks'] : [];
+
+        foreach ($allowedTracks as $track) {
+            $raw = is_array($rawTracks[$track] ?? null) ? $rawTracks[$track] : [];
+
+            $tracks[$track] = [
+                'enabled' => (bool) ($raw['enabled'] ?? ($track === 'original')),
+                'volume' => $this->clampFloat($raw['volume'] ?? ($track === 'original' ? 1.0 : 0.72), 0.0, 1.25),
+                'low' => $this->clampFloat($raw['low'] ?? 0.0, -12.0, 12.0),
+                'mid' => $this->clampFloat($raw['mid'] ?? 0.0, -12.0, 12.0),
+                'high' => $this->clampFloat($raw['high'] ?? 0.0, -12.0, 12.0),
+            ];
+        }
+
+        return [
+            'schema_version' => 'ezscore.stem_mix.v1',
+            'master_volume' => $this->clampFloat($settings['master_volume'] ?? 1.0, 0.0, 1.25),
+            'playback_rate' => $this->clampFloat($settings['playback_rate'] ?? 1.0, 0.75, 1.25),
+            'tracks' => $tracks,
+        ];
+    }
+
+    private function clampFloat(mixed $value, float $min, float $max): float
+    {
+        $number = is_numeric($value) ? (float) $value : $min;
+
+        return max($min, min($max, $number));
     }
 
     private function requireEditor(Song $song): User
