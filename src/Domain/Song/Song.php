@@ -42,6 +42,12 @@ class Song
     #[ORM\Column]
     private int $capo = 0;
 
+    #[ORM\Column(name: 'key_signature', length: 16, nullable: true)]
+    private ?string $keySignature = null;
+
+    #[ORM\Column(name: 'chord_analysis_level', length: 16, options: ['default' => 'intermediate'])]
+    private string $chordAnalysisLevel = 'intermediate';
+
     #[ORM\Column(length: 120, nullable: true)]
     private ?string $strummingPrimary = null;
 
@@ -126,11 +132,48 @@ class Song
 
     public function setTimeSignature(string $timeSignature): self
     {
-        $allowed = ['auto', '2/4', '3/4', '4/4', '5/4', '6/8', '9/8', '12/8'];
-        if (!in_array($timeSignature, $allowed, true)) {
-            throw new \InvalidArgumentException(sprintf('Unsupported time signature "%s".', $timeSignature));
+        if ($timeSignature !== 'auto') {
+            if (!preg_match('/^(\\d{1,2})\\/(1|2|4|8|16|32)$/', $timeSignature, $matches)) {
+                throw new \InvalidArgumentException(sprintf('Unsupported time signature "%s".', $timeSignature));
+            }
+
+            $numerator = (int) $matches[1];
+            if ($numerator < 1 || $numerator > 32) {
+                throw new \InvalidArgumentException(sprintf('Unsupported time signature "%s".', $timeSignature));
+            }
         }
+
         $this->timeSignature = $timeSignature;
+        return $this->touch();
+    }
+
+    public function getKeySignature(): ?string { return $this->keySignature; }
+
+    public function setKeySignature(?string $keySignature): self
+    {
+        if ($keySignature !== null) {
+            $keySignature = trim($keySignature);
+            if ($keySignature !== '' && !preg_match('/^[A-G](?:#|b)?(?:m)?$/', $keySignature)) {
+                throw new \InvalidArgumentException('Invalid musical key.');
+            }
+            if ($keySignature === '') {
+                $keySignature = null;
+            }
+        }
+
+        $this->keySignature = $keySignature;
+        return $this->touch();
+    }
+
+    public function getChordAnalysisLevel(): string { return $this->chordAnalysisLevel; }
+
+    public function setChordAnalysisLevel(string $level): self
+    {
+        if (!in_array($level, ['beginner', 'intermediate', 'expert'], true)) {
+            throw new \InvalidArgumentException('Invalid chord analysis level.');
+        }
+
+        $this->chordAnalysisLevel = $level;
         return $this->touch();
     }
 

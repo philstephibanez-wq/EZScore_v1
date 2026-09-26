@@ -1,45 +1,70 @@
-# EZScore_v1 — R31.2 Reader login landing fix
+# EZScore_v1 — R32.2 Doctrine schema default sync
 
-Le mail d'activation fonctionne désormais et la connexion d'Aline aboutit bien à une session authentifiée.
+Après la migration R32, Doctrine proposait encore de reconstruire entièrement la table `songs`.
 
-Le `403 ROLE_EDITOR` observé après connexion signifie que Symfony a ensuite tenté de renvoyer Aline vers une page protégée Éditeur.
+La cause est ciblée :
 
-La cause est le comportement standard de `form_login` : Symfony peut réutiliser un `target_path` mémorisé dans la session avant l'authentification.
-
-Pour un Lecteur, ce target peut être une page Éditeur et provoquer immédiatement :
-
-```text
-Access Denied. The user doesn't have ROLE_EDITOR.
+```sql
+chord_analysis_level VARCHAR(16) NOT NULL DEFAULT 'intermediate'
 ```
 
-R31.2 force donc la connexion locale à toujours arriver sur le Répertoire, qui est l'écran valide pour les Lecteurs.
+a été créé par la migration, alors que le mapping Doctrine déclarait le champ sans le `DEFAULT`.
+
+Doctrine considérait donc le schéma SQLite différent du mapping et proposait une reconstruction de table uniquement pour supprimer ce défaut.
+
+R32.2 aligne le mapping Doctrine sur la migration :
+
+```php
+#[ORM\Column(
+    name: 'chord_analysis_level',
+    length: 16,
+    options: ['default' => 'intermediate'],
+)]
+```
+
+Aucune donnée n'est modifiée.
+Aucune migration supplémentaire n'est nécessaire.
+Aucun `schema:update --force`.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R31_2_READER_LOGIN_LANDING_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R32_2_SCHEMA_DEFAULT_SYNC.zip" -C H:\EZScore_v1
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r31_2_reader_login_landing_fix.py
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r32_2_schema_default_sync.py
 
-php .\tests\r31_2_reader_login_contract.php
-php bin\console lint:yaml config
+php -l .\src\Domain\Song\Song.php
+php .\tests\r32_2_schema_sync_contract.php
+
+php bin\console doctrine:schema:validate
+php bin\console doctrine:schema:update --dump-sql
 php bin\console cache:clear
 ```
 
 Attendu :
 
 ```text
-4 R31.2 reader-login checks passed.
+5 R32.2 schema-sync checks passed.
 ```
 
 Puis :
-1. se déconnecter ;
-2. se reconnecter avec Aline ;
-3. vérifier l'arrivée sur le Répertoire ;
-4. vérifier qu'aucune page Éditeur n'est ouverte automatiquement.
 
-Aucune migration Doctrine.
-Aucune modification des rôles.
-Aucune modification ChordsLab / STEMS / Worker.
+```text
+Mapping
+-------
+[OK] The mapping files are correct.
+
+Database
+--------
+[OK] The database schema is in sync with the mapping files.
+```
+
+et :
+
+```powershell
+php bin\console doctrine:schema:update --dump-sql
+```
+
+ne doit afficher aucune instruction SQL.

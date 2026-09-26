@@ -270,6 +270,9 @@
         if (els.seek && duration > 0) {
             els.seek.value = String(Math.round((time / duration) * 1000));
         }
+        root.dispatchEvent(new CustomEvent('ezscore:audio-timeupdate', {
+            detail: {time, duration},
+        }));
     });
 
     const dispose = () => {
