@@ -326,7 +326,7 @@ final class SongStemController extends AbstractController
     {
         $allowedTracks = [
             'original',
-'lead_vocals',
+            'lead_vocals',
             'backing_vocals',
             'drums',
             'bass',
@@ -334,26 +334,26 @@ final class SongStemController extends AbstractController
             'piano',
             'other',
         ];
-
         $tracks = [];
         $rawTracks = is_array($settings['tracks'] ?? null) ? $settings['tracks'] : [];
-
         foreach ($allowedTracks as $track) {
             $raw = is_array($rawTracks[$track] ?? null) ? $rawTracks[$track] : [];
-
             $tracks[$track] = [
                 'enabled' => (bool) ($raw['enabled'] ?? ($track === 'original')),
                 'volume' => $this->clampFloat($raw['volume'] ?? ($track === 'original' ? 1.0 : 0.72), 0.0, 1.25),
-                'low' => $this->clampFloat($raw['low'] ?? 0.0, -12.0, 12.0),
-                'mid' => $this->clampFloat($raw['mid'] ?? 0.0, -12.0, 12.0),
-                'high' => $this->clampFloat($raw['high'] ?? 0.0, -12.0, 12.0),
             ];
         }
-
+        $eq = is_array($settings['master_eq'] ?? null) ? $settings['master_eq'] : [];
         return [
-            'schema_version' => 'ezscore.stem_mix.v1',
+            'schema_version' => 'ezscore.stem_mix.v2',
             'master_volume' => $this->clampFloat($settings['master_volume'] ?? 1.0, 0.0, 1.25),
             'playback_rate' => $this->clampFloat($settings['playback_rate'] ?? 1.0, 0.75, 1.25),
+            'master_eq' => [
+                'low' => $this->clampFloat($eq['low'] ?? 0.0, -12.0, 12.0),
+                'mid' => $this->clampFloat($eq['mid'] ?? 0.0, -12.0, 12.0),
+                'high' => $this->clampFloat($eq['high'] ?? 0.0, -12.0, 12.0),
+            ],
+            'master_compression' => $this->clampFloat($settings['master_compression'] ?? 0.0, 0.0, 100.0),
             'tracks' => $tracks,
         ];
     }

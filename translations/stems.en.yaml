@@ -94,3 +94,7 @@ stems:
     build: Generate playback tracks
     queued: Playback track preparation was queued for the Worker.
     requires_stems: STEMS must be complete before playback tracks can be prepared.
+stems.mixer.master_fx: 'Master processing'
+stems.mixer.compression: 'Compression'
+stems.mixer.limiter: 'Limiter active'
+stems.mixer.reset_master_fx: 'Reset'

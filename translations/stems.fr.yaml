@@ -94,3 +94,7 @@ stems:
     build: Générer les pistes de lecture
     queued: La préparation des pistes de lecture a été ajoutée à la file du Worker.
     requires_stems: Les STEMS doivent être terminés avant de préparer les pistes de lecture.
+stems.mixer.master_fx: 'Traitement master'
+stems.mixer.compression: 'Compression'
+stems.mixer.limiter: 'Limiteur actif'
+stems.mixer.reset_master_fx: 'Réinitialiser'

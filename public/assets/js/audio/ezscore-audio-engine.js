@@ -11,8 +11,38 @@
             }
 
             this.context = new AudioContextCtor({latencyHint: 'interactive'});
+            // R29 MASTER FX CHAIN
+            this.masterInput = this.context.createGain();
+            this.masterLow = this.context.createBiquadFilter();
+            this.masterLow.type = 'lowshelf';
+            this.masterLow.frequency.value = 110;
+            this.masterMid = this.context.createBiquadFilter();
+            this.masterMid.type = 'peaking';
+            this.masterMid.frequency.value = 900;
+            this.masterMid.Q.value = 1.0;
+            this.masterHigh = this.context.createBiquadFilter();
+            this.masterHigh.type = 'highshelf';
+            this.masterHigh.frequency.value = 3600;
+            this.masterCompressor = this.context.createDynamicsCompressor();
+            this.masterCompressor.threshold.value = 0;
+            this.masterCompressor.knee.value = 18;
+            this.masterCompressor.ratio.value = 1;
+            this.masterCompressor.attack.value = 0.015;
+            this.masterCompressor.release.value = 0.18;
+            this.masterLimiter = this.context.createDynamicsCompressor();
+            this.masterLimiter.threshold.value = -1;
+            this.masterLimiter.knee.value = 0;
+            this.masterLimiter.ratio.value = 20;
+            this.masterLimiter.attack.value = 0.003;
+            this.masterLimiter.release.value = 0.08;
             this.masterGain = this.context.createGain();
             this.masterGain.gain.value = 1;
+            this.masterInput.connect(this.masterLow);
+            this.masterLow.connect(this.masterMid);
+            this.masterMid.connect(this.masterHigh);
+            this.masterHigh.connect(this.masterCompressor);
+            this.masterCompressor.connect(this.masterLimiter);
+            this.masterLimiter.connect(this.masterGain);
             this.masterGain.connect(this.context.destination);
 
             this.tracks = new Map();
@@ -70,7 +100,7 @@
             low.connect(mid);
             mid.connect(high);
             high.connect(gain);
-            gain.connect(this.masterGain);
+            gain.connect(this.masterInput);
 
             const track = {
                 key: config.key,
@@ -180,6 +210,21 @@
             if (Number.isFinite(Number(high))) {
                 track.high.gain.setTargetAtTime(Number(high), now, 0.01);
             }
+        }
+
+        setMasterEq({low, mid, high}) {
+            const now = this.context.currentTime;
+            if (Number.isFinite(Number(low))) this.masterLow.gain.setTargetAtTime(Number(low), now, 0.02);
+            if (Number.isFinite(Number(mid))) this.masterMid.gain.setTargetAtTime(Number(mid), now, 0.02);
+            if (Number.isFinite(Number(high))) this.masterHigh.gain.setTargetAtTime(Number(high), now, 0.02);
+        }
+
+        setMasterCompression(value) {
+            const amount = Math.max(0, Math.min(100, Number(value) || 0)) / 100;
+            const now = this.context.currentTime;
+            this.masterCompressor.threshold.setTargetAtTime(-28 * amount, now, 0.02);
+            this.masterCompressor.ratio.setTargetAtTime(1 + 3.5 * amount, now, 0.02);
+            this.masterCompressor.knee.setTargetAtTime(18 + 8 * amount, now, 0.02);
         }
 
         setMasterVolume(value) {
@@ -345,6 +390,12 @@
 
             this.tracks.clear();
 
+            try { this.masterInput.disconnect(); } catch (_) {}
+            try { this.masterLow.disconnect(); } catch (_) {}
+            try { this.masterMid.disconnect(); } catch (_) {}
+            try { this.masterHigh.disconnect(); } catch (_) {}
+            try { this.masterCompressor.disconnect(); } catch (_) {}
+            try { this.masterLimiter.disconnect(); } catch (_) {}
             try { this.masterGain.disconnect(); } catch (_) {}
             try { this.context.close(); } catch (_) {}
 
