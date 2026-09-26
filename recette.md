@@ -1,6 +1,6 @@
 # EZScore_v1 — PLAN DE RECETTE FONCTIONNELLE
 
-Version de référence : R19.
+Version de référence : R30 — recette Workflow Labs / ChordsLab.
 
 Convention :
 
@@ -497,3 +497,208 @@ Commentaires :
 - [ ] `melband-roformer-infer` disponible dans le Python STEM
 - [ ] `BS_ROFORMER_MODELS_PATH` hors C:
 - [ ] device CUDA configuré
+
+## 30. Recette ChordsLab / Labs
+
+### 30.1 Workflow et nomenclature
+
+- [ ] le workflow affiche `Import`
+- [ ] le workflow affiche `Analyse`
+- [ ] le workflow affiche `Édition`
+- [ ] l'ancien intitulé `STEMS` est remplacé par `StemsLab`
+- [ ] le workflow affiche `ChordsLab`
+- [ ] le workflow affiche `LyricsLab`
+- [ ] le workflow affiche `Publication`
+- [ ] l'ordre est strictement `Import → Analyse → Édition → StemsLab → ChordsLab → LyricsLab → Publication`
+- [ ] aucun ancien libellé contradictoire ne subsiste dans le workflow principal
+
+### 30.2 Timeline comme source de vérité
+
+- [ ] le prompteur est construit depuis la timeline
+- [ ] la chaîne compacte affichée n'est pas persistée comme source canonique
+- [ ] le seek du player repositionne correctement la mesure active
+- [ ] la lecture met à jour le beat/subdivision actif
+- [ ] modifier la signature rythmique ne modifie pas les timestamps harmoniques
+- [ ] modifier le capo ne modifie pas les timestamps harmoniques
+- [ ] modifier le capo ne modifie pas les accords réels stockés
+
+### 30.3 Prompteur harmonique
+
+- [ ] les mesures sont affichées sous forme compacte
+- [ ] le beat/subdivision courant est clairement surligné
+- [ ] la mesure courante est identifiable sans ambiguïté
+- [ ] le défilement suit la lecture sans sauts visuels excessifs
+- [ ] un clic sur une mesure/position déplace le player au bon instant
+- [ ] un accord prolongé sur la mesure suivante est réaffiché explicitement
+- [ ] aucune mesure suivante n'est vide uniquement parce que l'accord précédent continue
+- [ ] le rendu `[Em---]` est cohérent avec quatre positions en 4/4
+- [ ] le rendu reste déterministe après rechargement
+
+### 30.4 Diagramme courant
+
+- [ ] option `Afficher le diagramme` présente
+- [ ] option décochée masque complètement la zone diagramme
+- [ ] option cochée affiche le diagramme
+- [ ] le diagramme est placé directement au-dessus de l'accord courant
+- [ ] le diagramme suit le changement d'accord pendant la lecture
+- [ ] le diagramme suit immédiatement une modification manuelle d'accord
+- [ ] le diagramme suit immédiatement le changement de capo
+
+### 30.5 Édition d'accord en place
+
+- [ ] un accord du prompteur peut être modifié en place
+- [ ] la validation persiste la correction
+- [ ] un rechargement conserve la correction
+- [ ] la valeur issue de l'analyse reste disponible en arrière-plan
+- [ ] la correction est stockée comme override et non comme destruction de l'original
+- [ ] les autres mesures ne sont pas modifiées par erreur
+- [ ] l'édition d'un accord ne décale pas la timeline
+
+### 30.6 Reset des accords
+
+- [ ] bouton `Réinitialiser les accords` présent
+- [ ] confirmation demandée avant reset global
+- [ ] reset supprime les overrides manuels
+- [ ] reset restaure les accords issus de l'analyse
+- [ ] reset ne modifie pas les timestamps
+- [ ] reset ne modifie pas le capo
+- [ ] reset ne modifie pas la signature rythmique
+- [ ] reset ne modifie pas le niveau d'analyse sélectionné
+
+### 30.7 Capo EZScore
+
+- [ ] capo persistant
+- [ ] changement de capo sans réanalyse
+- [ ] changement visible immédiatement dans le prompteur
+- [ ] changement visible immédiatement dans le diagramme
+- [ ] tonalité réelle du morceau inchangée
+- [ ] accord harmonique canonique inchangé
+- [ ] audio inchangé
+- [ ] exemple de référence : `Cm` avec capo 3 peut s'afficher comme forme `Am`
+- [ ] retour capo 0 restaure la forme correspondant à l'accord réel
+
+### 30.8 Tonalité
+
+- [ ] le cartouche chanson affiche la tonalité réelle
+- [ ] la tonalité reste visible en PC
+- [ ] la tonalité reste lisible en tablette
+- [ ] la tonalité reste lisible en smartphone
+- [ ] changer le capo ne change pas la tonalité affichée
+- [ ] aucune fonction de transposition réelle n'est présentée comme disponible tant qu'elle n'est pas implémentée
+
+### 30.9 Signature rythmique
+
+- [ ] la signature est persistante
+- [ ] la liste contient `2/4`
+- [ ] la liste contient `3/4`
+- [ ] la liste contient `4/4`
+- [ ] la liste contient `5/4`
+- [ ] la liste contient `6/8`
+- [ ] la liste contient `7/4`
+- [ ] la liste contient `7/8`
+- [ ] la liste contient `9/8`
+- [ ] la liste contient `11/8`
+- [ ] la liste contient `12/8`
+- [ ] la liste supporte une signature non triviale telle que `13/16`
+- [ ] stockage distinct numerator / denominator
+- [ ] passage 4/4 → 2/4 recompose les mesures sans réanalyse
+- [ ] `[Em---]` en 4/4 devient deux mesures cohérentes `[Em-] [Em-]` en 2/4 si les timestamps couvrent quatre pulsations
+- [ ] passage vers 6/8 conserve six subdivisions de croche
+- [ ] changement de signature ne crée aucun trou harmonique
+- [ ] rechargement conserve la signature choisie
+
+### 30.10 Niveau d'analyse harmonique
+
+- [ ] choix `Débutant`
+- [ ] choix `Intermédiaire`
+- [ ] choix `Expert`
+- [ ] choix persistant
+- [ ] niveau Débutant simplifie effectivement les enrichissements
+- [ ] niveau Intermédiaire conserve les accords usuels enrichis
+- [ ] niveau Expert autorise une restitution plus détaillée
+- [ ] changement de niveau ne se limite pas à masquer des suffixes d'accords
+- [ ] si une réanalyse est nécessaire, l'interface l'indique clairement
+- [ ] aucune réanalyse des STEMS n'est déclenchée inutilement pour un simple changement de niveau harmonique
+
+### 30.11 Player partagé
+
+- [ ] ChordsLab utilise le même moteur audio que StemsLab
+- [ ] aucun second player audio concurrent n'est créé
+- [ ] play synchronise le prompteur
+- [ ] pause fige la position harmonique
+- [ ] seek resynchronise immédiatement le prompteur
+- [ ] changement de vitesse conserve la synchronisation
+- [ ] sortie de page arrête proprement les médias en cours
+
+### 30.12 Pistes et chaîne d'effets
+
+- [ ] panneau `Pistes` replié par défaut
+- [ ] panneau `Chaîne d'effets master` replié par défaut
+- [ ] transport visible lorsque les panneaux sont repliés
+- [ ] ouverture/fermeture n'interrompt pas la lecture
+- [ ] ouverture/fermeture ne décale pas la timeline
+- [ ] mixer conserve ses réglages persistés
+- [ ] chaîne master conserve EQ / compression / limiteur / gain
+- [ ] ChordsLab ne duplique pas la chaîne d'effets
+
+### 30.13 Ergonomie PC
+
+- [ ] aucune hauteur excessive par piste
+- [ ] plusieurs mesures visibles simultanément
+- [ ] prompteur prioritaire visuellement
+- [ ] diagramme ancré au-dessus de l'accord actif
+- [ ] réglages principaux accessibles sans ouvrir les panneaux secondaires
+- [ ] aucun scroll horizontal global
+- [ ] focus clavier visible sur les contrôles interactifs
+
+### 30.14 Ergonomie tablette
+
+- [ ] test paysage tablette
+- [ ] test portrait tablette
+- [ ] aucun scroll horizontal global
+- [ ] contrôles Capo / Signature / Niveau restent accessibles
+- [ ] sliders et boutons sont utilisables au doigt
+- [ ] diagramme ne recouvre pas les mesures voisines
+- [ ] panneaux repliables pleine largeur si nécessaire
+- [ ] transport reste visible et utilisable
+
+### 30.15 Ergonomie smartphone
+
+- [ ] test largeur ~390 px
+- [ ] test largeur ~360 px
+- [ ] aucun contenu essentiel hors écran
+- [ ] aucune largeur desktop forcée
+- [ ] prompteur reste la zone principale
+- [ ] mesure active reste visible pendant la lecture
+- [ ] diagramme s'affiche au-dessus de l'accord actif
+- [ ] Capo / Signature / Niveau peuvent s'empiler proprement
+- [ ] Pistes et Effets s'ouvrent en accordéons pleine largeur
+- [ ] play/pause/stop ont des cibles tactiles suffisantes
+- [ ] édition d'accord reste utilisable au doigt
+- [ ] confirmation de reset reste lisible et actionnable
+- [ ] clavier virtuel ne masque pas définitivement l'accord en cours d'édition
+
+### 30.16 Persistance
+
+- [ ] capo persiste après reconnexion
+- [ ] signature persiste après reconnexion
+- [ ] niveau d'analyse persiste après reconnexion
+- [ ] overrides d'accords persistent après reconnexion
+- [ ] reset persiste après reconnexion
+- [ ] tonalité canonique persiste
+- [ ] les préférences d'ouverture des panneaux ne polluent pas les données éditoriales de la chanson
+
+### 30.17 Non-régression
+
+- [ ] StemsLab continue de lire les proxies Opus existants
+- [ ] mixer R29 reste fonctionnel
+- [ ] chaîne d'effets master R29 reste fonctionnelle
+- [ ] aucune régénération des STEMS pour capo
+- [ ] aucune régénération des STEMS pour signature rythmique
+- [ ] aucune régression ACL
+- [ ] aucune régression publication
+- [ ] `php -l` OK
+- [ ] `lint:yaml` OK
+- [ ] `lint:twig` OK
+- [ ] `doctrine:schema:validate` OK
+- [ ] `doctrine:schema:update --dump-sql` vide

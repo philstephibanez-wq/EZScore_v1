@@ -1,6 +1,6 @@
 # EZScore_v1 — Cahier des charges fonctionnel
 
-Version de référence : R18.
+Version de référence : R30 — Workflow Labs / ChordsLab.
 
 ## Rôles globaux
 
@@ -830,3 +830,497 @@ Mute / activation / volume seront modifiables en temps réel.
 Ce mixer n'est PAS implémenté en R23.
 
 De même, le verrou empêchant un utilisateur non Admin de publier un morceau tant que le workflow n'est pas terminé jusqu'au karaoké reste une exigence future. Il sera activé lorsque les critères de complétude des étapes suivantes auront été définis.
+
+## 30. Workflow Labs et ChordsLab
+
+### 30.1 Workflow chanson de référence
+
+Le workflow fonctionnel de la chanson devient :
+
+```text
+Import
+Analyse
+Édition
+StemsLab
+ChordsLab
+LyricsLab
+Publication
+```
+
+Nomenclature :
+
+- `StemsLab` remplace l'intitulé historique `STEMS` dans l'interface ;
+- `ChordsLab` est l'espace d'édition et de lecture harmonique synchronisée ;
+- `LyricsLab` est l'espace dédié aux paroles, phonèmes, alignements et corrections textuelles ;
+- `Publication` reste l'étape de finalisation éditoriale.
+
+Les trois espaces `StemsLab`, `ChordsLab` et `LyricsLab` doivent conserver une identité visuelle cohérente et une navigation homogène.
+
+### 30.2 Ergonomie multi-écran obligatoire
+
+Toutes les fonctions Labs sont conçues dès l'origine pour :
+
+- PC ;
+- tablette ;
+- smartphone.
+
+Aucun écran ne doit être conçu uniquement pour le desktop puis adapté a posteriori.
+
+Règles :
+
+- aucun scroll horizontal global imposé ;
+- composants fluides ;
+- contrôles tactiles utilisables au doigt ;
+- informations principales visibles avant les fonctions secondaires ;
+- réduction de hauteur verticale lorsque cela améliore la lisibilité ;
+- panneaux secondaires repliables ;
+- maintien des fonctions essentielles sur les petits écrans.
+
+Sur smartphone, les contrôles peuvent passer sur plusieurs lignes, mais l'ordre fonctionnel et la lisibilité doivent rester constants.
+
+## 31. Source de vérité temporelle
+
+### 31.1 Timeline canonique
+
+La timeline est la source de vérité de ChordsLab.
+
+Les représentations graphiques d'accords, mesures et beats ne sont jamais la donnée canonique.
+
+Principe :
+
+```text
+Audio / temps courant
+        ↓
+Timeline canonique
+        ↓
+Mesures / beats / subdivisions
+        ↓
+Accords ancrés temporellement
+        ↓
+Overrides manuels
+        ↓
+Transformation d'affichage
+        ↓
+Prompteur ChordsLab
+```
+
+La chaîne compacte affichée, par exemple :
+
+```text
+[ Em--- ] [ Am-A. ] [ C--- ]
+```
+
+est un rendu calculé depuis la timeline.
+
+Elle ne doit jamais devenir la source primaire des données harmoniques.
+
+### 31.2 Continuité harmonique entre mesures
+
+Si un accord reste actif à la mesure suivante, il doit être réaffiché explicitement dans cette nouvelle mesure.
+
+Exemple :
+
+```text
+[ Em--- ] [ Em--- ]
+```
+
+et non :
+
+```text
+[ Em--- ] [ ---- ]
+```
+
+Aucune mesure ne doit dépendre visuellement d'un accord implicite provenant de la mesure précédente.
+
+### 31.3 Notation compacte
+
+Le renderer ChordsLab utilise la notation compacte existante :
+
+```text
+Em---   = accord Em tenu sur la mesure
+Em-A.   = représentation compacte selon les positions temporelles
+.       = absence de nouvel accord / silence selon la timeline
+-       = prolongation de l'accord actif
+```
+
+Le rendu doit toujours être dérivé des événements de timeline et de la signature rythmique courante.
+
+## 32. ChordsLab
+
+### 32.1 Player partagé
+
+ChordsLab réutilise le player audio/STEMS existant.
+
+Il ne doit pas introduire un second moteur audio.
+
+Sont réutilisés :
+
+- play ;
+- pause ;
+- stop ;
+- seek ;
+- vitesse ;
+- horloge courante ;
+- synchronisation des STEMS ;
+- mixage existant ;
+- chaîne d'effets master existante.
+
+Le prompteur écoute la même horloge que le player.
+
+### 32.2 Prompteur synchronisé
+
+Le prompteur affiche les mesures et accords synchronisés avec la lecture.
+
+Il doit fournir :
+
+- mesure courante ;
+- beat ou subdivision courante ;
+- accord courant ;
+- mise en évidence du beat/subdivision actif ;
+- défilement automatique ;
+- possibilité de sélectionner une mesure ou un accord pour déplacer le player au bon instant.
+
+La navigation visuelle doit rester stable afin d'éviter les sauts de mise en page pendant la lecture.
+
+### 32.3 Diagramme de l'accord courant
+
+Une case à cocher permet d'afficher ou masquer le diagramme d'accord.
+
+Règle de placement :
+
+```text
+Diagramme
+    ↓
+accord courant dans le prompteur
+```
+
+Le diagramme est affiché directement au-dessus de l'accord courant, et non dans un panneau latéral permanent.
+
+Il suit l'accord actif pendant la lecture.
+
+Lorsque l'option est désactivée, la zone disparaît complètement afin de préserver la hauteur utile.
+
+### 32.4 Modification en place
+
+Un accord affiché dans le prompteur doit être modifiable directement en place.
+
+Le modèle doit conserver séparément :
+
+```text
+accord issu de l'analyse
+override manuel éventuel
+```
+
+Valeur effective :
+
+```text
+chord_effective = chord_override ?? chord_original
+```
+
+Une correction ne doit pas détruire la valeur initialement produite par l'analyse.
+
+La correction est persistée.
+
+### 32.5 Reset des accords
+
+ChordsLab fournit un bouton :
+
+```text
+Réinitialiser les accords
+```
+
+L'action demande confirmation.
+
+Elle supprime les overrides manuels et restaure le résultat de l'analyse.
+
+Une évolution peut proposer :
+
+- reset de la mesure courante ;
+- reset de tous les accords.
+
+Le reset global reste obligatoire.
+
+## 33. Capo EZScore
+
+### 33.1 Sémantique produit
+
+Dans EZScore, le capo est volontairement utilisé comme un outil de simplification des formes d'accords à la guitare.
+
+Il ne modifie pas :
+
+- la tonalité réelle ;
+- la timeline harmonique ;
+- la hauteur audio ;
+- le résultat canonique de l'analyse.
+
+Exemple :
+
+```text
+Tonalité réelle : Cm
+Accord réel     : Cm
+Capo EZScore    : 3
+Forme affichée  : Am
+```
+
+La tonalité reste `Cm`.
+
+### 33.2 Temps réel et persistance
+
+Le capo :
+
+- est modifiable sans réanalyse ;
+- met immédiatement à jour les formes d'accords affichées ;
+- met immédiatement à jour le diagramme courant ;
+- est persistant au niveau éditorial de la chanson/version.
+
+La transformation capo intervient uniquement dans la couche de rendu.
+
+## 34. Tonalité et future transposition
+
+### 34.1 Tonalité dans le cartouche
+
+Le cartouche de la chanson affiche la tonalité réelle du morceau.
+
+Exemple :
+
+```text
+Titre     : La Bohème
+Artiste   : Charles Aznavour
+Tonalité  : Cm
+Mesure    : 6/8
+Capo      : 3
+```
+
+Le capo n'altère jamais cette tonalité affichée.
+
+### 34.2 Transposition future
+
+La transposition est distincte du capo.
+
+Architecture prévue :
+
+```text
+timeline canonique
+→ transposition réelle éventuelle
+→ nouvelle tonalité
+→ simplification éventuelle par capo
+→ rendu ChordsLab
+```
+
+La transposition n'est pas définie fonctionnellement dans la présente version et fera l'objet d'une étude séparée.
+
+## 35. Signature rythmique
+
+### 35.1 Liste exhaustive et modèle extensible
+
+ChordsLab fournit une liste déroulante de signatures rythmiques courantes et composées, notamment :
+
+```text
+2/2
+2/4
+3/2
+3/4
+3/8
+4/2
+4/4
+4/8
+5/4
+5/8
+6/4
+6/8
+7/4
+7/8
+9/8
+10/8
+11/8
+12/8
+12/16
+13/8
+15/8
+```
+
+Le modèle ne doit pas dépendre d'une liste fermée.
+
+La signature est stockée sous forme :
+
+```text
+numerator
+denominator
+```
+
+afin de supporter également des signatures telles que `13/16` sans modification du renderer.
+
+### 35.2 Recomposition temps réel
+
+Changer la signature rythmique ne relance pas l'analyse audio.
+
+Le renderer regroupe les événements existants de la timeline dans de nouvelles mesures.
+
+Exemple :
+
+```text
+4/4
+[ Em--- ]
+
+→ 2/4
+
+[ Em- ] [ Em- ]
+```
+
+La modification est persistée.
+
+Les signatures composées, notamment `6/8`, doivent conserver leurs subdivisions réelles et permettre un marquage visuel adapté des pulsations ternaires.
+
+## 36. Niveau d'analyse harmonique
+
+ChordsLab propose un mode d'analyse persistant :
+
+```text
+Débutant
+Intermédiaire
+Expert
+```
+
+### Débutant
+
+Objectif : simplicité et jouabilité.
+
+- triades majeures et mineures prioritaires ;
+- accords simples ;
+- réduction des enrichissements ;
+- changements harmoniques limités aux événements significatifs.
+
+### Intermédiaire
+
+Objectif : compromis entre lisibilité et fidélité.
+
+- majeur / mineur ;
+- 7 ;
+- m7 ;
+- maj7 ;
+- sus2 / sus4 ;
+- dim / aug lorsqu'ils sont suffisamment fiables ;
+- changements harmoniques plus fins.
+
+### Expert
+
+Objectif : restitution harmonique maximale.
+
+- extensions ;
+- altérations ;
+- slash chords ;
+- accords enrichis ;
+- changements plus fins ;
+- substitutions détectées lorsque le moteur les estime suffisamment fiables.
+
+Le niveau agit sur l'analyse harmonique, pas seulement sur l'affichage.
+
+Un changement de niveau peut donc nécessiter une nouvelle analyse des accords.
+
+## 37. StemsLab dans ChordsLab
+
+### 37.1 Panneaux repliés par défaut
+
+Dans ChordsLab :
+
+```text
+▸ Pistes
+▸ Chaîne d'effets master
+```
+
+sont repliés par défaut.
+
+Le transport principal reste visible.
+
+Le prompteur reste la fonction prioritaire à l'écran.
+
+L'état ouvert/fermé relève de la préférence d'interface utilisateur et ne constitue pas une donnée éditoriale de la chanson.
+
+### 37.2 Chaîne audio existante
+
+La chaîne existante est conservée :
+
+```text
+STEMS / Original
+→ gains individuels
+→ bus master
+→ EQ master
+→ compression
+→ limiteur
+→ gain master
+→ sortie
+```
+
+ChordsLab ne duplique pas cette chaîne.
+
+## 38. Responsive ChordsLab
+
+### 38.1 PC
+
+Sur PC :
+
+- prompteur horizontal prioritaire ;
+- plusieurs mesures visibles ;
+- diagramme ancré au-dessus de l'accord actif ;
+- transport toujours visible ;
+- Pistes et Effets repliés par défaut ;
+- réglages Capo / Signature / Niveau regroupés dans une barre compacte.
+
+### 38.2 Tablette
+
+Sur tablette :
+
+- aucun scroll horizontal global ;
+- plusieurs mesures restent visibles si l'espace le permet ;
+- réglages répartis sur une ou deux lignes ;
+- panneaux secondaires en accordéon ;
+- diagramme toujours lié visuellement à l'accord actif ;
+- boutons et sliders dimensionnés pour le tactile.
+
+### 38.3 Smartphone
+
+Sur smartphone :
+
+- prompteur prioritaire ;
+- nombre de mesures visibles réduit sans perte fonctionnelle ;
+- défilement automatique centré autour de la mesure active ;
+- diagramme affiché au-dessus de l'accord courant ;
+- réglages Capo / Signature / Niveau empilables ;
+- Pistes et Effets en accordéons pleine largeur ;
+- transport tactile ;
+- aucune largeur desktop imposée ;
+- aucune perte de fonction essentielle.
+
+Les cibles tactiles importantes doivent viser une hauteur d'environ 40 à 44 px sans imposer cette hauteur aux simples lignes de lecture.
+
+## 39. Données persistées ChordsLab
+
+Le modèle cible distingue au minimum :
+
+```text
+Timeline :
+- start_time
+- end_time ou durée
+- measure_index
+- beat/subdivision
+- chord_original
+- chord_override nullable
+
+Paramètres éditoriaux :
+- key_original
+- capo
+- time_signature_numerator
+- time_signature_denominator
+- chord_analysis_level
+```
+
+Les transformations de rendu ne doivent pas altérer les données canoniques.
+
+Invariant :
+
+```text
+timeline = source de vérité
+prompteur = projection visuelle
+capo = transformation d'affichage
+transposition = future transformation harmonique distincte
+```

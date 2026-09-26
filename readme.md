@@ -1,53 +1,68 @@
-# EZScore_v1 — R29 Master FX + mixer compact responsive
+# EZScore_v1 — R30 CDC + cahier de recette ChordsLab
 
-R29 remplace l'EQ par piste par une chaîne d'effets globale.
+Ce livrable met à jour :
+
+- `docs/CAHIER_DES_CHARGES.md`
+- `recette.md`
+
+Il documente la spécification consolidée du workflow :
 
 ```text
-STEMS / Original
-→ Volume individuel
-→ Bus master
-→ Graves 110 Hz
-→ Médiums 900 Hz / Q 1
-→ Aigus 3,6 kHz
-→ Compresseur global
-→ Limiteur fixe -1 dB
-→ Volume master
-→ Sortie
+Import
+Analyse
+Édition
+StemsLab
+ChordsLab
+LyricsLab
+Publication
 ```
 
-## Ergonomie
+et ajoute les exigences détaillées pour :
 
-Desktop : `Nom | Actif | Volume`, hauteur cible 42 px.
-
-Tablette : 3 colonnes conservées, aucun min-width de 1100 px, Master FX réorganisé sur plusieurs colonnes.
-
-Smartphone : en-tête masqué, chaque piste sur 2 lignes compactes (nom/activation puis volume), contrôles tactiles agrandis, Master FX sur une colonne, transport réorganisé. Un breakpoint supplémentaire existe pour les écrans <= 390 px.
+- timeline comme source de vérité ;
+- prompteur harmonique synchronisé ;
+- notation compacte `[Em---]`, etc. ;
+- réaffichage explicite d'un accord qui continue sur la mesure suivante ;
+- diagramme au-dessus de l'accord courant ;
+- édition d'accord en place + persistance ;
+- reset des accords ;
+- capo EZScore = simplification de doigtés uniquement ;
+- tonalité réelle visible dans le cartouche ;
+- transposition future séparée du capo ;
+- signatures rythmiques extensibles, y compris 7/4, 6/8, 13/16, etc. ;
+- niveaux Débutant / Intermédiaire / Expert ;
+- réutilisation du player existant ;
+- Pistes et chaîne d'effets repliées par défaut ;
+- ergonomie PC / tablette / smartphone ;
+- plan de recette fonctionnelle complet et non-régression.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R29_MASTER_FX_COMPACT_RESPONSIVE.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R30_CDC_RECETTE_CHORDSLAB.zip" -C H:\EZScore_v1
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r29_master_fx_compact_mixer.py
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r30_cdc_recette_chordslab.py
+```
 
-node --check .\public\assets\js\audio\ezscore-audio-engine.js
-node --check .\public\assets\js\stems-mixer.js
+Validation :
 
-php -l .\src\Controller\SongStemController.php
-php .\tests\r29_master_fx_contract.php
-php bin\console lint:yaml translations
-php bin\console lint:twig templates
-php bin\console cache:clear
+```powershell
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\tests\test_r30_cdc_recette.py
 ```
 
 Attendu :
 
 ```text
-18 R29 master-FX responsive checks passed.
+22 R30 CDC/recette checks passed.
 ```
 
-Puis `Ctrl + F5`.
+Le script est idempotent et crée une sauvegarde sous :
 
-Aucune migration Doctrine. Le Worker Desktop, les STEMS et les proxies Opus ne sont pas régénérés.
+```text
+var\backup\r30-cdc-recette-YYYYMMDD-HHMMSS
+```
+
+Aucune migration Doctrine.
+Aucun code métier n'est modifié par ce livrable documentaire.
