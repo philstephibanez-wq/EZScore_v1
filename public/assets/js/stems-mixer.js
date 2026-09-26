@@ -15,6 +15,7 @@
     const masterVolumeOutput = root.querySelector('[data-master-volume-output]');
     const saveUrl = root.dataset.mixSaveUrl;
     const csrfToken = root.dataset.mixToken;
+
     const t = {
         saved: root.dataset.i18nSaved || 'Saved',
         modified: root.dataset.i18nModified || 'Modified',
@@ -25,10 +26,9 @@
         playing: root.dataset.i18nPlaying || 'Playing',
         paused: root.dataset.i18nPaused || 'Paused',
         finished: root.dataset.i18nFinished || 'Finished',
-        loadingTemplate: root.dataset.i18nLoadingTemplate || 'Loading __DONE__/__TOTAL__',
-        loadedPartialTemplate: root.dataset.i18nLoadedPartialTemplate || '__DONE__/__TOTAL__ tracks loaded',
         audioErrorTemplate: root.dataset.i18nAudioErrorTemplate || 'Audio error: __ERROR__'
     };
+
     const fmtTemplate = (value, replacements) => {
         let out = value;
         Object.entries(replacements).forEach(([key, replacement]) => {
@@ -57,6 +57,7 @@
     let saveTimer = 0;
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
     const fmt = (seconds) => {
         const safe = Math.max(0, Number(seconds) || 0);
         const minutes = Math.floor(safe / 60);
@@ -69,19 +70,24 @@
         return `${n > 0 ? '+' : ''}${n.toFixed(n % 1 ? 1 : 0)} dB`;
     };
 
-    const stopSources = () => {
-        tracks.forEach((track) => {
-            if (track.source) {
-                try { track.source.stop(); } catch (_) {}
-                try { track.source.disconnect(); } catch (_) {}
-                track.source = null;
-            }
-        });
+    const setState = (text) => {
+        if (stateEl) stateEl.textContent = text;
     };
 
     const currentPosition = () => {
         if (!playing) return position;
-        return clamp(position + ((context.currentTime - startedAt) * rate), 0, duration || 0);
+        return clamp(position + ((context.currentTime - startedAt) * rate), 0, duration || Number.MAX_SAFE_INTEGER);
+    };
+
+    const stopTrackSource = (track) => {
+        if (!track.source) return;
+        try { track.source.stop(); } catch (_) {}
+        try { track.source.disconnect(); } catch (_) {}
+        track.source = null;
+    };
+
+    const stopSources = () => {
+        tracks.forEach(stopTrackSource);
     };
 
     const setTrackGain = (track) => {
@@ -95,20 +101,79 @@
         track.high.gain.setTargetAtTime(Number(track.highInput.value), context.currentTime, 0.01);
     };
 
+    const ensureTrackLoaded = async (track) => {
+        if (track.buffer) return track.buffer;
+        if (track.loadingPromise) return track.loadingPromise;
+
+        track.loadingPromise = (async () => {
+            setState(`Chargement ${track.label}…`);
+
+            const response = await fetch(track.url, {
+                credentials: 'same-origin',
+                cache: 'force-cache'
+            });
+
+            if (!response.ok) {
+                throw new Error(`${track.key}: HTTP ${response.status}`);
+            }
+
+            const bytes = await response.arrayBuffer();
+            const buffer = await context.decodeAudioData(bytes);
+            track.buffer = buffer;
+            duration = Math.max(duration, buffer.duration);
+            return buffer;
+        })();
+
+        try {
+            return await track.loadingPromise;
+        } finally {
+            track.loadingPromise = null;
+        }
+    };
+
     const createSource = (track, offset) => {
-        if (!track.buffer) return;
+        if (!track.buffer || !track.enabled.checked) return;
+
+        stopTrackSource(track);
+
         const source = context.createBufferSource();
         source.buffer = track.buffer;
         source.playbackRate.value = rate;
         source.connect(track.low);
-        source.start(0, Math.min(offset, Math.max(0, track.buffer.duration - 0.001)));
+
+        const safeOffset = Math.min(
+            offset,
+            Math.max(0, track.buffer.duration - 0.001)
+        );
+
+        source.start(0, safeOffset);
         track.source = source;
     };
 
-    const restartSources = (offset) => {
+    const ensureEnabledTracksLoaded = async () => {
+        const enabledTracks = Array.from(tracks.values()).filter((track) => track.enabled.checked);
+
+        if (enabledTracks.length === 0) {
+            return;
+        }
+
+        for (const track of enabledTracks) {
+            await ensureTrackLoaded(track);
+        }
+    };
+
+    const restartSources = async (offset) => {
         stopSources();
         if (!playing) return;
-        tracks.forEach((track) => createSource(track, offset));
+
+        await ensureEnabledTracksLoaded();
+
+        tracks.forEach((track) => {
+            if (track.enabled.checked) {
+                createSource(track, offset);
+            }
+        });
+
         position = offset;
         startedAt = context.currentTime;
     };
@@ -116,15 +181,20 @@
     const updateClock = () => {
         const pos = currentPosition();
 
-        if (timeEl) timeEl.textContent = `${fmt(pos)} / ${fmt(duration)}`;
-        if (seekEl && duration > 0) seekEl.value = String(Math.round((pos / duration) * 1000));
+        if (timeEl) {
+            timeEl.textContent = `${fmt(pos)} / ${fmt(duration)}`;
+        }
+
+        if (seekEl && duration > 0) {
+            seekEl.value = String(Math.round((pos / duration) * 1000));
+        }
 
         if (playing && duration > 0 && pos >= duration - 0.02) {
             playing = false;
             position = 0;
             stopSources();
             if (seekEl) seekEl.value = '0';
-            if (stateEl) stateEl.textContent = t.finished;
+            setState(t.finished);
         }
 
         raf = window.requestAnimationFrame(updateClock);
@@ -169,7 +239,10 @@
                 })
             });
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
             if (saveStateEl) saveStateEl.textContent = t.saved;
         } catch (_) {
             if (saveStateEl) saveStateEl.textContent = t.saveFailed;
@@ -191,11 +264,13 @@
         if (masterVolumeEl && Number.isFinite(Number(settings.master_volume))) {
             masterVolumeEl.value = String(settings.master_volume);
         }
+
         if (rateEl && Number.isFinite(Number(settings.playback_rate))) {
             rateEl.value = String(settings.playback_rate);
         }
 
         const rawTracks = settings.tracks || {};
+
         tracks.forEach((track, key) => {
             const saved = rawTracks[key];
             if (!saved || typeof saved !== 'object') return;
@@ -220,7 +295,9 @@
 
         if (masterVolumeEl) {
             master.gain.value = Number(masterVolumeEl.value);
-            if (masterVolumeOutput) masterVolumeOutput.textContent = `${Math.round(Number(masterVolumeEl.value) * 100)}%`;
+            if (masterVolumeOutput) {
+                masterVolumeOutput.textContent = `${Math.round(Number(masterVolumeEl.value) * 100)}%`;
+            }
         }
 
         rate = Number(rateEl?.value || 1);
@@ -241,6 +318,7 @@
         high.frequency.value = 5500;
 
         const gain = context.createGain();
+
         low.connect(mid);
         mid.connect(high);
         high.connect(gain);
@@ -248,9 +326,11 @@
 
         const track = {
             key: row.dataset.trackKey,
+            label: row.querySelector('strong')?.textContent?.trim() || row.dataset.trackKey,
             url: row.dataset.trackUrl,
             row,
             buffer: null,
+            loadingPromise: null,
             source: null,
             low,
             mid,
@@ -270,9 +350,31 @@
 
         tracks.set(track.key, track);
 
-        track.enabled.addEventListener('change', () => {
+        track.enabled.addEventListener('change', async () => {
             setTrackGain(track);
             scheduleSave();
+
+            if (!track.enabled.checked) {
+                stopTrackSource(track);
+                return;
+            }
+
+            if (playing) {
+                const offset = currentPosition();
+
+                try {
+                    await ensureTrackLoaded(track);
+
+                    // Navigation can happen while the fetch is pending.
+                    // Only start audio if the page is still active and playback is still running.
+                    if (playing && track.enabled.checked) {
+                        createSource(track, offset);
+                        setState(t.playing);
+                    }
+                } catch (error) {
+                    setState(fmtTemplate(t.audioErrorTemplate, {'__ERROR__': error.message}));
+                }
+            }
         });
 
         track.volume.addEventListener('input', () => {
@@ -307,6 +409,7 @@
 
     applyPersisted();
     syncOutputs();
+    setState(t.ready);
 
     masterVolumeEl?.addEventListener('input', () => {
         master.gain.setTargetAtTime(Number(masterVolumeEl.value), context.currentTime, 0.01);
@@ -314,83 +417,79 @@
         scheduleSave();
     });
 
-    rateEl?.addEventListener('change', () => {
+    rateEl?.addEventListener('change', async () => {
         const pos = currentPosition();
         rate = Number(rateEl.value);
-        if (playing) restartSources(pos);
+
+        if (playing) {
+            await restartSources(pos);
+        }
+
         scheduleSave();
     });
 
     playButton?.addEventListener('click', async () => {
-        if (!duration) return;
-        if (context.state === 'suspended') await context.resume();
+        if (context.state === 'suspended') {
+            await context.resume();
+        }
+
         if (playing) return;
 
-        if (position >= duration - 0.02) position = 0;
-        playing = true;
-        startedAt = context.currentTime;
-        tracks.forEach((track) => createSource(track, position));
-        if (stateEl) stateEl.textContent = t.playing;
+        try {
+            await ensureEnabledTracksLoaded();
+
+            if (duration <= 0) {
+                setState('Aucune piste active');
+                return;
+            }
+
+            if (position >= duration - 0.02) {
+                position = 0;
+            }
+
+            playing = true;
+            startedAt = context.currentTime;
+
+            tracks.forEach((track) => {
+                if (track.enabled.checked) {
+                    createSource(track, position);
+                }
+            });
+
+            setState(t.playing);
+        } catch (error) {
+            playing = false;
+            setState(fmtTemplate(t.audioErrorTemplate, {'__ERROR__': error.message}));
+        }
     });
 
     pauseButton?.addEventListener('click', () => {
         if (!playing) return;
+
         position = currentPosition();
         playing = false;
         stopSources();
-        if (stateEl) stateEl.textContent = t.paused;
+        setState(t.paused);
     });
 
     stopButton?.addEventListener('click', () => {
         playing = false;
         position = 0;
         stopSources();
+
         if (seekEl) seekEl.value = '0';
-        if (stateEl) stateEl.textContent = t.ready;
+        setState(t.ready);
     });
 
-    seekEl?.addEventListener('input', () => {
+    seekEl?.addEventListener('input', async () => {
         if (!duration) return;
+
         const newPosition = (Number(seekEl.value) / 1000) * duration;
         position = newPosition;
-        if (playing) restartSources(newPosition);
-    });
 
-    const loadTrack = async (track) => {
-        const response = await fetch(track.url, {
-            credentials: 'same-origin',
-            cache: 'force-cache'
-        });
-        if (!response.ok) throw new Error(`${track.key}: HTTP ${response.status}`);
-        const bytes = await response.arrayBuffer();
-        track.buffer = await context.decodeAudioData(bytes);
-        duration = Math.max(duration, track.buffer.duration);
-    };
-
-    const loadAll = async () => {
-        const all = Array.from(tracks.values());
-        let done = 0;
-
-        if (stateEl) stateEl.textContent = fmtTemplate(t.loadingTemplate, {'__DONE__': 0, '__TOTAL__': all.length});
-
-        const results = await Promise.allSettled(all.map(async (track) => {
-            await loadTrack(track);
-            done += 1;
-            if (stateEl) stateEl.textContent = fmtTemplate(t.loadingTemplate, {'__DONE__': done, '__TOTAL__': all.length});
-        }));
-
-        const failures = results.filter((result) => result.status === 'rejected');
-        if (failures.length) {
-            if (stateEl) stateEl.textContent = fmtTemplate(t.loadedPartialTemplate, {'__DONE__': all.length - failures.length, '__TOTAL__': all.length});
-        } else {
-            if (stateEl) stateEl.textContent = t.ready;
+        if (playing) {
+            await restartSources(newPosition);
         }
-
-        if (timeEl) timeEl.textContent = `0:00 / ${fmt(duration)}`;
-    };
-
-    loadAll().catch((error) => {
-        if (stateEl) stateEl.textContent = fmtTemplate(t.audioErrorTemplate, {'__ERROR__': error.message});
     });
 
     raf = window.requestAnimationFrame(updateClock);

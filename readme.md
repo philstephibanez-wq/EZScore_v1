@@ -1,80 +1,88 @@
-# EZScore_v1 — R25.4 Original audio + navigation STEMS
+# EZScore_v1 — R25.5 Chargement audio paresseux
 
-Deux corrections cumulatives.
+Le problème de navigation lente depuis la page STEMS est identifié.
 
-## 1. Piste Original inaudible
+## Cause
 
-Le mixer chargeait 8 pistes sur 9 : la piste manquante était `Original`.
-
-Cause :
-
-`SongImportStorage` persiste `audioStoragePath` sous forme relative :
+Le mixer R25 lançait immédiatement, dès l'ouverture de la page :
 
 ```text
-var/storage/audio/<sha256>.<ext>
+9 requêtes audio
++ téléchargement intégral
++ decodeAudioData des 9 pistes
 ```
 
-La route `/stems/original` utilisait directement cette valeur avec `is_file()` puis `BinaryFileResponse`.
+Le serveur local actuel est :
 
-R25.4 résout explicitement ce chemin depuis :
+```powershell
+php -S 127.0.0.1:8501 -t H:\EZScore_v1\public
+```
+
+Ce serveur de développement est un mauvais endroit pour saturer immédiatement la connexion avec plusieurs gros WAV.
+
+Conséquence visible :
 
 ```text
-%kernel.project_dir%
+clic Répertoire / Retour / Modifier
+→ le clic fonctionne
+→ mais la navigation semble bloquée longtemps
 ```
 
-donc, sur cette installation :
+## Correction R25.5
+
+Aucune piste n'est maintenant téléchargée au chargement de la page.
+
+Le mixer charge seulement les pistes actives au premier clic sur Lecture.
+
+Par défaut :
 
 ```text
-H:\EZScore_v1\var\storage\audio\<sha256>.<ext>
+Original = actif
+les STEMS = inactifs
 ```
 
-La réponse conserve le MIME original et reste protégée par les droits Editor/Admin du morceau.
+Donc le premier Play charge seulement `Original`.
 
-## 2. Navigation latérale depuis STEMS
-
-Le correctif de couche du panneau gauche est inclus également :
+Si une piste est activée pendant la lecture :
 
 ```text
-contenu STEMS
-< backdrop
-< drawer
-< topbar
+ON
+→ téléchargement de cette piste seulement
+→ décodage
+→ démarrage à la position courante
 ```
 
-Ainsi les liens Répertoire / Playlists / Groupes / Sessions restent cliquables depuis STEMS.
+Les autres pistes ne sont jamais téléchargées tant qu'elles ne sont pas utilisées.
+
+La synchronisation Web Audio, le mixage temps réel, l'EQ et la persistence restent inchangés.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R25_4_STEMS_ORIGINAL_DRAWER_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R25_5_STEMS_LAZY_LOADING.zip" -C H:\EZScore_v1
 
-php -l .\src\Controller\SongStemController.php
-php .\tests\stems_original_drawer_r25_4_contract.php
+node --check .\public\assets\js\stems-mixer.js
+php .\tests\stems_lazy_loading_r25_5_contract.php
 
 php bin\console cache:clear
 ```
 
-Puis dans Chrome :
+Puis :
 
 ```text
 Ctrl + F5
 ```
 
-Sur la page STEMS, le mixer doit passer de :
+Test :
 
 ```text
-8/9 pistes chargées
+ouvrir STEMS
+→ cliquer immédiatement Répertoire / Retour / Modifier
 ```
 
-à :
-
-```text
-9/9 pistes chargées
-```
-
-et `Original` doit devenir audible.
+La navigation doit partir immédiatement, sans attendre le chargement des 9 audios.
 
 Aucune migration Doctrine.
-Aucun changement du moteur de séparation STEMS.
+Aucun changement du moteur STEMS.
