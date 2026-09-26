@@ -6,6 +6,7 @@
     <title>{% block title %}EZSCORE v1{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/base.css?v=20260924">
     <link rel="stylesheet" href="/assets/css/layout.css?v=20260925r13">
+    <link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260926r32_3">
     {% block stylesheets %}{% endblock %}
     <link rel="stylesheet" href="/assets/css/interactions.css?v=20260924f">
     <link rel="stylesheet" href="/assets/css/r21-admin.css?v=20260925r21">
@@ -125,7 +126,7 @@
 {% endif %}
 
         {% for label, messages in app.flashes %}
-            {% for message in messages %}<div class="flash flash-{{ label }}">{{ message starts with 'event.' ? message|trans({}, 'event') : message|trans }}</div>{% endfor %}
+            {% for message in messages %}<div class="flash flash-{{ label }}">{{ message starts with 'event.' ? message|trans({}, 'event') : (message starts with 'chordslab.' ? message|trans({}, 'chordslab') : message|trans) }}</div>{% endfor %}
         {% endfor %}
         {% block body %}{% endblock %}
     </main>

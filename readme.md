@@ -1,70 +1,76 @@
-# EZScore_v1 — R32.2 Doctrine schema default sync
+# EZScore_v1 — R32.3 ChordsLab UI / i18n
 
-Après la migration R32, Doctrine proposait encore de reconstruire entièrement la table `songs`.
+Ce correctif traite les défauts visibles après R32.
 
-La cause est ciblée :
+## 1. Workflow mal présenté avant ouverture d'un Lab
 
-```sql
-chord_analysis_level VARCHAR(16) NOT NULL DEFAULT 'intermediate'
+La feuille :
+
+```text
+workflow-tabs-r23-2.css
 ```
 
-a été créé par la migration, alors que le mapping Doctrine déclarait le champ sans le `DEFAULT`.
+était chargée uniquement par certaines pages (`StemsLab`, `ChordsLab`) et pas par la page morceau.
 
-Doctrine considérait donc le schéma SQLite différent du mapping et proposait une reconstruction de table uniquement pour supprimer ce défaut.
+R32.3 la charge désormais depuis `base.html.twig`, donc le workflow a le même rendu partout dès le premier affichage.
 
-R32.2 aligne le mapping Doctrine sur la migration :
+## 2. Libellés `chordslab.xxx` affichés à l'écran
 
-```php
-#[ORM\Column(
-    name: 'chord_analysis_level',
-    length: 16,
-    options: ['default' => 'intermediate'],
-)]
+Les traductions R32 sont dans :
+
+```text
+translations/chordslab.fr.yaml
+translations/chordslab.en.yaml
 ```
 
-Aucune donnée n'est modifiée.
-Aucune migration supplémentaire n'est nécessaire.
-Aucun `schema:update --force`.
+donc dans le domaine Symfony `chordslab`.
+
+Le template utilisait le domaine par défaut `messages`. R32.3 ajoute explicitement le domaine `chordslab` à tous les libellés concernés, y compris les flashes.
+
+## 3. Signature `auto`
+
+Le morceau Aline est actuellement en `auto`, mais la liste R32 commençait à `2/2`, ce qui affichait à tort `2/2` dans le sélecteur.
+
+`auto` est maintenant la première valeur de la liste et reste sélectionné tant que l'analyse n'a pas déterminé ou que l'éditeur n'a pas imposé une signature.
+
+## 4. Boutons du player
+
+Les glyphes ajoutés dans ChordsLab dupliquaient ceux déjà présents dans certaines traductions Stems. Ils sont retirés.
+
+## 5. Pourquoi le prompteur est vide
+
+R32 n'invente volontairement aucun accord.
+
+Le prompteur lit exclusivement `song_timeline_events` avec `event_type = chord`.
+
+Si la table ne contient aucun accord pour le morceau, l'état vide est correct.
+
+Le dépôt actuel contient le moteur STEMS / proxies de lecture, mais pas encore le moteur d'analyse harmonique qui doit alimenter la timeline. Cette étape sera R33.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R32_2_SCHEMA_DEFAULT_SYNC.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R32_3_CHORDSLAB_UI_I18N_FIX.zip" -C H:\EZScore_v1
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r32_2_schema_default_sync.py
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r32_3_ui_i18n_fix.py
 
-php -l .\src\Domain\Song\Song.php
-php .\tests\r32_2_schema_sync_contract.php
-
-php bin\console doctrine:schema:validate
-php bin\console doctrine:schema:update --dump-sql
+php -l .\src\Controller\SongLabController.php
+php .\tests\r32_3_ui_i18n_contract.php
+php bin\console lint:yaml translations
+php bin\console lint:twig templates
 php bin\console cache:clear
 ```
 
 Attendu :
 
 ```text
-5 R32.2 schema-sync checks passed.
+7 R32.3 UI/i18n checks passed.
 ```
 
-Puis :
+Puis `Ctrl+F5`.
 
-```text
-Mapping
--------
-[OK] The mapping files are correct.
-
-Database
---------
-[OK] The database schema is in sync with the mapping files.
-```
-
-et :
-
-```powershell
-php bin\console doctrine:schema:update --dump-sql
-```
-
-ne doit afficher aucune instruction SQL.
+Aucune migration Doctrine.
+Aucune donnée musicale modifiée.
+Aucun accord artificiel ajouté.

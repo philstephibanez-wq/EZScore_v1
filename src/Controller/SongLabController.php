@@ -21,6 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class SongLabController extends AbstractController
 {
     private const TIME_SIGNATURES = [
+        'auto',
         '2/2', '2/4',
         '3/2', '3/4', '3/8',
         '4/2', '4/4', '4/8',
