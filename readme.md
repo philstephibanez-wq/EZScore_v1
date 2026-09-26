@@ -1,85 +1,55 @@
-# EZScore_v1 — R24.16 Notification Worker hors ligne
+# EZScore_v1 — R24.18 État du serveur dans Analysis Worker
 
-EZScore doit signaler clairement quand l'application `EZScore Analysis Worker` n'est plus active.
+Le Worker affiche maintenant en permanence l'état du serveur local EZScore.
 
-## Détection
+## Affichage
 
-Le Worker envoie déjà un heartbeat environ toutes les 2 secondes.
-
-R24.16 considère le Worker hors ligne si aucun heartbeat valide n'a été reçu depuis plus de :
+Dans `Connexion / Runtime` :
 
 ```text
-8 secondes
+API EZScore       http://127.0.0.1:8501
+Python STEM       H:\EZScore_v1\.venv-py313\Scripts\python.exe
+CUDA / GPU        NVIDIA GeForce RTX 2060
+Serveur local     ACTIF · 127.0.0.1:8501 · PID 16228
+Canal             RX/TX OK
 ```
 
-Cela évite un faux positif sur un simple retard de heartbeat.
-
-## Notification globale
-
-Pour les rôles `EDITOR` et `ADMIN`, EZScore affiche une bannière persistante :
+Si le serveur est arrêté :
 
 ```text
-Moteur d'analyse hors ligne
-Les analyses sont indisponibles tant que EZScore Analysis Worker n'est pas démarré.
+Serveur local     ARRÊTÉ · 127.0.0.1:8501
 ```
 
-La bannière est vérifiée toutes les 5 secondes.
+Le contrôle est refait automatiquement toutes les 2 secondes.
 
-Elle disparaît automatiquement lorsque le Worker recommence à envoyer ses heartbeats.
-
-Les lecteurs ne voient pas cette alerte puisqu'ils ne lancent pas d'analyses.
-
-## Sécurité fonctionnelle
-
-La notification n'est pas seulement visuelle.
-
-La route qui crée un job STEMS refuse maintenant de mettre un job en file si le Worker est hors ligne :
+Le test ne se contente pas du fichier PID : il vérifie aussi que le serveur HTTP répond réellement sur :
 
 ```text
-Le moteur d'analyse est hors ligne.
-Démarrez EZScore Analysis Worker avant de lancer une analyse.
+http://127.0.0.1:8501/fr/login
 ```
 
-Cela évite d'accumuler des jobs impossibles à traiter.
+## Bouton Ouvrir EZScore
 
-## Endpoint
-
-Nouveau endpoint authentifié :
+Le bouton ouvre désormais l'URL utilisateur correcte :
 
 ```text
-GET /analysis/worker/status
+https://ezscore.logandplay.com/fr/catalog
 ```
 
-Réponse minimale :
-
-```json
-{
-  "online": false,
-  "status": "offline",
-  "last_seen_at": "...",
-  "last_seen_age_seconds": 12
-}
-```
-
-Aucune capacité GPU, aucun chemin local, aucun token et aucune information technique sensible ne sont exposés.
+L'API locale et l'URL navigateur sont donc clairement séparées.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_16_WORKER_OFFLINE_NOTIFICATION.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R24_18_WORKER_SERVER_STATUS.zip" -C H:\EZScore_v1
 
-Get-ChildItem src,tests -Recurse -Filter *.php | ForEach-Object {
-    php -l $_.FullName
-}
-
-php tests\analysis_worker_offline_r24_16_contract.php
-php bin\console lint:yaml config translations
-php bin\console lint:twig templates
-php bin\console cache:clear
-php bin\console debug:router | Select-String "analysis_worker_status"
+python -m py_compile .\worker_app\ezscore_analysis_worker.pyw
+php tests\worker_server_status_r24_18_contract.php
 ```
+
+Fermer puis relancer `EZScore Analysis Worker` pour charger cette version.
 
 Aucune migration Doctrine.
 Aucun changement du moteur STEMS.

@@ -20,7 +20,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 
-APP_VERSION = "R24.6"
+APP_VERSION = "R24.18"
 HEARTBEAT_SECONDS = 2.0
 CLAIM_SECONDS = 1.5
 
@@ -51,6 +51,47 @@ def read_env_local(root: Path) -> dict[str, str]:
             value = value[1:-1]
         result[key.strip()] = value
     return result
+
+
+def browser_url(root: Path) -> str:
+    env = read_env_local(root)
+    return (
+        os.environ.get("EZSCORE_BROWSER_URL")
+        or env.get("EZSCORE_BROWSER_URL")
+        or "https://ezscore.logandplay.com"
+    ).rstrip("/")
+
+
+def local_server_url() -> str:
+    return "http://127.0.0.1:8501"
+
+
+def local_server_pid(root: Path) -> int | None:
+    path = root / "var" / "runtime" / "ezscore-web.pid"
+    try:
+        value = int(path.read_text(encoding="ascii", errors="ignore").strip())
+        return value if value > 0 else None
+    except Exception:
+        return None
+
+
+def local_server_alive(timeout: float = 0.8) -> tuple[bool, int | None]:
+    root = project_root()
+    pid = local_server_pid(root)
+
+    req = urllib.request.Request(
+        local_server_url() + "/fr/login",
+        headers={"User-Agent": f"EZScore-Analysis-Worker/{APP_VERSION}"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return 200 <= int(response.status) < 500, pid
+    except urllib.error.HTTPError as exc:
+        # HTTP 4xx proves that the local HTTP server is alive.
+        return 400 <= int(exc.code) < 500, pid
+    except Exception:
+        return False, pid
 
 
 class ApiClient:
@@ -122,7 +163,6 @@ class WorkerEngine:
         for candidate in [
             os.environ.get("EZSCORE_STEM_PYTHON"),
             env.get("EZSCORE_STEM_PYTHON"),
-            r"H:\EZScore\.venv-py313\Scripts\python.exe",
             str(self.root / ".venv-py313" / "Scripts" / "python.exe"),
             sys.executable,
             "python",
@@ -479,6 +519,37 @@ class WorkerEngine:
             return None
 
 
+class LocalServerMonitor:
+    def __init__(self, app: "WorkerWindow"):
+        self.app = app
+        self.stop_event = threading.Event()
+        self.thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        if self.thread and self.thread.is_alive():
+            return
+        self.stop_event.clear()
+        self.thread = threading.Thread(
+            target=self._loop,
+            name="local-server-monitor",
+            daemon=True,
+        )
+        self.thread.start()
+
+    def stop(self) -> None:
+        self.stop_event.set()
+
+    def _loop(self) -> None:
+        while not self.stop_event.is_set():
+            alive, pid = local_server_alive()
+            self.app.events.put(("server_status", {
+                "alive": alive,
+                "pid": pid,
+                "url": local_server_url(),
+            }))
+            self.stop_event.wait(2.0)
+
+
 class WorkerWindow:
     def __init__(self):
         self.root = tk.Tk()
@@ -495,11 +566,14 @@ class WorkerWindow:
         self.job_var = tk.StringVar(value="Aucun")
         self.stage_var = tk.StringVar(value="—")
         self.txrx_var = tk.StringVar(value="—")
+        self.server_var = tk.StringVar(value="Vérification…")
         self.progress_var = tk.DoubleVar(value=0)
+        self.server_monitor = LocalServerMonitor(self)
 
         self._build()
         self.root.after(100, self._drain_events)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.server_monitor.start()
 
     def _build(self):
         style = ttk.Style()
@@ -527,9 +601,10 @@ class WorkerWindow:
         info.pack(fill="x", padx=12, pady=(0, 10))
         rows = [
             ("État", self.status_var),
-            ("EZScore", self.url_var),
+            ("API EZScore", self.url_var),
             ("Python STEM", self.python_var),
             ("CUDA / GPU", self.cuda_var),
+            ("Serveur local", self.server_var),
             ("Canal", self.txrx_var),
         ]
         for i, (label, var) in enumerate(rows):
@@ -576,10 +651,7 @@ class WorkerWindow:
         self.engine.pause(not self.engine.paused)
 
     def _open_ezscore(self):
-        url = self.url_var.get()
-        if not url or url == "—":
-            url = "http://127.0.0.1:8501"
-        webbrowser.open(url.rstrip("/") + "/fr/catalog")
+        webbrowser.open(browser_url(project_root()) + "/fr/catalog")
 
     def _open_logs(self):
         path = project_root() / "var" / "log"
@@ -603,6 +675,15 @@ class WorkerWindow:
                 self.status_var.set(str(payload))
             elif kind == "txrx":
                 self.txrx_var.set(str(payload))
+            elif kind == "server_status":
+                data = payload if isinstance(payload, dict) else {}
+                if data.get("alive"):
+                    pid = data.get("pid")
+                    self.server_var.set(
+                        f"ACTIF · 127.0.0.1:8501" + (f" · PID {pid}" if pid else "")
+                    )
+                else:
+                    self.server_var.set("ARRÊTÉ · 127.0.0.1:8501")
             elif kind == "connection_config":
                 data = payload if isinstance(payload, dict) else {}
                 self.url_var.set(str(data.get("url", "—")))
@@ -642,6 +723,7 @@ class WorkerWindow:
             self.engine.cancel_current()
 
         self.engine.request_stop()
+        self.server_monitor.stop()
         self.root.destroy()
 
     def run(self):
