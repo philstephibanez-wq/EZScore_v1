@@ -20,7 +20,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 
-APP_VERSION = "R24.18"
+APP_VERSION = "R27.2"
 HEARTBEAT_SECONDS = 2.0
 CLAIM_SECONDS = 1.5
 
@@ -489,6 +489,59 @@ class WorkerEngine:
         return_code = proc.wait()
         self.current_process = None
 
+        # R27.2 PLAYBACK PROXY STAGE
+        # Desktop Worker executes stems_only.py directly and bypasses
+        # App\Service\SongStemWorker. Build Opus proxies here before complete.
+        proxy_error = None
+
+        if return_code == 0:
+            proxy_script = self.root / "analysis" / "build_playback_proxies.py"
+
+            if not proxy_script.is_file():
+                return_code = 90
+                proxy_error = "playback_proxy_builder_missing"
+                self.log("ERREUR: build_playback_proxies.py introuvable.")
+            else:
+                proxy_command = [
+                    self.engine_python,
+                    str(proxy_script),
+                    "--source", str(paths["source"]),
+                    "--storage-root", str(paths["storage_root"]),
+                    "--progress-file", str(paths["progress_file"]),
+                ]
+
+                self.log("Génération des proxies Opus 192 kb/s lancée.")
+
+                proxy_proc = subprocess.Popen(
+                    proxy_command,
+                    cwd=str(self.root),
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    bufsize=1,
+                    creationflags=WINDOWS_NO_WINDOW if os.name == "nt" else 0,
+                )
+                self.current_process = proxy_proc
+
+                if proxy_proc.stdout is not None:
+                    for line in proxy_proc.stdout:
+                        line = line.rstrip()
+                        if line:
+                            self.log("[OPUS] " + line)
+
+                proxy_return_code = proxy_proc.wait()
+                self.current_process = None
+
+                if proxy_return_code != 0:
+                    return_code = proxy_return_code
+                    proxy_error = f"playback_proxy_exit_{proxy_return_code}"
+                    self.log(f"Échec génération Opus: {proxy_error}")
+                else:
+                    self.log("Proxies Opus générés.")
+
         if return_code == 0:
             try:
                 self.api.post(f"/internal/analysis/desktop/jobs/{job_id}/complete", {})
@@ -498,7 +551,7 @@ class WorkerEngine:
                 self.log(f"Échec validation finale job #{job_id}: {exc}")
                 self.api.post(f"/internal/analysis/desktop/jobs/{job_id}/fail", {"error": str(exc)[:400]})
         else:
-            error = f"stems_python_exit_{return_code}"
+            error = proxy_error or f"stems_python_exit_{return_code}"
             self.log(f"Job #{job_id} en échec: {error}")
             try:
                 self.api.post(f"/internal/analysis/desktop/jobs/{job_id}/fail", {"error": error})

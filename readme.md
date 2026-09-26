@@ -1,52 +1,32 @@
-# EZScore_v1 — R27.1 namespace fix
+# EZScore_v1 — R27.2 Desktop Worker + proxies Opus
 
-R27 avait bien créé :
+Le job était bien lancé mais aucun player n'apparaissait.
 
-```text
-App\Service\SongStemPlaybackStorage
-```
+## Cause
 
-mais `SongStemController.php` utilisait le type :
+Le Worker Desktop lance directement `analysis/stems_only.py`, puis appelle immédiatement
+`/internal/analysis/desktop/jobs/{id}/complete`.
 
-```php
-SongStemPlaybackStorage $playback
-```
+Il ne passe donc pas par `App\Service\SongStemWorker`, où R27 avait ajouté la génération Opus.
 
-sans importer la classe.
-
-PHP l'interprétait donc comme :
-
-```text
-App\Controller\SongStemPlaybackStorage
-```
-
-ce qui provoquait l'erreur Symfony :
-
-```text
-Cannot determine controller argument ...
-non-existent class or interface:
-App\Controller\SongStemPlaybackStorage
-```
-
-R27.1 ajoute uniquement l'import manquant :
-
-```php
-use App\Service\SongStemPlaybackStorage;
-```
-
-Aucune migration Doctrine.
-Aucune modification du moteur STEMS.
-Aucune modification AudioEngine.
+R27.2 corrige le Worker Desktop réellement utilisé.
 
 ## Installation
+
+Fermer d'abord EZScore Analysis Worker.
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R27_1_PLAYBACK_NAMESPACE_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R27_2_DESKTOP_WORKER_OPUS_FIX.zip" -C H:\EZScore_v1
+
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r27_2_worker_proxy_fix.py
+
+H:\EZScore_v1\.venv-py313\Scripts\python.exe -m py_compile .\worker_app\ezscore_analysis_worker.pyw
+H:\EZScore_v1\.venv-py313\Scripts\python.exe -m py_compile .\analysis\build_playback_proxies.py
 
 php -l .\src\Controller\SongStemController.php
-php .\tests\opus_playback_r27_1_namespace_contract.php
+php .\tests\r27_2_desktop_worker_contract.php
 
 php bin\console cache:clear
 ```
@@ -54,7 +34,30 @@ php bin\console cache:clear
 Attendu :
 
 ```text
-4 R27.1 namespace checks passed.
+11 R27.2 desktop-worker checks passed.
 ```
 
-Puis recharger la page STEMS.
+Relancer le Worker Desktop puis recliquer `Générer les pistes de lecture`.
+
+Le Worker doit afficher :
+
+```text
+Commande STEMS lancée.
+Génération des proxies Opus 192 kb/s lancée.
+Proxies Opus générés.
+Job #... terminé.
+```
+
+Vérification :
+
+```powershell
+Get-ChildItem H:\EZScore_v1\var\storage\stems -Recurse -Filter *.opus |
+    Select-Object FullName,Length
+```
+
+Il doit y avoir 9 fichiers `.opus` pour le run courant.
+
+Le flash littéral `stems.playback.queued` est également corrigé.
+
+Aucune migration Doctrine.
+Aucune nouvelle séparation STEMS nécessaire.

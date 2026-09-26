@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[Route('/song/{id}/stems', requirements: ['id' => '\d+'])]
 final class SongStemController extends AbstractController
@@ -157,6 +158,7 @@ final class SongStemController extends AbstractController
         SongStemJobService $jobs,
         AnalysisDesktopStateStore $workerState,
         SongStemStorage $storage,
+        TranslatorInterface $translator,
     ): Response {
         $user = $this->requireEditor($song);
 
@@ -177,7 +179,7 @@ final class SongStemController extends AbstractController
         }
 
         if (!$storage->hasCompleteStems($song)) {
-            $this->addFlash('error', 'stems.playback.requires_stems');
+            $this->addFlash('error', $translator->trans('stems.playback.requires_stems', [], 'stems'));
 
             return $this->redirectToRoute('app_song_stems', [
                 '_locale' => $request->getLocale(),
@@ -188,7 +190,7 @@ final class SongStemController extends AbstractController
         // force=false is intentional: stems_only.py returns immediately for an
         // existing current run, then SongStemWorker only builds the Opus proxies.
         $jobs->queue($song, $user, false);
-        $this->addFlash('success', 'stems.playback.queued');
+        $this->addFlash('success', $translator->trans('stems.playback.queued', [], 'stems'));
 
         return $this->redirectToRoute('app_song_stems', [
             '_locale' => $request->getLocale(),
