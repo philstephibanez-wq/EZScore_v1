@@ -12,6 +12,7 @@ final class SongStemWorker
     public function __construct(
         private readonly SongStemJobService $jobs,
         private readonly SongStemStorage $storage,
+        private readonly SongStemPlaybackStorage $playback,
         #[Autowire('%kernel.project_dir%')]
         private readonly string $projectDir,
     ) {}
@@ -70,14 +71,54 @@ final class SongStemWorker
                 throw new \RuntimeException('stems_manifest_incomplete');
             }
 
+            // R27: build lightweight playback proxies from the already persisted
+            // analytical masters. If the STEM run was cached, this stage alone
+            // runs, so old songs can be upgraded without re-separation.
+            $proxyScript = $this->projectDir
+                . DIRECTORY_SEPARATOR . 'analysis'
+                . DIRECTORY_SEPARATOR . 'build_playback_proxies.py';
+
+            if (!is_file($proxyScript)) {
+                throw new \RuntimeException('Playback proxy builder is missing.');
+            }
+
+            $proxyCommand = [
+                $python,
+                $proxyScript,
+                '--source', $source,
+                '--storage-root', $storageRoot,
+                '--progress-file', $this->storage->progressPath($song),
+            ];
+
+            $proxyExitCode = $this->runProcess(
+                $proxyCommand,
+                $this->storage->logPath($song),
+            );
+
+            if ($proxyExitCode !== 0) {
+                throw new \RuntimeException(sprintf(
+                    'playback_proxy_exit_%d',
+                    $proxyExitCode,
+                ));
+            }
+
+            if (!$this->playback->isReady($song)) {
+                throw new \RuntimeException('playback_proxy_incomplete');
+            }
+
             $this->storage->pruneOtherAudioHashes($song);
 
             $this->jobs->complete($job, [
-                'schema_version' => 'ezscore.stems.v1',
+                'schema_version' => 'ezscore.stems.v2',
                 'scope' => 'stems_only',
                 'audio_sha256' => $audioHash,
                 'manifest' => $manifest,
                 'artifacts' => array_values(SongStemStorage::STEMS),
+                'playback' => [
+                    'codec' => 'opus',
+                    'tracks' => array_values(SongStemPlaybackStorage::TRACKS),
+                    'manifest' => $this->playback->manifest($song),
+                ],
             ]);
         } catch (\Throwable $exception) {
             $this->jobs->fail($job, $exception->getMessage());

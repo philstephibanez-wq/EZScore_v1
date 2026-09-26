@@ -86,3 +86,11 @@ stems:
     stop: '■ Stop'
     speed: Speed
     position: Position
+
+  playback:
+    eyebrow: Playback audio
+    title: Prepare multitrack player
+    description: WAV STEMS remain the analysis masters. EZScore generates high-quality, much lighter Opus proxies for real-time playback.
+    build: Generate playback tracks
+    queued: Playback track preparation was queued for the Worker.
+    requires_stems: STEMS must be complete before playback tracks can be prepared.

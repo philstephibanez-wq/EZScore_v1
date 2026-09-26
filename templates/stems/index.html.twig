@@ -4,7 +4,7 @@
 {% block stylesheets %}
 <link rel="stylesheet" href="/assets/css/workflow-tabs-r23-2.css?v=20260925r23_2">
 <link rel="stylesheet" href="/assets/css/catalog.css?v=20260925r23_2">
-<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r25">
+<link rel="stylesheet" href="/assets/css/stems.css?v=20260926r27">
 {% endblock %}
 
 {% block body %}
@@ -137,6 +137,25 @@
     </section>
 </div>
 
+{% if not playback_ready %}
+<section class="panel stem-playback-prep">
+    <div>
+        <div class="eyebrow">{{ 'stems.playback.eyebrow'|trans({}, 'stems') }}</div>
+        <h2>{{ 'stems.playback.title'|trans({}, 'stems') }}</h2>
+        <p class="page-note">{{ 'stems.playback.description'|trans({}, 'stems') }}</p>
+    </div>
+
+    <form method="post"
+          action="{{ path('app_song_stems_playback_build', {'_locale': app.request.locale, id: song.id}) }}">
+        <input type="hidden"
+               name="_token"
+               value="{{ csrf_token('song_stems_playback_build_' ~ song.id) }}">
+        <button type="submit" class="primary">
+            {{ 'stems.playback.build'|trans({}, 'stems') }}
+        </button>
+    </form>
+</section>
+{% else %}
 <section class="panel stem-mixer-panel"
          data-stem-mixer
          data-mix-save-url="{{ path('app_song_stems_mix', {'_locale': app.request.locale, id: song.id}) }}"
@@ -172,15 +191,15 @@
 
     <div class="stem-mixer-tracks">
         {% set mix_tracks = [
-            {'key':'original', 'label':('stems.mixer.original'|trans({}, 'stems')), 'url': path('app_song_stems_original_audio', {'_locale': app.request.locale, id: song.id}), 'enabled':1, 'volume':1.00},
-            {'key':'vocals', 'label':('stems.name.vocals'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'vocals'}), 'enabled':0, 'volume':0.82},
-            {'key':'lead_vocals', 'label':('stems.name.lead_vocals'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'lead_vocals'}), 'enabled':0, 'volume':0.82},
-            {'key':'backing_vocals', 'label':('stems.name.backing_vocals'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'backing_vocals'}), 'enabled':0, 'volume':0.72},
-            {'key':'drums', 'label':('stems.name.drums'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'drums'}), 'enabled':0, 'volume':0.72},
-            {'key':'bass', 'label':('stems.name.bass'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'bass'}), 'enabled':0, 'volume':0.72},
-            {'key':'guitar', 'label':('stems.name.guitar'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'guitar'}), 'enabled':0, 'volume':0.72},
-            {'key':'piano', 'label':('stems.name.piano'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'piano'}), 'enabled':0, 'volume':0.72},
-            {'key':'other', 'label':('stems.name.other'|trans({}, 'stems')), 'url': path('app_song_stem_audio', {'_locale': app.request.locale, id: song.id, name:'other'}), 'enabled':0, 'volume':0.72}
+            {'key':'original', 'label':('stems.mixer.original'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'original'}), 'enabled':1, 'volume':1.00},
+            {'key':'vocals', 'label':('stems.name.vocals'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'vocals'}), 'enabled':0, 'volume':0.82},
+            {'key':'lead_vocals', 'label':('stems.name.lead_vocals'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'lead_vocals'}), 'enabled':0, 'volume':0.82},
+            {'key':'backing_vocals', 'label':('stems.name.backing_vocals'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'backing_vocals'}), 'enabled':0, 'volume':0.72},
+            {'key':'drums', 'label':('stems.name.drums'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'drums'}), 'enabled':0, 'volume':0.72},
+            {'key':'bass', 'label':('stems.name.bass'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'bass'}), 'enabled':0, 'volume':0.72},
+            {'key':'guitar', 'label':('stems.name.guitar'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'guitar'}), 'enabled':0, 'volume':0.72},
+            {'key':'piano', 'label':('stems.name.piano'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'piano'}), 'enabled':0, 'volume':0.72},
+            {'key':'other', 'label':('stems.name.other'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'other'}), 'enabled':0, 'volume':0.72}
         ] %}
 
         {% for track in mix_tracks %}
@@ -190,7 +209,11 @@
                  data-track-url="{{ track.url }}"
                  data-default-enabled="{{ track.enabled }}"
                  data-default-volume="{{ track.volume }}">
-                <strong>{{ track.label }}</strong>
+                <div class="stem-track-title">
+                    <strong>{{ track.label }}</strong>
+                    <span class="stem-track-loader" data-track-loader hidden aria-hidden="true"></span>
+                    <small class="stem-track-load-status" data-track-load-status></small>
+                </div>
                 <label class="stem-mixer-toggle">
                     <input type="checkbox" data-track-enabled {{ track.enabled ? 'checked' : '' }}>
                     <span>{{ 'stems.mixer.active'|trans({}, 'stems') }}</span>
@@ -246,6 +269,8 @@
     </div>
 </section>
 
+{% endif %}
+
 <section class="panel stem-technical">
     <div class="eyebrow">{{ 'stems.technical'|trans({}, 'stems') }}</div>
     <div class="stem-tech-grid">
@@ -259,7 +284,8 @@
 
 {% block javascripts %}
 <script src="/assets/js/stems-progress.js?v=20260926r24_10"></script>
-{% if stems_complete %}
-<script src="/assets/js/stems-mixer.js?v=20260926r25"></script>
+{% if stems_complete and playback_ready %}
+<script src="/assets/js/audio/ezscore-audio-engine.js?v=20260926r27"></script>
+<script src="/assets/js/stems-mixer.js?v=20260926r27"></script>
 {% endif %}
 {% endblock %}

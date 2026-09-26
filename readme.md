@@ -1,88 +1,60 @@
-# EZScore_v1 — R25.5 Chargement audio paresseux
+# EZScore_v1 — R27.1 namespace fix
 
-Le problème de navigation lente depuis la page STEMS est identifié.
-
-## Cause
-
-Le mixer R25 lançait immédiatement, dès l'ouverture de la page :
+R27 avait bien créé :
 
 ```text
-9 requêtes audio
-+ téléchargement intégral
-+ decodeAudioData des 9 pistes
+App\Service\SongStemPlaybackStorage
 ```
 
-Le serveur local actuel est :
+mais `SongStemController.php` utilisait le type :
 
-```powershell
-php -S 127.0.0.1:8501 -t H:\EZScore_v1\public
+```php
+SongStemPlaybackStorage $playback
 ```
 
-Ce serveur de développement est un mauvais endroit pour saturer immédiatement la connexion avec plusieurs gros WAV.
+sans importer la classe.
 
-Conséquence visible :
+PHP l'interprétait donc comme :
 
 ```text
-clic Répertoire / Retour / Modifier
-→ le clic fonctionne
-→ mais la navigation semble bloquée longtemps
+App\Controller\SongStemPlaybackStorage
 ```
 
-## Correction R25.5
-
-Aucune piste n'est maintenant téléchargée au chargement de la page.
-
-Le mixer charge seulement les pistes actives au premier clic sur Lecture.
-
-Par défaut :
+ce qui provoquait l'erreur Symfony :
 
 ```text
-Original = actif
-les STEMS = inactifs
+Cannot determine controller argument ...
+non-existent class or interface:
+App\Controller\SongStemPlaybackStorage
 ```
 
-Donc le premier Play charge seulement `Original`.
+R27.1 ajoute uniquement l'import manquant :
 
-Si une piste est activée pendant la lecture :
-
-```text
-ON
-→ téléchargement de cette piste seulement
-→ décodage
-→ démarrage à la position courante
+```php
+use App\Service\SongStemPlaybackStorage;
 ```
 
-Les autres pistes ne sont jamais téléchargées tant qu'elles ne sont pas utilisées.
-
-La synchronisation Web Audio, le mixage temps réel, l'EQ et la persistence restent inchangés.
+Aucune migration Doctrine.
+Aucune modification du moteur STEMS.
+Aucune modification AudioEngine.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R25_5_STEMS_LAZY_LOADING.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R27_1_PLAYBACK_NAMESPACE_FIX.zip" -C H:\EZScore_v1
 
-node --check .\public\assets\js\stems-mixer.js
-php .\tests\stems_lazy_loading_r25_5_contract.php
+php -l .\src\Controller\SongStemController.php
+php .\tests\opus_playback_r27_1_namespace_contract.php
 
 php bin\console cache:clear
 ```
 
-Puis :
+Attendu :
 
 ```text
-Ctrl + F5
+4 R27.1 namespace checks passed.
 ```
 
-Test :
-
-```text
-ouvrir STEMS
-→ cliquer immédiatement Répertoire / Retour / Modifier
-```
-
-La navigation doit partir immédiatement, sans attendre le chargement des 9 audios.
-
-Aucune migration Doctrine.
-Aucun changement du moteur STEMS.
+Puis recharger la page STEMS.

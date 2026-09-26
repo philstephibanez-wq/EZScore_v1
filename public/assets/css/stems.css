@@ -116,3 +116,61 @@ body.stem-modal-open{overflow:hidden}
 .ez-shell.ez-drawer-open .ez-main{
     pointer-events:none;
 }
+
+
+/* R26 — high-performance streaming AudioEngine */
+.stem-track-title{
+    display:grid;
+    grid-template-columns:minmax(0,auto) 18px minmax(0,1fr);
+    align-items:center;
+    gap:7px;
+    min-width:0;
+}
+.stem-track-title strong{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.stem-track-loader[hidden]{display:none!important}
+.stem-track-loader{
+    width:14px;
+    height:14px;
+    border:2px solid rgba(159,229,216,.24);
+    border-top-color:#9fe5d8;
+    border-radius:50%;
+    animation:stem-track-spin .75s linear infinite;
+}
+@keyframes stem-track-spin{to{transform:rotate(360deg)}}
+.stem-track-load-status{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:#78909c;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:.045em;
+}
+.stem-mixer-row.is-loading{
+    background:rgba(36,104,101,.055);
+}
+.stem-mixer-row.is-error{
+    background:rgba(132,60,60,.08);
+}
+
+
+/* R27 — playback proxy preparation */
+.stem-playback-prep{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+}
+.stem-playback-prep h2{margin:.2rem 0 .5rem}
+.stem-playback-prep form{flex:0 0 auto}
+@media(max-width:750px){
+    .stem-playback-prep{
+        align-items:stretch;
+        flex-direction:column;
+    }
+}

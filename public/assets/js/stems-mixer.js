@@ -1,8 +1,15 @@
 (() => {
+    'use strict';
+
     const root = document.querySelector('[data-stem-mixer]');
     if (!root) return;
 
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (typeof window.EZScoreAudioEngine !== 'function') {
+        const state = root.querySelector('[data-mixer-state]');
+        if (state) state.textContent = 'AudioEngine indisponible';
+        return;
+    }
+
     const stateEl = root.querySelector('[data-mixer-state]');
     const saveStateEl = root.querySelector('[data-mix-save-state]');
     const seekEl = root.querySelector('[data-mixer-seek]');
@@ -21,7 +28,6 @@
         modified: root.dataset.i18nModified || 'Modified',
         saving: root.dataset.i18nSaving || 'Saving…',
         saveFailed: root.dataset.i18nSaveFailed || 'Save failed',
-        webAudioUnavailable: root.dataset.i18nWebAudioUnavailable || 'Web Audio unavailable',
         ready: root.dataset.i18nReady || 'Ready',
         playing: root.dataset.i18nPlaying || 'Playing',
         paused: root.dataset.i18nPaused || 'Paused',
@@ -37,27 +43,6 @@
         return out;
     };
 
-    if (!AudioContextCtor) {
-        if (stateEl) stateEl.textContent = t.webAudioUnavailable;
-        return;
-    }
-
-    const context = new AudioContextCtor({latencyHint: 'interactive'});
-    const master = context.createGain();
-    master.gain.value = 1;
-    master.connect(context.destination);
-
-    const tracks = new Map();
-    let duration = 0;
-    let position = 0;
-    let startedAt = 0;
-    let playing = false;
-    let rate = 1;
-    let raf = 0;
-    let saveTimer = 0;
-
-    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
     const fmt = (seconds) => {
         const safe = Math.max(0, Number(seconds) || 0);
         const minutes = Math.floor(safe / 60);
@@ -70,135 +55,16 @@
         return `${n > 0 ? '+' : ''}${n.toFixed(n % 1 ? 1 : 0)} dB`;
     };
 
-    const setState = (text) => {
-        if (stateEl) stateEl.textContent = text;
-    };
+    let saveTimer = 0;
+    let disposed = false;
 
-    const currentPosition = () => {
-        if (!playing) return position;
-        return clamp(position + ((context.currentTime - startedAt) * rate), 0, duration || Number.MAX_SAFE_INTEGER);
-    };
+    const engine = new window.EZScoreAudioEngine({
+        masterTrackKey: 'original',
+        syncThresholdSeconds: 0.060,
+        syncIntervalMs: 250,
+    });
 
-    const stopTrackSource = (track) => {
-        if (!track.source) return;
-        try { track.source.stop(); } catch (_) {}
-        try { track.source.disconnect(); } catch (_) {}
-        track.source = null;
-    };
-
-    const stopSources = () => {
-        tracks.forEach(stopTrackSource);
-    };
-
-    const setTrackGain = (track) => {
-        const target = track.enabled.checked ? Number(track.volume.value) : 0;
-        track.gain.gain.setTargetAtTime(target, context.currentTime, 0.01);
-    };
-
-    const applyEq = (track) => {
-        track.low.gain.setTargetAtTime(Number(track.lowInput.value), context.currentTime, 0.01);
-        track.mid.gain.setTargetAtTime(Number(track.midInput.value), context.currentTime, 0.01);
-        track.high.gain.setTargetAtTime(Number(track.highInput.value), context.currentTime, 0.01);
-    };
-
-    const ensureTrackLoaded = async (track) => {
-        if (track.buffer) return track.buffer;
-        if (track.loadingPromise) return track.loadingPromise;
-
-        track.loadingPromise = (async () => {
-            setState(`Chargement ${track.label}…`);
-
-            const response = await fetch(track.url, {
-                credentials: 'same-origin',
-                cache: 'force-cache'
-            });
-
-            if (!response.ok) {
-                throw new Error(`${track.key}: HTTP ${response.status}`);
-            }
-
-            const bytes = await response.arrayBuffer();
-            const buffer = await context.decodeAudioData(bytes);
-            track.buffer = buffer;
-            duration = Math.max(duration, buffer.duration);
-            return buffer;
-        })();
-
-        try {
-            return await track.loadingPromise;
-        } finally {
-            track.loadingPromise = null;
-        }
-    };
-
-    const createSource = (track, offset) => {
-        if (!track.buffer || !track.enabled.checked) return;
-
-        stopTrackSource(track);
-
-        const source = context.createBufferSource();
-        source.buffer = track.buffer;
-        source.playbackRate.value = rate;
-        source.connect(track.low);
-
-        const safeOffset = Math.min(
-            offset,
-            Math.max(0, track.buffer.duration - 0.001)
-        );
-
-        source.start(0, safeOffset);
-        track.source = source;
-    };
-
-    const ensureEnabledTracksLoaded = async () => {
-        const enabledTracks = Array.from(tracks.values()).filter((track) => track.enabled.checked);
-
-        if (enabledTracks.length === 0) {
-            return;
-        }
-
-        for (const track of enabledTracks) {
-            await ensureTrackLoaded(track);
-        }
-    };
-
-    const restartSources = async (offset) => {
-        stopSources();
-        if (!playing) return;
-
-        await ensureEnabledTracksLoaded();
-
-        tracks.forEach((track) => {
-            if (track.enabled.checked) {
-                createSource(track, offset);
-            }
-        });
-
-        position = offset;
-        startedAt = context.currentTime;
-    };
-
-    const updateClock = () => {
-        const pos = currentPosition();
-
-        if (timeEl) {
-            timeEl.textContent = `${fmt(pos)} / ${fmt(duration)}`;
-        }
-
-        if (seekEl && duration > 0) {
-            seekEl.value = String(Math.round((pos / duration) * 1000));
-        }
-
-        if (playing && duration > 0 && pos >= duration - 0.02) {
-            playing = false;
-            position = 0;
-            stopSources();
-            if (seekEl) seekEl.value = '0';
-            setState(t.finished);
-        }
-
-        raf = window.requestAnimationFrame(updateClock);
-    };
+    const tracks = new Map();
 
     const serializeSettings = () => {
         const out = {
@@ -222,7 +88,7 @@
     };
 
     const saveSettings = async () => {
-        if (!saveUrl || !csrfToken) return;
+        if (disposed || !saveUrl || !csrfToken) return;
         if (saveStateEl) saveStateEl.textContent = t.saving;
 
         try {
@@ -239,13 +105,10 @@
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             if (saveStateEl) saveStateEl.textContent = t.saved;
         } catch (_) {
-            if (saveStateEl) saveStateEl.textContent = t.saveFailed;
+            if (!disposed && saveStateEl) saveStateEl.textContent = t.saveFailed;
         }
     };
 
@@ -255,248 +118,229 @@
         saveTimer = window.setTimeout(saveSettings, 450);
     };
 
-    const applyPersisted = () => {
-        let settings = {};
+    const persisted = (() => {
         try {
-            settings = JSON.parse(root.dataset.mixSettings || '{}') || {};
-        } catch (_) {}
-
-        if (masterVolumeEl && Number.isFinite(Number(settings.master_volume))) {
-            masterVolumeEl.value = String(settings.master_volume);
+            return JSON.parse(root.dataset.mixSettings || '{}') || {};
+        } catch (_) {
+            return {};
         }
-
-        if (rateEl && Number.isFinite(Number(settings.playback_rate))) {
-            rateEl.value = String(settings.playback_rate);
-        }
-
-        const rawTracks = settings.tracks || {};
-
-        tracks.forEach((track, key) => {
-            const saved = rawTracks[key];
-            if (!saved || typeof saved !== 'object') return;
-
-            if (typeof saved.enabled === 'boolean') track.enabled.checked = saved.enabled;
-            if (Number.isFinite(Number(saved.volume))) track.volume.value = String(saved.volume);
-            if (Number.isFinite(Number(saved.low))) track.lowInput.value = String(saved.low);
-            if (Number.isFinite(Number(saved.mid))) track.midInput.value = String(saved.mid);
-            if (Number.isFinite(Number(saved.high))) track.highInput.value = String(saved.high);
-        });
-    };
-
-    const syncOutputs = () => {
-        tracks.forEach((track) => {
-            track.volumeOutput.textContent = `${Math.round(Number(track.volume.value) * 100)}%`;
-            track.lowOutput.textContent = dbText(track.lowInput.value);
-            track.midOutput.textContent = dbText(track.midInput.value);
-            track.highOutput.textContent = dbText(track.highInput.value);
-            setTrackGain(track);
-            applyEq(track);
-        });
-
-        if (masterVolumeEl) {
-            master.gain.value = Number(masterVolumeEl.value);
-            if (masterVolumeOutput) {
-                masterVolumeOutput.textContent = `${Math.round(Number(masterVolumeEl.value) * 100)}%`;
-            }
-        }
-
-        rate = Number(rateEl?.value || 1);
-    };
+    })();
 
     root.querySelectorAll('[data-mixer-track]').forEach((row) => {
-        const low = context.createBiquadFilter();
-        low.type = 'lowshelf';
-        low.frequency.value = 180;
+        const key = row.dataset.trackKey;
+        const enabled = row.querySelector('[data-track-enabled]');
+        const volume = row.querySelector('[data-track-volume]');
+        const volumeOutput = row.querySelector('[data-track-volume-output]');
+        const lowInput = row.querySelector('[data-track-low]');
+        const lowOutput = row.querySelector('[data-track-low-output]');
+        const midInput = row.querySelector('[data-track-mid]');
+        const midOutput = row.querySelector('[data-track-mid-output]');
+        const highInput = row.querySelector('[data-track-high]');
+        const highOutput = row.querySelector('[data-track-high-output]');
+        const reset = row.querySelector('[data-track-reset]');
+        const loader = row.querySelector('[data-track-loader]');
+        const status = row.querySelector('[data-track-load-status]');
 
-        const mid = context.createBiquadFilter();
-        mid.type = 'peaking';
-        mid.frequency.value = 1200;
-        mid.Q.value = 0.9;
-
-        const high = context.createBiquadFilter();
-        high.type = 'highshelf';
-        high.frequency.value = 5500;
-
-        const gain = context.createGain();
-
-        low.connect(mid);
-        mid.connect(high);
-        high.connect(gain);
-        gain.connect(master);
+        const saved = persisted.tracks?.[key];
+        if (saved && typeof saved === 'object') {
+            if (typeof saved.enabled === 'boolean') enabled.checked = saved.enabled;
+            if (Number.isFinite(Number(saved.volume))) volume.value = String(saved.volume);
+            if (Number.isFinite(Number(saved.low))) lowInput.value = String(saved.low);
+            if (Number.isFinite(Number(saved.mid))) midInput.value = String(saved.mid);
+            if (Number.isFinite(Number(saved.high))) highInput.value = String(saved.high);
+        }
 
         const track = {
-            key: row.dataset.trackKey,
-            label: row.querySelector('strong')?.textContent?.trim() || row.dataset.trackKey,
-            url: row.dataset.trackUrl,
+            key,
             row,
-            buffer: null,
-            loadingPromise: null,
-            source: null,
-            low,
-            mid,
-            high,
-            gain,
-            enabled: row.querySelector('[data-track-enabled]'),
-            volume: row.querySelector('[data-track-volume]'),
-            volumeOutput: row.querySelector('[data-track-volume-output]'),
-            lowInput: row.querySelector('[data-track-low]'),
-            lowOutput: row.querySelector('[data-track-low-output]'),
-            midInput: row.querySelector('[data-track-mid]'),
-            midOutput: row.querySelector('[data-track-mid-output]'),
-            highInput: row.querySelector('[data-track-high]'),
-            highOutput: row.querySelector('[data-track-high-output]'),
-            reset: row.querySelector('[data-track-reset]')
+            enabled,
+            volume,
+            volumeOutput,
+            lowInput,
+            lowOutput,
+            midInput,
+            midOutput,
+            highInput,
+            highOutput,
+            reset,
+            loader,
+            status,
         };
 
-        tracks.set(track.key, track);
+        tracks.set(key, track);
 
-        track.enabled.addEventListener('change', async () => {
-            setTrackGain(track);
-            scheduleSave();
-
-            if (!track.enabled.checked) {
-                stopTrackSource(track);
-                return;
-            }
-
-            if (playing) {
-                const offset = currentPosition();
-
-                try {
-                    await ensureTrackLoaded(track);
-
-                    // Navigation can happen while the fetch is pending.
-                    // Only start audio if the page is still active and playback is still running.
-                    if (playing && track.enabled.checked) {
-                        createSource(track, offset);
-                        setState(t.playing);
-                    }
-                } catch (error) {
-                    setState(fmtTemplate(t.audioErrorTemplate, {'__ERROR__': error.message}));
-                }
-            }
+        engine.addTrack({
+            key,
+            label: row.querySelector('strong')?.textContent?.trim() || key,
+            url: row.dataset.trackUrl,
+            enabled: enabled.checked,
+            volume: Number(volume.value),
         });
 
-        track.volume.addEventListener('input', () => {
-            track.volumeOutput.textContent = `${Math.round(Number(track.volume.value) * 100)}%`;
-            setTrackGain(track);
+        engine.setTrackEq(key, {
+            low: Number(lowInput.value),
+            mid: Number(midInput.value),
+            high: Number(highInput.value),
+        });
+
+        const syncOutputs = () => {
+            volumeOutput.textContent = `${Math.round(Number(volume.value) * 100)}%`;
+            lowOutput.textContent = dbText(lowInput.value);
+            midOutput.textContent = dbText(midInput.value);
+            highOutput.textContent = dbText(highInput.value);
+        };
+
+        syncOutputs();
+
+        enabled.addEventListener('change', () => {
+            engine.setTrackEnabled(key, enabled.checked);
+            scheduleSave();
+        });
+
+        volume.addEventListener('input', () => {
+            volumeOutput.textContent = `${Math.round(Number(volume.value) * 100)}%`;
+            engine.setTrackVolume(key, Number(volume.value));
             scheduleSave();
         });
 
         [
-            [track.lowInput, track.lowOutput],
-            [track.midInput, track.midOutput],
-            [track.highInput, track.highOutput]
+            [lowInput, lowOutput],
+            [midInput, midOutput],
+            [highInput, highOutput],
         ].forEach(([input, output]) => {
             input.addEventListener('input', () => {
                 output.textContent = dbText(input.value);
-                applyEq(track);
+                engine.setTrackEq(key, {
+                    low: Number(lowInput.value),
+                    mid: Number(midInput.value),
+                    high: Number(highInput.value),
+                });
                 scheduleSave();
             });
         });
 
-        track.reset.addEventListener('click', () => {
-            track.lowInput.value = '0';
-            track.midInput.value = '0';
-            track.highInput.value = '0';
-            track.lowOutput.textContent = '0 dB';
-            track.midOutput.textContent = '0 dB';
-            track.highOutput.textContent = '0 dB';
-            applyEq(track);
+        reset.addEventListener('click', () => {
+            lowInput.value = '0';
+            midInput.value = '0';
+            highInput.value = '0';
+            syncOutputs();
+            engine.setTrackEq(key, {low: 0, mid: 0, high: 0});
             scheduleSave();
         });
     });
 
-    applyPersisted();
-    syncOutputs();
-    setState(t.ready);
+    if (masterVolumeEl && Number.isFinite(Number(persisted.master_volume))) {
+        masterVolumeEl.value = String(persisted.master_volume);
+    }
+    if (rateEl && Number.isFinite(Number(persisted.playback_rate))) {
+        rateEl.value = String(persisted.playback_rate);
+    }
+
+    engine.setMasterVolume(Number(masterVolumeEl?.value || 1));
+    engine.setPlaybackRate(Number(rateEl?.value || 1));
+
+    if (masterVolumeOutput && masterVolumeEl) {
+        masterVolumeOutput.textContent = `${Math.round(Number(masterVolumeEl.value) * 100)}%`;
+    }
 
     masterVolumeEl?.addEventListener('input', () => {
-        master.gain.setTargetAtTime(Number(masterVolumeEl.value), context.currentTime, 0.01);
+        engine.setMasterVolume(Number(masterVolumeEl.value));
         masterVolumeOutput.textContent = `${Math.round(Number(masterVolumeEl.value) * 100)}%`;
         scheduleSave();
     });
 
-    rateEl?.addEventListener('change', async () => {
-        const pos = currentPosition();
-        rate = Number(rateEl.value);
-
-        if (playing) {
-            await restartSources(pos);
-        }
-
+    rateEl?.addEventListener('change', () => {
+        engine.setPlaybackRate(Number(rateEl.value));
         scheduleSave();
     });
 
     playButton?.addEventListener('click', async () => {
-        if (context.state === 'suspended') {
-            await context.resume();
-        }
-
-        if (playing) return;
-
         try {
-            await ensureEnabledTracksLoaded();
-
-            if (duration <= 0) {
-                setState('Aucune piste active');
-                return;
-            }
-
-            if (position >= duration - 0.02) {
-                position = 0;
-            }
-
-            playing = true;
-            startedAt = context.currentTime;
-
-            tracks.forEach((track) => {
-                if (track.enabled.checked) {
-                    createSource(track, position);
-                }
-            });
-
-            setState(t.playing);
+            await engine.play();
         } catch (error) {
-            playing = false;
-            setState(fmtTemplate(t.audioErrorTemplate, {'__ERROR__': error.message}));
+            if (stateEl) {
+                stateEl.textContent = fmtTemplate(t.audioErrorTemplate, {
+                    '__ERROR__': error instanceof Error ? error.message : String(error)
+                });
+            }
         }
     });
 
-    pauseButton?.addEventListener('click', () => {
-        if (!playing) return;
+    pauseButton?.addEventListener('click', () => engine.pause());
+    stopButton?.addEventListener('click', () => engine.stop());
 
-        position = currentPosition();
-        playing = false;
-        stopSources();
-        setState(t.paused);
-    });
-
-    stopButton?.addEventListener('click', () => {
-        playing = false;
-        position = 0;
-        stopSources();
-
-        if (seekEl) seekEl.value = '0';
-        setState(t.ready);
-    });
-
-    seekEl?.addEventListener('input', async () => {
+    seekEl?.addEventListener('input', () => {
+        const duration = engine.duration();
         if (!duration) return;
+        engine.seek((Number(seekEl.value) / 1000) * duration);
+    });
 
-        const newPosition = (Number(seekEl.value) / 1000) * duration;
-        position = newPosition;
+    engine.addEventListener('statechange', (event) => {
+        const state = event.detail?.state;
+        if (!stateEl) return;
 
-        if (playing) {
-            await restartSources(newPosition);
+        if (state === 'playing') stateEl.textContent = t.playing;
+        else if (state === 'paused') stateEl.textContent = t.paused;
+        else if (state === 'ready') stateEl.textContent = t.ready;
+        else if (state === 'loading') stateEl.textContent = root.dataset.i18nLoading || 'Loading…';
+    });
+
+    engine.addEventListener('ended', () => {
+        if (stateEl) stateEl.textContent = t.finished;
+    });
+
+    engine.addEventListener('error', (event) => {
+        if (!stateEl) return;
+        stateEl.textContent = fmtTemplate(t.audioErrorTemplate, {
+            '__ERROR__': event.detail?.error || 'unknown'
+        });
+    });
+
+    engine.addEventListener('trackstate', (event) => {
+        const key = event.detail?.key;
+        const state = event.detail?.state;
+        const track = tracks.get(key);
+        if (!track) return;
+
+        const isBusy = state === 'loading' || state === 'buffering';
+
+        if (track.loader) {
+            track.loader.hidden = !isBusy;
+        }
+
+        if (track.status) {
+            if (state === 'loading') track.status.textContent = 'chargement';
+            else if (state === 'buffering') track.status.textContent = 'buffering';
+            else if (state === 'error') track.status.textContent = 'erreur';
+            else if (state === 'playing') track.status.textContent = 'lecture';
+            else if (state === 'ready') track.status.textContent = 'prêt';
+            else track.status.textContent = '';
+        }
+
+        track.row.classList.toggle('is-loading', isBusy);
+        track.row.classList.toggle('is-error', state === 'error');
+    });
+
+    engine.addEventListener('timeupdate', (event) => {
+        const time = Number(event.detail?.time || 0);
+        const duration = Number(event.detail?.duration || 0);
+
+        if (timeEl) timeEl.textContent = `${fmt(time)} / ${fmt(duration)}`;
+
+        if (seekEl && duration > 0) {
+            seekEl.value = String(Math.round((time / duration) * 1000));
         }
     });
 
-    raf = window.requestAnimationFrame(updateClock);
-
-    window.addEventListener('beforeunload', () => {
-        window.cancelAnimationFrame(raf);
-        stopSources();
+    const dispose = () => {
+        if (disposed) return;
+        disposed = true;
         window.clearTimeout(saveTimer);
-    });
+        engine.dispose();
+    };
+
+    window.addEventListener('pagehide', dispose, {once: true});
+    window.addEventListener('beforeunload', dispose, {once: true});
+
+    if (stateEl) stateEl.textContent = t.ready;
 })();

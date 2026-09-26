@@ -12,6 +12,7 @@ use App\Domain\User\User;
 use App\Service\AnalysisDesktopStateStore;
 use App\Service\SongStemJobService;
 use App\Service\SongStemStorage;
+use App\Service\SongStemPlaybackStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -20,7 +21,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 #[Route('/song/{id}/stems', requirements: ['id' => '\d+'])]
 final class SongStemController extends AbstractController
@@ -32,6 +32,7 @@ final class SongStemController extends AbstractController
         SongStemStorage $storage,
         AnalysisDesktopStateStore $workerState,
         UserSongStemMixRepository $mixes,
+        SongStemPlaybackStorage $playback,
     ): Response {
         $user = $this->requireEditor($song);
 
@@ -57,6 +58,8 @@ final class SongStemController extends AbstractController
             'job_active' => $isActive,
             'analysis_worker_online' => $workerState->isOnline(),
             'stem_mix_settings' => $mix?->getSettings() ?? [],
+            'playback_ready' => $playback->isReady($song),
+            'playback_manifest' => $playback->manifest($song),
         ]);
     }
 
@@ -147,6 +150,52 @@ final class SongStemController extends AbstractController
         ]);
     }
 
+    #[Route('/playback/build', name: 'app_song_stems_playback_build', methods: ['POST'])]
+    public function buildPlayback(
+        Song $song,
+        Request $request,
+        SongStemJobService $jobs,
+        AnalysisDesktopStateStore $workerState,
+        SongStemStorage $storage,
+    ): Response {
+        $user = $this->requireEditor($song);
+
+        if (!$this->isCsrfTokenValid(
+            'song_stems_playback_build_'.$song->getId(),
+            (string) $request->request->get('_token'),
+        )) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$workerState->isOnline()) {
+            $this->addFlash('error', 'stems.error.worker_offline');
+
+            return $this->redirectToRoute('app_song_stems', [
+                '_locale' => $request->getLocale(),
+                'id' => $song->getId(),
+            ]);
+        }
+
+        if (!$storage->hasCompleteStems($song)) {
+            $this->addFlash('error', 'stems.playback.requires_stems');
+
+            return $this->redirectToRoute('app_song_stems', [
+                '_locale' => $request->getLocale(),
+                'id' => $song->getId(),
+            ]);
+        }
+
+        // force=false is intentional: stems_only.py returns immediately for an
+        // existing current run, then SongStemWorker only builds the Opus proxies.
+        $jobs->queue($song, $user, false);
+        $this->addFlash('success', 'stems.playback.queued');
+
+        return $this->redirectToRoute('app_song_stems', [
+            '_locale' => $request->getLocale(),
+            'id' => $song->getId(),
+        ]);
+    }
+
     #[Route('/log', name: 'app_song_stems_log', methods: ['GET'])]
     public function log(
         Song $song,
@@ -190,48 +239,51 @@ final class SongStemController extends AbstractController
         return $response;
     }
 
-    #[Route('/original', name: 'app_song_stems_original_audio', methods: ['GET'])]
-    public function originalAudio(
+    #[Route('/playback/{name}', name: 'app_song_stems_playback_audio', methods: ['GET'])]
+    public function playbackAudio(
         Song $song,
-        #[Autowire('%kernel.project_dir%')]
-        string $projectDir,
+        string $name,
+        SongStemPlaybackStorage $playback,
     ): Response {
         $this->requireEditor($song);
 
-        $storagePath = trim((string) $song->getAudioStoragePath());
-        if ($storagePath === '') {
+        $path = $playback->playbackPath($song, $name);
+        if ($path === null) {
             throw $this->createNotFoundException();
         }
 
-        // SongImportStorage persists a project-relative path:
-        // var/storage/audio/<sha256>.<ext>
-        $relativePath = str_replace(
-            ['/', '\\'],
-            DIRECTORY_SEPARATOR,
-            ltrim($storagePath, '/\\'),
+        $response = new BinaryFileResponse($path);
+        $response->headers->set('Content-Type', 'audio/ogg; codecs=opus');
+        $response->headers->set('Cache-Control', 'private, max-age=3600');
+        $response->headers->set('Accept-Ranges', 'bytes');
+        $response->setContentDisposition(
+            ResponseHeaderBag::DISPOSITION_INLINE,
+            $name.'.opus',
         );
 
-        $path = $projectDir.DIRECTORY_SEPARATOR.$relativePath;
+        return $response;
+    }
 
-        if (!is_file($path)) {
+    #[Route('/original', name: 'app_song_stems_original_audio', methods: ['GET'])]
+    public function originalAudio(
+        Song $song,
+        SongStemStorage $storage,
+    ): Response {
+        $this->requireEditor($song);
+
+        // Use the exact same source resolver as the STEM worker.
+        // BinaryFileResponse keeps HTTP Range support, which is required by
+        // the streaming player and future karaoke transport.
+        $path = $storage->sourcePath($song);
+
+        if (!is_file($path) || filesize($path) === 0) {
             throw $this->createNotFoundException();
         }
 
-        $realProject = realpath($projectDir);
-        $realPath = realpath($path);
-
-        if ($realProject === false || $realPath === false) {
-            throw $this->createNotFoundException();
-        }
-
-        $projectPrefix = rtrim($realProject, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
-        if (!str_starts_with($realPath, $projectPrefix)) {
-            throw $this->createAccessDeniedException();
-        }
-
-        $response = new BinaryFileResponse($realPath);
+        $response = new BinaryFileResponse($path);
         $response->headers->set('Content-Type', $song->getAudioMimeType() ?: 'application/octet-stream');
         $response->headers->set('Cache-Control', 'private, max-age=3600');
+        $response->headers->set('Accept-Ranges', 'bytes');
         $response->setContentDisposition(
             ResponseHeaderBag::DISPOSITION_INLINE,
             $song->getAudioOriginalName() ?: 'original-audio',
