@@ -29,6 +29,18 @@ final class SongTimelineEventRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function deleteMusicalAnalysisForSong(Song $song): void
+    {
+        $this->createQueryBuilder('e')
+            ->delete()
+            ->andWhere('e.song = :song')
+            ->andWhere('e.eventType IN (:types)')
+            ->setParameter('song', $song)
+            ->setParameter('types', [SongTimelineEvent::TYPE_BEAT, SongTimelineEvent::TYPE_CHORD])
+            ->getQuery()
+            ->execute();
+    }
+
     /** @return list<SongTimelineEvent> */
     public function findChordEvents(Song $song): array
     {

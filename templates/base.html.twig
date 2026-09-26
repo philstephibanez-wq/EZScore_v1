@@ -126,7 +126,14 @@
 {% endif %}
 
         {% for label, messages in app.flashes %}
-            {% for message in messages %}<div class="flash flash-{{ label }}">{{ message starts with 'event.' ? message|trans({}, 'event') : (message starts with 'chordslab.' ? message|trans({}, 'chordslab') : message|trans) }}</div>{% endfor %}
+            {% for message in messages %}
+            {% if message starts with 'chordslab.analyze.failed|' %}
+                {% set parts = message|split('|', 2) %}
+                <div class="flash flash-{{ label }}">{{ 'chordslab.analyze.failed'|trans({'%error%': parts[1]|default('')}, 'chordslab') }}</div>
+            {% else %}
+                <div class="flash flash-{{ label }}">{{ message starts with 'event.' ? message|trans({}, 'event') : (message starts with 'chordslab.' ? message|trans({}, 'chordslab') : message|trans) }}</div>
+            {% endif %}
+        {% endfor %}
         {% endfor %}
         {% block body %}{% endblock %}
     </main>

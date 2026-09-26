@@ -61,7 +61,7 @@
 
         <label class="chordslab-diagram-toggle">
             <input type="checkbox" data-chordslab-diagram checked>
-            <span>{{ 'chordslab.show_diagram'|trans({}, 'chordslab') }}</span>
+            <span>{{ 'chordslab.guitar_chords'|trans({}, 'chordslab') }}</span>
         </label>
 
         <button type="submit" class="primary">{{ 'common.save'|trans }}</button>
@@ -83,14 +83,22 @@
             <h2>{{ 'chordslab.timeline'|trans({}, 'chordslab') }}</h2>
         </div>
 
-        {% if chord_events %}
-        <form method="post"
-              action="{{ path('app_song_chordslab_reset', {'_locale': app.request.locale, id: song.id}) }}"
-              onsubmit="return confirm('{{ 'chordslab.reset.confirm'|trans({}, 'chordslab')|e('js') }}');">
-            <input type="hidden" name="_token" value="{{ csrf_token('song_chordslab_reset_' ~ song.id) }}">
-            <button type="submit">{{ 'chordslab.reset.button'|trans({}, 'chordslab') }}</button>
-        </form>
-        {% endif %}
+        <div class="chordslab-prompter-actions">
+            <form method="post"
+                  action="{{ path('app_song_chordslab_analyze', {'_locale': app.request.locale, id: song.id}) }}"
+                  onsubmit="const b=this.querySelector('button'); b.disabled=true; b.textContent='{{ 'chordslab.analyze.running'|trans({}, 'chordslab')|e('js') }}';">
+                <input type="hidden" name="_token" value="{{ csrf_token('song_chordslab_analyze_' ~ song.id) }}">
+                <button type="submit" class="primary">{{ (chord_events ? 'chordslab.analyze.again' : 'chordslab.analyze.button')|trans({}, 'chordslab') }}</button>
+            </form>
+            {% if chord_events %}
+            <form method="post"
+                  action="{{ path('app_song_chordslab_reset', {'_locale': app.request.locale, id: song.id}) }}"
+                  onsubmit="return confirm('{{ 'chordslab.reset.confirm'|trans({}, 'chordslab')|e('js') }}');">
+                <input type="hidden" name="_token" value="{{ csrf_token('song_chordslab_reset_' ~ song.id) }}">
+                <button type="submit">{{ 'chordslab.reset.button'|trans({}, 'chordslab') }}</button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 
     {% if chord_events %}
@@ -103,7 +111,7 @@
         <div class="chordslab-empty">
             <strong>{{ 'chordslab.no_timeline_title'|trans({}, 'chordslab') }}</strong>
             <p>{{ 'chordslab.no_timeline_body'|trans({}, 'chordslab') }}</p>
-            <a href="{{ path('app_song_analysis_lab', {'_locale': app.request.locale, id: song.id}) }}">{{ 'chordslab.go_analysis'|trans({}, 'chordslab') }}</a>
+            <small>{{ 'chordslab.analyze.note'|trans({}, 'chordslab') }}</small>
         </div>
     {% endif %}
 </section>
@@ -202,5 +210,5 @@
 {% block javascripts %}
 <script src="/assets/js/audio/ezscore-audio-engine.js?v=20260926r29"></script>
 <script src="/assets/js/stems-mixer.js?v=20260926r32"></script>
-<script src="/assets/js/chordslab.js?v=20260926r32"></script>
+<script src="/assets/js/chordslab.js?v=20260926r33"></script>
 {% endblock %}

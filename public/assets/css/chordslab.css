@@ -45,3 +45,11 @@
  .chordslab-settings-grid{grid-template-columns:1fr}.chordslab-settings-grid>*{grid-column:auto!important}
  .chordslab-prompter-head{align-items:flex-start;flex-direction:column}
 }
+
+.chordslab-prompter-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.chordslab-prompter-actions form{margin:0}
+.chordslab-prompter-actions button{min-height:36px}
+@media(max-width:640px){
+  .chordslab-prompter-actions{width:100%;display:grid;grid-template-columns:1fr}
+  .chordslab-prompter-actions button{width:100%;min-height:42px}
+}
