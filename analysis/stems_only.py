@@ -30,7 +30,6 @@ BS_MODEL = "roformer-model-bs-roformer-sw-by-jarredou"
 KARAOKE_MODEL = "roformer-model-melband-roformer-karaoke-by-becruily"
 RAW_STEMS = ("vocals", "drums", "bass", "guitar", "piano", "other")
 FINAL_STEMS = (
-    "vocals",
     "lead_vocals",
     "backing_vocals",
     "drums",
@@ -517,6 +516,9 @@ def main() -> int:
             shutil.copy2(located[name], payload / f"{name}.wav")
         shutil.copy2(lead, payload / "lead_vocals.wav")
         shutil.copy2(backing, payload / "backing_vocals.wav")
+
+        # vocals.wav is only an intermediate input for MelBand-RoFormer.
+        (payload / "vocals.wav").unlink(missing_ok=True)
 
         for name in FINAL_STEMS:
             target = payload / f"{name}.wav"

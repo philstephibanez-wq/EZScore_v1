@@ -9,9 +9,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 final class SongStemStorage
 {
-    public const STEMS = [
-        'vocals',
-        'lead_vocals',
+    public const STEMS = ['lead_vocals',
         'backing_vocals',
         'drums',
         'bass',

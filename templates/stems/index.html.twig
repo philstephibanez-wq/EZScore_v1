@@ -192,7 +192,6 @@
     <div class="stem-mixer-tracks">
         {% set mix_tracks = [
             {'key':'original', 'label':('stems.mixer.original'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'original'}), 'enabled':1, 'volume':1.00},
-            {'key':'vocals', 'label':('stems.name.vocals'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'vocals'}), 'enabled':0, 'volume':0.82},
             {'key':'lead_vocals', 'label':('stems.name.lead_vocals'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'lead_vocals'}), 'enabled':0, 'volume':0.82},
             {'key':'backing_vocals', 'label':('stems.name.backing_vocals'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'backing_vocals'}), 'enabled':0, 'volume':0.72},
             {'key':'drums', 'label':('stems.name.drums'|trans({}, 'stems')), 'url': path('app_song_stems_playback_audio', {'_locale': app.request.locale, id: song.id, name:'drums'}), 'enabled':0, 'volume':0.72},

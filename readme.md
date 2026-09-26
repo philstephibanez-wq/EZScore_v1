@@ -1,63 +1,79 @@
-# EZScore_v1 — R27.2 Desktop Worker + proxies Opus
+# EZScore_v1 — R28.1 correctif installateur
 
-Le job était bien lancé mais aucun player n'apparaissait.
+R28 échouait avant toute modification avec :
 
-## Cause
+```text
+expected source block not found
+```
 
-Le Worker Desktop lance directement `analysis/stems_only.py`, puis appelle immédiatement
-`/internal/analysis/desktop/jobs/{id}/complete`.
+Cause : l'installateur R28 cherchait une chaîne contenant des `\n` littéraux au lieu de vrais retours à la ligne.
 
-Il ne passe donc pas par `App\Service\SongStemWorker`, où R27 avait ajouté la génération Opus.
+R28.1 remplace ce mécanisme fragile par un patch structurel et idempotent.
 
-R27.2 corrige le Worker Desktop réellement utilisé.
+## Effet fonctionnel
+
+Après application :
+
+```text
+STEMS persistants
+- lead_vocals
+- backing_vocals
+- drums
+- bass
+- guitar
+- piano
+- other
+```
+
+`vocals.wav` reste uniquement un intermédiaire temporaire de MelBand puis est supprimé avant publication du run.
+
+Le player ne génère plus `vocals.opus` et n'affiche plus `Voix — global`.
 
 ## Installation
 
-Fermer d'abord EZScore Analysis Worker.
+Le premier R28 ayant échoué avant modification, il n'y a rien à restaurer.
+
+Fermer le Worker Desktop puis :
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R27_2_DESKTOP_WORKER_OPUS_FIX.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R28_1_REMOVE_GLOBAL_VOCALS_FIX.zip" -C H:\EZScore_v1
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r27_2_worker_proxy_fix.py
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r28_remove_global_vocals.py
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe -m py_compile .\worker_app\ezscore_analysis_worker.pyw
+H:\EZScore_v1\.venv-py313\Scripts\python.exe -m py_compile .\analysis\stems_only.py
 H:\EZScore_v1\.venv-py313\Scripts\python.exe -m py_compile .\analysis\build_playback_proxies.py
 
+php -l .\src\Service\SongStemStorage.php
+php -l .\src\Service\SongStemPlaybackStorage.php
 php -l .\src\Controller\SongStemController.php
-php .\tests\r27_2_desktop_worker_contract.php
 
+php .\tests\r28_1_global_vocals_contract.php
+php bin\console lint:twig templates
 php bin\console cache:clear
 ```
 
 Attendu :
 
 ```text
-11 R27.2 desktop-worker checks passed.
+11 R28.1 checks passed.
 ```
 
-Relancer le Worker Desktop puis recliquer `Générer les pistes de lecture`.
+## Nettoyage disque
 
-Le Worker doit afficher :
-
-```text
-Commande STEMS lancée.
-Génération des proxies Opus 192 kb/s lancée.
-Proxies Opus générés.
-Job #... terminé.
-```
-
-Vérification :
+D'abord en dry-run :
 
 ```powershell
-Get-ChildItem H:\EZScore_v1\var\storage\stems -Recurse -Filter *.opus |
-    Select-Object FullName,Length
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\cleanup_redundant_global_vocals.py
 ```
 
-Il doit y avoir 9 fichiers `.opus` pour le run courant.
+Puis suppression réelle :
 
-Le flash littéral `stems.playback.queued` est également corrigé.
+```powershell
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\cleanup_redundant_global_vocals.py --apply
+```
+
+Le nettoyage ne supprime un ancien `vocals.wav` / `vocals.opus` que si le couple `lead_vocals` + `backing_vocals` correspondant existe et est non vide.
 
 Aucune migration Doctrine.
-Aucune nouvelle séparation STEMS nécessaire.

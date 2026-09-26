@@ -18,8 +18,7 @@ from pathlib import Path
 
 TRACKS = (
     "original",
-    "vocals",
-    "lead_vocals",
+"lead_vocals",
     "backing_vocals",
     "drums",
     "bass",

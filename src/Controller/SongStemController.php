@@ -326,8 +326,7 @@ final class SongStemController extends AbstractController
     {
         $allowedTracks = [
             'original',
-            'vocals',
-            'lead_vocals',
+'lead_vocals',
             'backing_vocals',
             'drums',
             'bass',
