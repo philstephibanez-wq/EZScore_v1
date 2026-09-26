@@ -1,6 +1,3 @@
-.song-workflow-tabs{margin-bottom:14px}
-.song-workflow-tabs .workflow-tab{display:flex;align-items:center;min-height:48px}
-.song-workflow-tabs .workflow-tab.disabled{cursor:not-allowed;opacity:.38;text-decoration:none;pointer-events:none}
 
 /* R31 LABS WORKFLOW */
 .song-workflow-tabs{

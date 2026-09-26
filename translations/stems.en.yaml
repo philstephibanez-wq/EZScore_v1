@@ -1,6 +1,6 @@
 stems:
   eyebrow: Audio separation
-  title: 'STEMS — %title%'
+  title: 'StemsLab — %title%'
   scope: This step performs audio source separation only. No lyrics, chords, tempo, structure, MIDI or karaoke analysis is run.
   back: Back to song
   workspace:

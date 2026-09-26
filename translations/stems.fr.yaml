@@ -1,6 +1,6 @@
 stems:
   eyebrow: Séparation audio
-  title: 'STEMS — %title%'
+  title: 'StemsLab — %title%'
   scope: Cette étape effectue uniquement la séparation audio. Aucune parole, aucun accord, aucun tempo, aucune structure, aucun MIDI et aucun karaoké ne sont analysés.
   back: Retour au morceau
   workspace:

@@ -40,6 +40,13 @@ localized_song_stems:
         fr: /fr
         en: /en
 
+localized_song_labs:
+    resource: ../src/Controller/SongLabController.php
+    type: attribute
+    prefix:
+        fr: /fr
+        en: /en
+
 localized_groups:
     resource: ../src/Controller/GroupController.php
     type: attribute

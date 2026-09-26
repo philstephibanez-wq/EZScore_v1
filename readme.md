@@ -1,11 +1,6 @@
-# EZScore_v1 — R30 CDC + cahier de recette ChordsLab
+# EZScore_v1 — R31 Workflow Labs
 
-Ce livrable met à jour :
-
-- `docs/CAHIER_DES_CHARGES.md`
-- `recette.md`
-
-Il documente la spécification consolidée du workflow :
+R31 implémente le nouveau workflow visible :
 
 ```text
 Import
@@ -17,52 +12,48 @@ LyricsLab
 Publication
 ```
 
-et ajoute les exigences détaillées pour :
+Ce livrable pose le **workflow navigable et responsive**. Il ne prétend pas encore implémenter le moteur complet du prompteur ChordsLab.
 
-- timeline comme source de vérité ;
-- prompteur harmonique synchronisé ;
-- notation compacte `[Em---]`, etc. ;
-- réaffichage explicite d'un accord qui continue sur la mesure suivante ;
-- diagramme au-dessus de l'accord courant ;
-- édition d'accord en place + persistance ;
-- reset des accords ;
-- capo EZScore = simplification de doigtés uniquement ;
-- tonalité réelle visible dans le cartouche ;
-- transposition future séparée du capo ;
-- signatures rythmiques extensibles, y compris 7/4, 6/8, 13/16, etc. ;
-- niveaux Débutant / Intermédiaire / Expert ;
-- réutilisation du player existant ;
-- Pistes et chaîne d'effets repliées par défaut ;
-- ergonomie PC / tablette / smartphone ;
-- plan de recette fonctionnelle complet et non-régression.
+## Changements
+
+- `MODIFIER` devient `ÉDITION`.
+- `STEMS` devient `StemsLab`.
+- Ajout des étapes `Analyse`, `ChordsLab`, `LyricsLab`, `Publication`.
+- Ajout de routes/pages shell pour ces nouvelles étapes.
+- ChordsLab montre un aperçu de la future notation compacte.
+- ACL identiques à StemsLab : Admin ou Éditeur propriétaire.
+- Responsive :
+  - PC : 7 colonnes ;
+  - tablette : 4 colonnes ;
+  - smartphone : 2 colonnes ;
+  - aucune largeur desktop forcée.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R30_CDC_RECETTE_CHORDSLAB.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R31_LABS_WORKFLOW.zip" -C H:\EZScore_v1
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r30_cdc_recette_chordslab.py
-```
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r31_labs_workflow.py
 
-Validation :
+php -l .\src\Controller\SongLabController.php
+php .\tests\r31_workflow_contract.php
 
-```powershell
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\tests\test_r30_cdc_recette.py
+php bin\console lint:yaml translations
+php bin\console lint:twig templates
+php bin\console debug:router | Select-String "song_(analysis_lab|chordslab|lyricslab|publication_lab)"
+php bin\console cache:clear
 ```
 
 Attendu :
 
 ```text
-22 R30 CDC/recette checks passed.
+12 R31 workflow checks passed.
 ```
 
-Le script est idempotent et crée une sauvegarde sous :
-
-```text
-var\backup\r30-cdc-recette-YYYYMMDD-HHMMSS
-```
+Puis `Ctrl + F5`.
 
 Aucune migration Doctrine.
-Aucun code métier n'est modifié par ce livrable documentaire.
+Aucun STEM n'est régénéré.
+Le Worker Desktop n'est pas modifié.
