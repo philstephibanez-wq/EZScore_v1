@@ -97,6 +97,23 @@ final class RegistrationService
         return ['user' => $user, 'token' => $token];
     }
 
+    /**
+     * Administrative resend: bypasses the public resend cooldown.
+     *
+     * @return array{user: User, token: string}|null
+     */
+    public function forceRenewActivationForUser(User $user): ?array
+    {
+        if ($user->isEmailVerified()) {
+            return null;
+        }
+
+        $token = $this->issueActivationToken($user);
+        $this->em->flush();
+
+        return ['user' => $user, 'token' => $token];
+    }
+
     private function issueActivationToken(User $user): string
     {
         $rawToken = bin2hex(random_bytes(32));

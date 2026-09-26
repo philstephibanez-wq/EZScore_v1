@@ -6,6 +6,13 @@
     <div class="eyebrow">EZScore_v1</div>
     <h1>{{ 'auth.login.heading'|trans }}</h1>
     {% if error %}<div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>{% endif %}
+    {% if error and error.messageKey == 'auth.account.email_not_verified' and last_username %}
+    <form method="post" action="{{ path('app_registration_resend', {'_locale': app.request.locale}) }}" class="auth-inline-action">
+        <input type="hidden" name="_token" value="{{ csrf_token('resend_activation') }}">
+        <input type="hidden" name="email" value="{{ last_username }}">
+        <button type="submit" class="secondary-button">{{ 'login.resend_activation'|trans({}, 'admin_users') }}</button>
+    </form>
+    {% endif %}
     <form method="post" class="form-grid">
         <label>{{ 'users.email'|trans }}<input type="email" name="_username" value="{{ last_username }}" required autofocus></label>
         <label>{{ 'users.password'|trans }}<input type="password" name="_password" required></label>
@@ -13,7 +20,7 @@
 
         <label class="auth-remember">
             <input type="checkbox" name="_remember_me" value="1">
-            <span>{{ 'auth.login.remember_me'|trans }}</span>
+            <span>{{ 'login.remember_me'|trans({}, 'admin_users') }}</span>
         </label>
 
         <button class="primary" type="submit">{{ 'auth.login.submit'|trans }}</button>

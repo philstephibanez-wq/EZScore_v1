@@ -25,7 +25,10 @@ final class GoogleOAuthController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        return $clients->getClient('google_main')->redirect(['email', 'profile']);
+        return $clients->getClient('google_main')->redirect(
+            ['email', 'profile'],
+            ['prompt' => 'select_account'],
+        );
     }
 
     // Must remain exactly this URL: it is registered in Google Console.

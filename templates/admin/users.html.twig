@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% block title %}{{ 'users.title'|trans }} — EZScore_v1{% endblock %}
 {% block stylesheets %}
-<link rel="stylesheet" href="/assets/css/admin-users.css?v=20260925r20">
+<link rel="stylesheet" href="/assets/css/admin-users.css?v=20260926r31_1">
 <link rel="stylesheet" href="/assets/css/collection-filters.css?v=20260925r20">
 {% endblock %}
 {% block body %}
@@ -88,10 +88,37 @@
 <div class="identity-fields"><input name="display_name" value="{{ user.displayName }}" required><input type="email" name="email" value="{{ user.email }}" required></div>
 <select name="role"><option value="ROLE_READER" {{ user.primaryRole == 'ROLE_READER' ? 'selected' : '' }}>{{ 'role.ROLE_READER'|trans }}</option><option value="ROLE_EDITOR" {{ user.primaryRole == 'ROLE_EDITOR' ? 'selected' : '' }}>{{ 'role.ROLE_EDITOR'|trans }}</option><option value="ROLE_ADMIN" {{ user.primaryRole == 'ROLE_ADMIN' ? 'selected' : '' }}>{{ 'role.ROLE_ADMIN'|trans }}</option></select>
 <select name="locale">{% for locale in supported_locales %}<option value="{{ locale }}" {{ user.locale == locale ? 'selected' : '' }}>{{ ('locale.' ~ locale)|trans }}</option>{% endfor %}</select>
-<label class="check active-check"><input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>{{ 'users.active'|trans }}</label>
+<label class="check active-check"><input type="checkbox" name="active" value="1" {{ user.active ? 'checked' : '' }}>{{ user.active ? ('admin_users.account.active'|trans({}, 'admin_users')) : ('admin_users.account.inactive'|trans({}, 'admin_users')) }}</label>
 <span class="provider-state">{{ user.googleSub ? ('users.google_linked'|trans) : '—' }}</span>
 <input type="password" name="password" minlength="10" placeholder="{{ 'users.password_unchanged'|trans }}">
 </form>
+
+<div class="user-verification">
+    <span class="verification-badge {{ user.emailVerified ? 'verified' : 'unverified' }}">
+        {{ user.emailVerified ? ('admin_users.activation.verified'|trans({}, 'admin_users')) : ('admin_users.activation.unverified'|trans({}, 'admin_users')) }}
+    </span>
+    {% if user.emailVerifiedAt %}
+        <small>{{ 'admin_users.activation.verified_on'|trans({'%date%': user.emailVerifiedAt|date('d/m/Y H:i')}, 'admin_users') }}</small>
+    {% else %}
+        <div class="verification-actions">
+            <form method="post" action="{{ path('admin_user_activation_resend', {'_locale': app.request.locale, id: user.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('resend_activation_user_' ~ user.id) }}">
+                {% for key,value in filters %}{% if value is not null and value != '' %}<input type="hidden" name="filter_{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                <input type="hidden" name="filter_page" value="{{ pager.page }}">
+                <button type="submit" class="secondary-button">{{ 'admin_users.activation.resend'|trans({}, 'admin_users') }}</button>
+            </form>
+
+            <form method="post" action="{{ path('admin_user_activation_verify', {'_locale': app.request.locale, id: user.id}) }}"
+                  onsubmit="return confirm('{{ 'admin_users.activation.confirm_manual'|trans({}, 'admin_users')|e('js') }}');">
+                <input type="hidden" name="_token" value="{{ csrf_token('verify_email_user_' ~ user.id) }}">
+                {% for key,value in filters %}{% if value is not null and value != '' %}<input type="hidden" name="filter_{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                <input type="hidden" name="filter_page" value="{{ pager.page }}">
+                <button type="submit" class="secondary-button">{{ 'admin_users.activation.verify_manual'|trans({}, 'admin_users') }}</button>
+            </form>
+        </div>
+    {% endif %}
+</div>
+
 <div class="user-actions">
 <button type="submit" form="user-edit-{{ user.id }}" class="save-button">{{ 'common.save'|trans }}</button>
 <form method="post" action="{{ path('admin_user_delete', {'_locale': app.request.locale, id: user.id}) }}" class="user-delete-form" onsubmit="return confirm('{{ 'users.delete.confirm'|trans({'%name%': user.displayName})|e('js') }}');">

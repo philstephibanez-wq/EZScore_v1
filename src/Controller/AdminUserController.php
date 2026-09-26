@@ -9,6 +9,11 @@ use App\Domain\User\UserRepository;
 use App\Service\ListPagination;
 use App\Service\UserDeletionService;
 use App\Service\UserManager;
+use App\Service\Exception\ActivationMailException;
+use App\Service\RegistrationMailer;
+use App\Service\RegistrationService;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -155,6 +160,63 @@ final class AdminUserController extends AbstractController
         }
 
         $this->addFlash('success', 'users.updated');
+        return $this->redirectToRoute('admin_users', $this->returnFilters($request));
+    }
+
+    #[Route('/{id}/activation/resend', name: 'admin_user_activation_resend', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function resendActivation(
+        User $user,
+        Request $request,
+        RegistrationService $registration,
+        RegistrationMailer $mailer,
+        TranslatorInterface $translator,
+    ): Response {
+        if (!$this->isCsrfTokenValid(
+            'resend_activation_user_'.$user->getId(),
+            (string) $request->request->get('_token'),
+        )) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if ($user->isEmailVerified()) {
+            $this->addFlash('success', $translator->trans('admin_users.activation.already_verified', [], 'admin_users'));
+            return $this->redirectToRoute('admin_users', $this->returnFilters($request));
+        }
+
+        $result = $registration->forceRenewActivationForUser($user);
+
+        try {
+            if ($result !== null) {
+                $mailer->sendActivation($result['user'], $result['token']);
+            }
+            $this->addFlash('success', $translator->trans('admin_users.activation.resend_sent', [], 'admin_users'));
+        } catch (ActivationMailException) {
+            $this->addFlash('error', $translator->trans('admin_users.activation.resend_failed', [], 'admin_users'));
+        }
+
+        return $this->redirectToRoute('admin_users', $this->returnFilters($request));
+    }
+
+    #[Route('/{id}/activation/verify', name: 'admin_user_activation_verify', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function verifyEmailManually(
+        User $user,
+        Request $request,
+        EntityManagerInterface $em,
+        TranslatorInterface $translator,
+    ): Response {
+        if (!$this->isCsrfTokenValid(
+            'verify_email_user_'.$user->getId(),
+            (string) $request->request->get('_token'),
+        )) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$user->isEmailVerified()) {
+            $user->markEmailVerifiedForManagedAccount();
+            $em->flush();
+        }
+
+        $this->addFlash('success', $translator->trans('admin_users.activation.manual_verified', [], 'admin_users'));
         return $this->redirectToRoute('admin_users', $this->returnFilters($request));
     }
 

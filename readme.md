@@ -1,59 +1,45 @@
-# EZScore_v1 — R31 Workflow Labs
+# EZScore_v1 — R31.2 Reader login landing fix
 
-R31 implémente le nouveau workflow visible :
+Le mail d'activation fonctionne désormais et la connexion d'Aline aboutit bien à une session authentifiée.
+
+Le `403 ROLE_EDITOR` observé après connexion signifie que Symfony a ensuite tenté de renvoyer Aline vers une page protégée Éditeur.
+
+La cause est le comportement standard de `form_login` : Symfony peut réutiliser un `target_path` mémorisé dans la session avant l'authentification.
+
+Pour un Lecteur, ce target peut être une page Éditeur et provoquer immédiatement :
 
 ```text
-Import
-Analyse
-Édition
-StemsLab
-ChordsLab
-LyricsLab
-Publication
+Access Denied. The user doesn't have ROLE_EDITOR.
 ```
 
-Ce livrable pose le **workflow navigable et responsive**. Il ne prétend pas encore implémenter le moteur complet du prompteur ChordsLab.
-
-## Changements
-
-- `MODIFIER` devient `ÉDITION`.
-- `STEMS` devient `StemsLab`.
-- Ajout des étapes `Analyse`, `ChordsLab`, `LyricsLab`, `Publication`.
-- Ajout de routes/pages shell pour ces nouvelles étapes.
-- ChordsLab montre un aperçu de la future notation compacte.
-- ACL identiques à StemsLab : Admin ou Éditeur propriétaire.
-- Responsive :
-  - PC : 7 colonnes ;
-  - tablette : 4 colonnes ;
-  - smartphone : 2 colonnes ;
-  - aucune largeur desktop forcée.
+R31.2 force donc la connexion locale à toujours arriver sur le Répertoire, qui est l'écran valide pour les Lecteurs.
 
 ## Installation
 
 ```powershell
 cd H:\EZScore_v1
 
-tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R31_LABS_WORKFLOW.zip" -C H:\EZScore_v1
+tar -xf "$env:USERPROFILE\Downloads\EZScore_v1_R31_2_READER_LOGIN_LANDING_FIX.zip" -C H:\EZScore_v1
 
-H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r31_labs_workflow.py
+H:\EZScore_v1\.venv-py313\Scripts\python.exe .\scripts\apply_r31_2_reader_login_landing_fix.py
 
-php -l .\src\Controller\SongLabController.php
-php .\tests\r31_workflow_contract.php
-
-php bin\console lint:yaml translations
-php bin\console lint:twig templates
-php bin\console debug:router | Select-String "song_(analysis_lab|chordslab|lyricslab|publication_lab)"
+php .\tests\r31_2_reader_login_contract.php
+php bin\console lint:yaml config
 php bin\console cache:clear
 ```
 
 Attendu :
 
 ```text
-12 R31 workflow checks passed.
+4 R31.2 reader-login checks passed.
 ```
 
-Puis `Ctrl + F5`.
+Puis :
+1. se déconnecter ;
+2. se reconnecter avec Aline ;
+3. vérifier l'arrivée sur le Répertoire ;
+4. vérifier qu'aucune page Éditeur n'est ouverte automatiquement.
 
 Aucune migration Doctrine.
-Aucun STEM n'est régénéré.
-Le Worker Desktop n'est pas modifié.
+Aucune modification des rôles.
+Aucune modification ChordsLab / STEMS / Worker.
